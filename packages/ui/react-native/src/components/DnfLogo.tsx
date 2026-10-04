@@ -1,16 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
   Easing,
   Platform,
   StyleSheet,
+  Text,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
-import { useRpgTheme } from '../theme';
+import { fonts, useRpgTheme } from '../theme';
 
 export interface DnfLogoProps {
   /** Largura do emblema em px; o nome embaixo acompanha a escala. */
@@ -117,6 +118,83 @@ export function DnfLogo({ size = 120, showName = true, animated = true, style }:
   );
 }
 
+export interface DnfSpinnerProps {
+  /** Largura do emblema em px. Use o mesmo `imageWidth` da splash para a troca não pular. */
+  size?: number;
+  /** Mostra as espadas cruzadas paradas atrás do d20 (como na splash). */
+  withSwords?: boolean;
+  /** Texto embaixo, ex.: "Abrindo o compêndio…". */
+  label?: string;
+  style?: StyleProp<ViewStyle>;
+}
+
+/** Carregamento do app: um d20 girando (com "reduzir movimento", só pulsa de leve). */
+export function DnfSpinner({ size = 56, withSwords = false, label, style }: DnfSpinnerProps) {
+  const theme = useRpgTheme();
+  const [spin] = useState(() => new Animated.Value(0));
+  const [pulse] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    let running: Animated.CompositeAnimation | undefined;
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+      if (cancelled) return;
+      const breathe = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.sin), useNativeDriver }),
+          Animated.timing(pulse, { toValue: 0, duration: 700, easing: Easing.inOut(Easing.sin), useNativeDriver }),
+        ]),
+      );
+      // Uma volta inteira por "rolagem", acelerando e freando como um dado de verdade.
+      const roll = Animated.loop(
+        Animated.timing(spin, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.cubic), useNativeDriver }),
+      );
+      running = reduce ? breathe : Animated.parallel([roll, breathe]);
+      running.start();
+    });
+    return () => {
+      cancelled = true;
+      running?.stop();
+    };
+  }, [spin, pulse]);
+
+  return (
+    <View
+      style={[styles.spinner, style]}
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={label ?? 'Carregando'}
+    >
+      <View style={{ width: size, height: size }}>
+        {withSwords && (
+          <>
+            <View style={[StyleSheet.absoluteFill, { transform: [{ rotate: '-45deg' }] }]}>
+              <Sword color={theme.textMuted} />
+            </View>
+            <View style={[StyleSheet.absoluteFill, { transform: [{ rotate: '45deg' }] }]}>
+              <Sword color={theme.textMuted} />
+            </View>
+          </>
+        )}
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              transform: [
+                { rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) },
+                { scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, withSwords ? 1.06 : 1.1] }) },
+              ],
+            },
+          ]}
+        >
+          <D20 color={theme.accent} fill={theme.surface} />
+        </Animated.View>
+      </View>
+      {label ? <Text style={[styles.spinnerLabel, { color: theme.textMuted }]}>{label}</Text> : null}
+    </View>
+  );
+}
+
 const useNativeDriver = Platform.OS !== 'web';
 
 /** Espada em pé, centrada em (60,60) do viewBox: a camada gira em volta do centro até cruzar. */
@@ -150,6 +228,8 @@ function D20({ color, fill }: { color: string; fill: string }) {
 }
 
 const styles = StyleSheet.create({
+  spinner: { alignItems: 'center', gap: 12 },
+  spinnerLabel: { fontSize: 13, letterSpacing: 0.3 },
   root: { alignItems: 'center' },
-  name: { fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }), fontWeight: '700' },
+  name: { fontFamily: fonts.displayHeavy },
 });

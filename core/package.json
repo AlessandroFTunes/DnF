@@ -6,7 +6,8 @@
     "./*": "./src/*/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "seed:complement": "bun scripts/seed-complement.ts"
   },
   "devDependencies": {
     "@dnf/tsconfig": "workspace:*"

@@ -40,6 +40,34 @@ const { data } = await srd.GET('/v2/spells/', {
 
 Para atualizar o spec e os tipos: `cd packages/sdk && bun run srd:spec && bun run srd:gen`.
 
+### Complemento próprio (2024, Xanathar e Tasha)
+
+A Open5e só tem o que está no SRD — de 2024, só 4 dos 16 antecedentes, e nada do Guia de Xanathar nem
+do Caldeirão de Tasha (não são conteúdo aberto). O resto vem da nossa API:
+coleções públicas (somente leitura) no PocketBase, no mesmo formato da Open5e, que o catálogo junta
+com a Open5e (`createSrdCatalog(client, { complement: createPocketBaseComplement(pb) })`).
+
+| Coleção | Conteúdo |
+|---|---|
+| `srd_backgrounds` | Os 12 antecedentes de 2024 fora do SRD (Artesão, Charlatão, Artista, Fazendeiro, Guarda, Guia, Eremita, Mercador, Nobre, Marinheiro, Escriba, Andarilho) |
+| `srd_feats` | Talentos de origem que eles usam (Fabricante, Curandeiro, Sortudo, Músico, Brigão de Taverna, Robusto); talentos raciais do Xanathar (15) e talentos do Tasha (15) |
+| `srd_species` | Aasimar; Linhagem Customizada (Tasha) |
+| `srd_subclasses` | Subclasses do Xanathar (31) e do Tasha (26, sem as do Artífice), com as habilidades por nível |
+| `srd_spells` | Magias do Xanathar (94) e do Tasha (21), com as listas de classe (sem o Artífice) |
+
+Só a mecânica vem dos livros; as descrições são texto próprio e resumido (o texto dos livros não é livre).
+O conteúdo dos livros é de 2014: numa classe de 2024, as subclasses entram adaptadas (habilidades de nível
+1 e 2 passam para o 3), como as subclasses de 2014 da Open5e.
+Cada registro tem `i18n` com a tradução em pt-BR, que o app registra no tradutor (`tr`).
+
+O conteúdo fica em `core/seed/srd-complement.json` (2024) e `core/seed/books/` (Xanathar e Tasha). Para importar (ou atualizar) num PocketBase:
+
+```sh
+cd core && bun run seed:complement   # local; em outro servidor: PB_URL, PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD
+```
+
+Dá para adicionar conteúdo pelo painel do PocketBase também; o app pega na próxima vez que abrir.
+
 ## Desenvolvimento
 
 ```sh

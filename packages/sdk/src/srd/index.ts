@@ -26,3 +26,8 @@ export function createSrdClient(baseUrl: string = SRD_URL) {
 }
 
 export type SrdClient = ReturnType<typeof createSrdClient>;
+export * from './catalog';
+export * from './rules';
+export * from './i18n';
+export { PT_BR } from './locales/pt-BR';
+export * from './complement';

@@ -78,4 +78,5 @@ export namespace Examples {
     character: Character,
     timeJoined: '2026-10-04T05:24:30.227Z',
   };
+
 }

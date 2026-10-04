@@ -20,7 +20,8 @@ export namespace Sheet {
 
   /** Escolhas do jogador; o que a classe/espécie/antecedente já dá vem da API. */
   export const Proficiencies = z.object({
-    skills: z.record(key, z.enum(['proficient', 'expertise'])).default({}),
+    /** `none` desfaz uma perícia dada pela espécie/antecedente (ex.: Origem Personalizada do Caldeirão de Tasha). */
+    skills: z.record(key, z.enum(['proficient', 'expertise', 'none'])).default({}),
     languages: z.array(key).default([]),
     tools: z.array(key).default([]),
     weaponMasteries: z.array(key).default([]),
@@ -45,8 +46,15 @@ export namespace Sheet {
     attuned: z.boolean().default(false),
   });
 
+  /** Item sem chave na Open5e (ex.: "explorer's pack" no SRD 2014, foco arcano). */
+  export const CustomItem = z.object({
+    name: text(128).min(1),
+    quantity: count.default(1),
+  });
+
   export const Equipment = z.object({
     items: z.array(Item).default([]),
+    custom: z.array(CustomItem).default([]),
     coins: z
       .object({ cp: count, sp: count, ep: count, gp: count, pp: count })
       .default({ cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }),

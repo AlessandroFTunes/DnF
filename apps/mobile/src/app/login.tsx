@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,7 +13,7 @@ import {
 import { z } from 'zod';
 import { ClientResponseError } from '@dnf/core/pocketbase';
 import { User } from '@dnf/core/user';
-import { DnfLogo, radius, spacing, useRpgTheme, type RpgTheme } from '@dnf/ui-react-native';
+import { Button, DnfLogo, radius, shadow, spacing, typography, useRpgTheme, type RpgTheme } from '@dnf/ui-react-native';
 import { useSession } from '../hooks/hook.session';
 
 type Mode = 'login' | 'signUp';
@@ -65,11 +64,11 @@ export default function Login() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <DnfLogo size={120} style={styles.logo} />
-        <Text style={[styles.subtitle, { color: theme.textMuted }]}>
+        <Text style={[typography.body, styles.subtitle, { color: theme.textMuted }]}>
           {isSignUp ? 'Crie sua conta para começar a aventura' : 'Entre para continuar sua aventura'}
         </Text>
 
-        <View style={[styles.card, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
+        <View style={[styles.card, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }, shadow(theme, 1)]}>
           {isSignUp && (
             <Input
               theme={theme}
@@ -138,24 +137,12 @@ export default function Login() {
             </Text>
           )}
 
-          <Pressable
+          <Button
+            label={isSignUp ? 'Criar conta' : 'Entrar'}
             onPress={submit}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityState={{ busy, disabled: busy }}
-            style={({ pressed }) => [
-              styles.button,
-              { backgroundColor: theme.accent, opacity: pressed || busy ? 0.75 : 1 },
-            ]}
-          >
-            {busy ? (
-              <ActivityIndicator color={theme.accentText} />
-            ) : (
-              <Text style={[styles.buttonText, { color: theme.accentText }]}>
-                {isSignUp ? 'Criar conta' : 'Entrar'}
-              </Text>
-            )}
-          </Pressable>
+            loading={busy}
+            style={styles.button}
+          />
         </View>
 
         <Pressable onPress={switchMode} disabled={busy} accessibilityRole="button" style={styles.switch}>
@@ -180,7 +167,7 @@ interface InputProps extends TextInputProps {
 function Input({ ref, theme, label, error, hint, style, ...props }: InputProps) {
   return (
     <View style={styles.field}>
-      <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
+      <Text style={[typography.caption, styles.label, { color: theme.text }]}>{label}</Text>
       <TextInput
         ref={ref}
         accessibilityLabel={label}
@@ -238,14 +225,13 @@ function fieldMessage(field: Field, code: string, mode: Mode): string {
 const styles = StyleSheet.create({
   content: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg, gap: spacing.lg },
   logo: { alignSelf: 'center' },
-  subtitle: { fontSize: 15, textAlign: 'center', marginTop: -spacing.sm },
-  card: { borderWidth: 1, borderRadius: radius.md, padding: spacing.lg, gap: spacing.md },
+  subtitle: { textAlign: 'center', marginTop: -spacing.sm },
+  card: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
   field: { gap: spacing.xs },
-  label: { fontSize: 13, fontWeight: '600' },
-  input: { borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 16 },
+  label: { fontWeight: '600' },
+  input: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 16 },
   help: { fontSize: 12 },
   formError: { fontSize: 14, textAlign: 'center' },
-  button: { borderRadius: radius.sm, minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: spacing.xs },
-  buttonText: { fontSize: 16, fontWeight: '700' },
+  button: { marginTop: spacing.xs },
   switch: { alignSelf: 'center', padding: spacing.sm },
 });

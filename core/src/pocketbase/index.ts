@@ -44,4 +44,9 @@ export namespace PocketBase {
     if (!url) throw new Error('PocketBase não configurado: chame PocketBase.init(url) ou defina POCKETBASE_URL.');
     return (current = createAdapter(url));
   }
+
+  /** O mesmo que `use()`, com um nome que o lint de hooks do React não confunde com um hook. */
+  export function client(): PocketBaseClient {
+    return use();
+  }
 }

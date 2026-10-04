@@ -141,6 +141,37 @@ export namespace Mesa {
     { title: 'New invite code', description: 'Replace the invite code; the old one stops working.' },
   );
 
+  /** Mesa pelo código de convite (para mostrar nome e edição antes de entrar). */
+  export const fromInviteCode = fn(
+    InviteCode,
+    async (inviteCode) => {
+      const pb = PocketBase.use();
+      // A regra de listagem só mostra a mesa a quem manda o código certo em `?code=`.
+      const result = await pb
+        .collection('mesas')
+        .getList(1, 1, { filter: pb.filter('inviteCode = {:inviteCode}', { inviteCode }), code: inviteCode });
+      return result.items[0] ? serialize(result.items[0]) : null;
+    },
+    { title: 'Find table by code', description: 'Look up a table by its invite code.' },
+  );
+
+  /** Mesas em que um personagem do usuário está. */
+  export const ofCharacter = fn(
+    Character.Info.shape.id,
+    async (characterID): Promise<{ memberID: string; mesa: Info }[]> => {
+      const pb = PocketBase.use();
+      const records = await pb.collection('mesa_members').getFullList({
+        filter: pb.filter('character = {:characterID}', { characterID }),
+        expand: 'mesa',
+        sort: 'created,id',
+      });
+      return records
+        .filter((r) => r.expand?.mesa)
+        .map((r) => ({ memberID: r.id, mesa: serialize(r.expand!.mesa) }));
+    },
+    { title: 'Tables of a character', description: 'Tables where one of your characters is seated.' },
+  );
+
   export const join = fn(
     z.object({ inviteCode: InviteCode, characterID: Character.Info.shape.id }),
     async ({ inviteCode, characterID }) => {

@@ -1,0 +1,809 @@
+{
+ "srd_backgrounds": [
+  {
+   "key": "dnf-2024_artisan",
+   "name": "Artisan",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You learned a trade at a workbench, haggling with buyers and fixing what others broke. You know the value of good work and how to talk your way into a fair price.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Strength, Dexterity, Intelligence"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Crafter"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Investigation and Persuasion"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Choose one kind of Artisan's Tools"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Artisan's Tools (same as above), 2 Pouches, Traveler's Clothes, 32 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Artesão",
+     "desc": "Você aprendeu um ofício na bancada, negociando com clientes e consertando o que os outros quebravam. Conhece o valor de um trabalho bem feito e sabe conversar até chegar a um preço justo.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Ferramentas de Artesão (as mesmas acima), 2 Algibeiras, Roupas de Viajante, 32 PO; ou (B) 50 PO",
+      "tool_proficiency": "Escolha um tipo de Ferramentas de Artesão"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_charlatan",
+   "name": "Charlatan",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You lived by selling stories: fake relics, false titles, cures that cured nothing. Every town taught you a new face and a quicker exit.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Dexterity, Constitution, Charisma"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Skilled"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Deception and Sleight of Hand"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Forgery Kit"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Forgery Kit, Costume, Fine Clothes, 15 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Charlatão",
+     "desc": "Você viveu de vender histórias: relíquias falsas, títulos inventados, curas que não curavam nada. Cada cidade te ensinou um rosto novo e uma saída mais rápida.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Kit de Falsificação, Fantasia, Roupas Finas, 15 PO; ou (B) 50 PO",
+      "tool_proficiency": "Kit de Falsificação"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_entertainer",
+   "name": "Entertainer",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "Stages, taverns and town squares were your home. You know how to read a crowd, hold its attention and leave before the applause turns into questions.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Strength, Dexterity, Charisma"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Musician"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Acrobatics and Performance"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Choose one kind of Musical Instrument"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Musical Instrument (same as above), 2 Costumes, Mirror, Perfume, Traveler's Clothes, 11 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Artista",
+     "desc": "Palcos, tavernas e praças foram sua casa. Você sabe ler uma plateia, prender a atenção dela e sair antes que os aplausos virem perguntas.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Instrumento Musical (o mesmo acima), 2 Fantasias, Espelho, Perfume, Roupas de Viajante, 11 PO; ou (B) 50 PO",
+      "tool_proficiency": "Escolha um tipo de Instrumento Musical"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_farmer",
+   "name": "Farmer",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You grew up working the land: early mornings, stubborn animals and long harvests. Hard seasons made you patient and harder to break.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Strength, Constitution, Wisdom"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Tough"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Animal Handling and Nature"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Carpenter's Tools"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Sickle, Carpenter's Tools, Healer's Kit, Iron Pot, Shovel, Traveler's Clothes, 30 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Fazendeiro",
+     "desc": "Você cresceu trabalhando a terra: madrugadas, animais teimosos e colheitas longas. As estações difíceis te deixaram paciente e difícil de quebrar.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Foice Curta, Ferramentas de Carpinteiro, Kit de Curandeiro, Panela de Ferro, Pá, Roupas de Viajante, 30 PO; ou (B) 50 PO",
+      "tool_proficiency": "Ferramentas de Carpinteiro"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_guard",
+   "name": "Guard",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You kept watch on walls and gates, playing cards between rounds and noticing every face that came and went. Trouble rarely caught you off guard.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Strength, Intelligence, Wisdom"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Alert"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Athletics and Perception"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Choose one kind of Gaming Set"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Spear, Light Crossbow, 20 Bolts, Gaming Set (same as above), Hooded Lantern, Manacles, Quiver, Traveler's Clothes, 12 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Guarda",
+     "desc": "Você vigiou muralhas e portões, jogando cartas entre as rondas e reparando em cada rosto que entrava e saía. Raramente um problema te pegava desprevenido.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Lança, Besta Leve, 20 Virotes, Jogo (o mesmo acima), Lanterna Coberta, Algemas, Aljava, Roupas de Viajante, 12 PO; ou (B) 50 PO",
+      "tool_proficiency": "Escolha um tipo de Jogo"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_guide",
+   "name": "Guide",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You led travelers through forests and mountains, mapping safe trails and learning a little of the old nature magic along the way.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Dexterity, Constitution, Wisdom"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Magic Initiate (Druid)"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Stealth and Survival"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Cartographer's Tools"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Shortbow, 20 Arrows, Cartographer's Tools, Bedroll, Quiver, Tent, Traveler's Clothes, 3 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Guia",
+     "desc": "Você conduziu viajantes por florestas e montanhas, mapeando trilhas seguras e aprendendo um pouco da antiga magia da natureza pelo caminho.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Arco Curto, 20 Flechas, Ferramentas de Cartógrafo, Saco de Dormir, Aljava, Tenda, Roupas de Viajante, 3 PO; ou (B) 50 PO",
+      "tool_proficiency": "Ferramentas de Cartógrafo"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_hermit",
+   "name": "Hermit",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You spent years away from everyone, studying herbs and big questions in silence. You came back with remedies and a calm that unsettles people.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Constitution, Wisdom, Charisma"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Healer"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Medicine and Religion"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Herbalism Kit"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Quarterstaff, Herbalism Kit, Bedroll, Book (philosophy), Lamp, Oil (3 flasks), Traveler's Clothes, 16 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Eremita",
+     "desc": "Você passou anos longe de todos, estudando ervas e grandes perguntas em silêncio. Voltou com remédios e uma calma que deixa as pessoas inquietas.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Bordão, Kit de Herbalismo, Saco de Dormir, Livro (filosofia), Lamparina, Óleo (3 frascos), Roupas de Viajante, 16 PO; ou (B) 50 PO",
+      "tool_proficiency": "Kit de Herbalismo"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_merchant",
+   "name": "Merchant",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You moved goods between cities, guiding pack animals, reading routes and closing deals. A good bargain and a bit of luck kept you on the road.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Constitution, Intelligence, Charisma"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Lucky"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Animal Handling and Persuasion"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Navigator's Tools"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Navigator's Tools, 2 Pouches, Traveler's Clothes, 22 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Mercador",
+     "desc": "Você levou mercadorias entre cidades, guiando animais de carga, lendo rotas e fechando negócios. Uma boa barganha e um pouco de sorte te mantiveram na estrada.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Ferramentas de Navegador, 2 Algibeiras, Roupas de Viajante, 22 PO; ou (B) 50 PO",
+      "tool_proficiency": "Ferramentas de Navegador"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_noble",
+   "name": "Noble",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You were raised among titles, banquets and family intrigue. You learned history from tutors and diplomacy from rivals.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Strength, Intelligence, Charisma"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Skilled"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "History and Persuasion"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Choose one kind of Gaming Set"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Gaming Set (same as above), Fine Clothes, Perfume, 29 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Nobre",
+     "desc": "Você foi criado entre títulos, banquetes e intrigas de família. Aprendeu história com tutores e diplomacia com rivais.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Jogo (o mesmo acima), Roupas Finas, Perfume, 29 PO; ou (B) 50 PO",
+      "tool_proficiency": "Escolha um tipo de Jogo"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_sailor",
+   "name": "Sailor",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You worked the decks of ships, climbing rigging in storms and settling arguments in port taverns with your fists.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Strength, Dexterity, Wisdom"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Tavern Brawler"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Acrobatics and Perception"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Navigator's Tools"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Dagger, Navigator's Tools, Rope, Traveler's Clothes, 20 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Marinheiro",
+     "desc": "Você trabalhou no convés de navios, subindo no cordame durante tempestades e resolvendo discussões nas tavernas do porto no braço.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Adaga, Ferramentas de Navegador, Corda, Roupas de Viajante, 20 PO; ou (B) 50 PO",
+      "tool_proficiency": "Ferramentas de Navegador"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_scribe",
+   "name": "Scribe",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You copied documents in archives and offices, where a single wrong word mattered. Your eye for detail catches what others miss.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Dexterity, Intelligence, Wisdom"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Skilled"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Investigation and Perception"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Calligrapher's Supplies"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) Calligrapher's Supplies, Fine Clothes, Lamp, Oil (3 flasks), Parchment (12 sheets), 23 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Escriba",
+     "desc": "Você copiou documentos em arquivos e repartições, onde uma única palavra errada fazia diferença. Seu olho para detalhes pega o que os outros deixam passar.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Suprimentos de Calígrafo, Roupas Finas, Lamparina, Óleo (3 frascos), Pergaminho (12 folhas), 23 PO; ou (B) 50 PO",
+      "tool_proficiency": "Suprimentos de Calígrafo"
+     }
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_wayfarer",
+   "name": "Wayfarer",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "desc": "You grew up on the streets and roads, sleeping where you could and reading people to survive. Luck has been your most loyal companion.",
+   "benefits": [
+    {
+     "name": "Ability Scores",
+     "type": "ability_score",
+     "desc": "Dexterity, Wisdom, Charisma"
+    },
+    {
+     "name": "Feat",
+     "type": "feat",
+     "desc": "Lucky"
+    },
+    {
+     "name": "Skill Proficiencies",
+     "type": "skill_proficiency",
+     "desc": "Insight and Stealth"
+    },
+    {
+     "name": "Tool Proficiency",
+     "type": "tool_proficiency",
+     "desc": "Thieves' Tools"
+    },
+    {
+     "name": "Equipment",
+     "type": "equipment",
+     "desc": "*Choose A or B:* (A) 2 Daggers, Thieves' Tools, Gaming Set (any), Bedroll, 2 Pouches, Traveler's Clothes, 16 GP; or (B) 50 GP"
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Andarilho",
+     "desc": "Você cresceu nas ruas e estradas, dormindo onde dava e lendo as pessoas para sobreviver. A sorte foi sua companheira mais fiel.",
+     "benefits": {
+      "equipment": "Escolha A ou B: (A) Adagas (2), Ferramentas de Ladrão, Jogo (qualquer), Saco de Dormir, 2 Algibeiras, Roupas de Viajante, 16 PO; ou (B) 50 PO",
+      "tool_proficiency": "Ferramentas de Ladrão"
+     }
+    }
+   }
+  }
+ ],
+ "srd_feats": [
+  {
+   "key": "dnf-2024_crafter",
+   "name": "Crafter",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "type": "Origin",
+   "prerequisite": "",
+   "desc": "You are skilled at making and buying gear.",
+   "benefits": [
+    {
+     "desc": "Tool Proficiency. You gain proficiency with three different Artisan's Tools of your choice."
+    },
+    {
+     "desc": "Discount. Whenever you buy a nonmagical item, you get a 20 percent discount."
+    },
+    {
+     "desc": "Fast Crafting. When you finish a Long Rest, you can make one simple piece of gear associated with one of those tools; it lasts until your next Long Rest."
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Fabricante",
+     "desc": "Você é bom em fabricar e comprar equipamento.",
+     "benefits": [
+      "Proficiência com Ferramentas: você ganha proficiência com três Ferramentas de Artesão à sua escolha.",
+      "Desconto: sempre que compra um item não mágico, você ganha 20% de desconto.",
+      "Fabricação Rápida: ao terminar um Descanso Longo, você pode fabricar uma peça simples de equipamento ligada a uma dessas ferramentas; ela dura até o próximo Descanso Longo."
+     ]
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_healer",
+   "name": "Healer",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "type": "Origin",
+   "prerequisite": "",
+   "desc": "You know how to patch people up in the middle of a fight.",
+   "benefits": [
+    {
+     "desc": "Battle Medic. With a Healer's Kit, you can spend one use of it and take the Utilize action to tend a creature within 5 feet; it can spend one Hit Die, and you roll it: the creature regains Hit Points equal to the roll plus your Proficiency Bonus."
+    },
+    {
+     "desc": "Healing Rerolls. Whenever you roll a die to restore Hit Points with a spell or with this feat, you can reroll it if it shows a 1, and you must use the new roll."
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Curandeiro",
+     "desc": "Você sabe remendar as pessoas no meio da luta.",
+     "benefits": [
+      "Médico de Campo: com um Kit de Curandeiro, você gasta um uso dele e usa a ação Usar para tratar uma criatura a até 1,5 m; ela pode gastar um Dado de Vida e você o rola: ela recupera PV iguais ao resultado + seu Bônus de Proficiência.",
+      "Rolagens de Cura: quando rola um dado para recuperar PV com uma magia ou com este talento, você pode rolar de novo se sair 1, e precisa usar o novo resultado."
+     ]
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_lucky",
+   "name": "Lucky",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "type": "Origin",
+   "prerequisite": "",
+   "desc": "Fortune bends a little in your favor.",
+   "benefits": [
+    {
+     "desc": "Luck Points. You have a number of Luck Points equal to your Proficiency Bonus, and you regain them when you finish a Long Rest."
+    },
+    {
+     "desc": "Advantage. When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll."
+    },
+    {
+     "desc": "Disadvantage. When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll."
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Sortudo",
+     "desc": "A sorte pende um pouco para o seu lado.",
+     "benefits": [
+      "Pontos de Sorte: você tem Pontos de Sorte iguais ao seu Bônus de Proficiência e os recupera ao terminar um Descanso Longo.",
+      "Vantagem: quando rola um d20 num Teste de D20, você pode gastar 1 Ponto de Sorte para ter Vantagem.",
+      "Desvantagem: quando uma criatura rola um d20 para atacar você, você pode gastar 1 Ponto de Sorte para impor Desvantagem."
+     ]
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_musician",
+   "name": "Musician",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "type": "Origin",
+   "prerequisite": "",
+   "desc": "Your music lifts the spirits of your companions.",
+   "benefits": [
+    {
+     "desc": "Instrument Training. You gain proficiency with three Musical Instruments of your choice."
+    },
+    {
+     "desc": "Encouraging Song. As you finish a Short or Long Rest, you can play a song on an instrument you are proficient with and give Heroic Inspiration to a number of allies who hear it equal to your Proficiency Bonus."
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Músico",
+     "desc": "Sua música levanta o ânimo dos companheiros.",
+     "benefits": [
+      "Treino com Instrumentos: você ganha proficiência com três Instrumentos Musicais à sua escolha.",
+      "Canção Encorajadora: ao terminar um Descanso Curto ou Longo, você pode tocar um instrumento em que é proficiente e dar Inspiração Heroica a aliados que ouçam, em número igual ao seu Bônus de Proficiência."
+     ]
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_tavern-brawler",
+   "name": "Tavern Brawler",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "type": "Origin",
+   "prerequisite": "",
+   "desc": "You learned to fight with whatever is at hand, fists first.",
+   "benefits": [
+    {
+     "desc": "Enhanced Unarmed Strike. When you hit with your Unarmed Strike and deal damage, you can deal Bludgeoning damage equal to 1d4 plus your Strength modifier."
+    },
+    {
+     "desc": "Damage Rerolls. Whenever you roll a damage die for your Unarmed Strike, you can reroll it if it shows a 1, and you must use the new roll."
+    },
+    {
+     "desc": "Improvised Weaponry. You have proficiency with improvised weapons."
+    },
+    {
+     "desc": "Push. When you hit a creature with an Unarmed Strike as part of the Attack action on your turn, you can also push it 5 feet away from you, once per turn."
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Brigão de Taverna",
+     "desc": "Você aprendeu a brigar com o que estiver à mão, começando pelos punhos.",
+     "benefits": [
+      "Ataque Desarmado Aprimorado: ao acertar um Ataque Desarmado e causar dano, você pode causar dano de Concussão igual a 1d4 + seu modificador de Força.",
+      "Rolagens de Dano: quando rola o dado de dano do Ataque Desarmado, você pode rolar de novo se sair 1, e precisa usar o novo resultado.",
+      "Armas Improvisadas: você tem proficiência com armas improvisadas.",
+      "Empurrão: ao acertar uma criatura com um Ataque Desarmado como parte da ação Atacar no seu turno, você também pode empurrá-la 1,5 m, uma vez por turno."
+     ]
+    }
+   }
+  },
+  {
+   "key": "dnf-2024_tough",
+   "name": "Tough",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "type": "Origin",
+   "prerequisite": "",
+   "desc": "You are harder to take down than most.",
+   "benefits": [
+    {
+     "desc": "Your Hit Point maximum increases by twice your character level when you gain this feat, and by 2 more every time you gain a character level after that."
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Robusto",
+     "desc": "Você é mais difícil de derrubar que a maioria.",
+     "benefits": [
+      "Seus PV máximos aumentam em duas vezes o seu nível de personagem quando você ganha este talento, e em mais 2 a cada nível que ganhar depois."
+     ]
+    }
+   }
+  }
+ ],
+ "srd_species": [
+  {
+   "key": "dnf-2024_aasimar",
+   "name": "Aasimar",
+   "edition": "2024",
+   "document_key": "dnf-2024",
+   "document_name": "DnF · Complemento 2024 (mecânica do Livro do Jogador, texto próprio)",
+   "subspecies_of": "",
+   "desc": "Mortals touched by celestial power, often guided by a sense of purpose from the Upper Planes.",
+   "traits": [
+    {
+     "name": "Size",
+     "type": "SIZE",
+     "order": 1,
+     "desc": "Medium (about 4–7 feet tall) or Small (about 2–4 feet tall), chosen when you select this species"
+    },
+    {
+     "name": "Speed",
+     "type": "SPEED",
+     "order": 2,
+     "desc": "30 feet"
+    },
+    {
+     "name": "Celestial Resistance",
+     "type": null,
+     "order": 3,
+     "desc": "You have Resistance to Necrotic damage and Radiant damage."
+    },
+    {
+     "name": "Darkvision",
+     "type": null,
+     "order": 4,
+     "desc": "You have Darkvision with a range of 60 feet."
+    },
+    {
+     "name": "Healing Hands",
+     "type": null,
+     "order": 5,
+     "desc": "As a Magic action, you touch a creature and roll a number of d4s equal to your Proficiency Bonus; it regains that many Hit Points. Once per Long Rest."
+    },
+    {
+     "name": "Light Bearer",
+     "type": null,
+     "order": 6,
+     "desc": "You know the Light cantrip. Charisma is your spellcasting ability for it."
+    },
+    {
+     "name": "Celestial Revelation",
+     "type": null,
+     "order": 7,
+     "desc": "From character level 3, as a Bonus Action you can transform for 1 minute, choosing Heavenly Wings (Fly Speed equal to your Speed), Inner Radiance (shed light and deal Radiant damage equal to your Proficiency Bonus to nearby creatures at the end of your turns) or Necrotic Shroud (nearby creatures make a Charisma save or are Frightened). Once per turn while transformed, one of your attacks or spells deals extra damage equal to your Proficiency Bonus. Once per Long Rest."
+    }
+   ],
+   "i18n": {
+    "pt-BR": {
+     "name": "Aasimar",
+     "desc": "Mortais tocados por poder celestial, muitas vezes guiados por um senso de propósito vindo dos Planos Superiores.",
+     "traits": {
+      "Celestial Resistance": [
+       "Resistência Celestial",
+       "Você tem Resistência a dano Necrótico e Radiante."
+      ],
+      "Darkvision": [
+       "Visão no Escuro",
+       "Você tem Visão no Escuro com alcance de 18 m."
+      ],
+      "Healing Hands": [
+       "Mãos Curativas",
+       "Como ação Mágica, você toca uma criatura e rola d4s em número igual ao seu Bônus de Proficiência; ela recupera essa quantidade de PV. Uma vez por Descanso Longo."
+      ],
+      "Light Bearer": [
+       "Portador da Luz",
+       "Você conhece o truque Luz. Carisma é seu atributo de conjuração para ele."
+      ],
+      "Celestial Revelation": [
+       "Revelação Celestial",
+       "A partir do nível 3, como Ação Bônus você se transforma por 1 minuto, escolhendo Asas Celestiais (Deslocamento de Voo igual ao seu Deslocamento), Radiância Interior (emite luz e causa dano Radiante igual ao seu Bônus de Proficiência às criaturas próximas no fim dos seus turnos) ou Mortalha Necrótica (criaturas próximas fazem um teste de resistência de Carisma ou ficam Amedrontadas). Uma vez por turno, enquanto transformado, um ataque ou magia seu causa dano extra igual ao seu Bônus de Proficiência. Uma vez por Descanso Longo."
+      ]
+     }
+    }
+   }
+  }
+ ]
+}
