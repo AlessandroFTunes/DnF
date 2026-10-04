@@ -1,0 +1,22 @@
+{
+  "name": "@dnf/ui-svelte",
+  "version": "0.0.0",
+  "private": true,
+  "svelte": "./src/index.ts",
+  "exports": {
+    ".": {
+      "svelte": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@dnf/core": "workspace:*",
+    "@dnf/sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@dnf/tsconfig": "workspace:*"
+  }
+}

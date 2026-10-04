@@ -2,16 +2,22 @@
   "name": "@dnf/sdk",
   "version": "0.0.0",
   "private": true,
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./srd": "./src/srd/index.ts"
+  },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "srd:spec": "curl -sf https://api.open5e.com/schema/ | sed \"s|#/components/schemas/Race'|#/components/schemas/Species'|\" > openapi/open5e.yaml",
+    "srd:gen": "openapi-typescript openapi/open5e.yaml -o src/srd/open5e.d.ts"
   },
   "dependencies": {
     "@dnf/core": "workspace:*",
-    "pocketbase": "^0.26.0"
+    "openapi-fetch": "^0.17.0",
+    "pocketbase": "^0.28.1"
   },
   "devDependencies": {
-    "@dnf/tsconfig": "workspace:*"
+    "@dnf/tsconfig": "workspace:*",
+    "openapi-typescript": "^7.13.0"
   }
 }
