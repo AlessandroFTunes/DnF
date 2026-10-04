@@ -1,0 +1,22 @@
+# Ambiente local de testes. Sobe junto com `bun expo start` em apps/mobile.
+services:
+  pocketbase:
+    build: ./core
+    ports:
+      - "8090:8090"
+    environment:
+      PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@dnf.local}
+      PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-dnf-dev-password}
+    # Cria/atualiza o superuser de dev e sobe em modo --dev (logs SQL, migrations geradas pelo Dashboard).
+    command: >
+      sh -c './pocketbase superuser upsert "$$PB_ADMIN_EMAIL" "$$PB_ADMIN_PASSWORD"
+      && exec ./pocketbase serve --http=0.0.0.0:8090 --dev'
+    volumes:
+      - ./core/pb_data:/pb/pb_data
+      - ./core/pb_migrations:/pb/pb_migrations
+      - ./core/pb_hooks:/pb/pb_hooks
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/api/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 15

@@ -1,0 +1,33 @@
+{
+  "name": "@dnf/mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@dnf/core": "workspace:*",
+    "@dnf/sdk": "workspace:*",
+    "expo": "~57.0.26",
+    "expo-constants": "~57.0.20",
+    "expo-linking": "~57.0.11",
+    "expo-router": "~57.0.24",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "expo": "sh scripts/expo.sh",
+    "start": "bun expo start",
+    "android": "bun expo start --android",
+    "ios": "bun expo start --ios",
+    "web": "bun expo start --web",
+    "db:down": "docker compose -f ../../compose.yaml down",
+    "db:logs": "docker compose -f ../../compose.yaml logs -f pocketbase",
+    "typecheck": "tsc --noEmit"
+  },
+  "private": true
+}

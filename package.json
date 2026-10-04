@@ -1,0 +1,16 @@
+{
+  "name": "dnf",
+  "private": true,
+  "workspaces": [
+    "core",
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "expo": "cd apps/mobile && bun expo",
+    "typecheck": "bun run --filter '*' typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

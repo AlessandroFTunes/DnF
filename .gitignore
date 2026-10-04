@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.expo/
+*.log
+.env*
+!.env.example
+
+# PocketBase
+core/pb_data/
+core/pocketbase
+core/pocketbase.exe

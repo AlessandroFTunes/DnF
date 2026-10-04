@@ -1,0 +1,16 @@
+{
+  "name": "@dnf/core",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "devDependencies": {
+    "@dnf/tsconfig": "workspace:*"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

@@ -1,0 +1,3 @@
+[install]
+# Expo/Metro precisam de node_modules hoisted (o isolated linker duplica módulos nativos).
+linker = "hoisted"
