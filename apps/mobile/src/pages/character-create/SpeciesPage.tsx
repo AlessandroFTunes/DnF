@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { speciesRules, type SkillInfo, type SrdSpecies } from '@dnf/sdk/srd';
+import { sizeLabel, speciesRules, type SkillInfo, type SrdSpecies } from '@dnf/sdk/srd';
 import type { Ability } from '@dnf/core/character';
 import { Chip, OptionCard, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { InfoRow, LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
@@ -103,7 +103,7 @@ function SpeciesSummary({ chain, skills, languageNames }: { chain: SrdSpecies[];
   return (
     <>
       {bonuses.length > 0 && <InfoRow icon="arm-flex" label="Atributos" value={bonuses.join(', ')} />}
-      <InfoRow icon="shoe-print" label="Deslocamento" value={`${rules.speed} pés · ${rules.size}`} />
+      <InfoRow icon="shoe-print" label="Deslocamento" value={[rules.speed, rules.size].filter(Boolean).join(' · ')} />
       {rules.hpPerLevel > 0 && <InfoRow icon="heart-plus" label="Robustez" value={`+${rules.hpPerLevel} PV por nível`} />}
     </>
   );
@@ -113,10 +113,11 @@ function SpeciesSummary({ chain, skills, languageNames }: { chain: SrdSpecies[];
 const isTrait = (t: SrdSpecies['traits'][number], type: 'SIZE' | 'SPEED') =>
   t.type === type || t.name.toLowerCase() === type.toLowerCase();
 
-/** "Medium · 30 feet", a partir dos traços de tamanho e deslocamento. */
+/** "Médio · 9 metros", a partir dos traços de tamanho e deslocamento. */
 function summary(species: SrdSpecies): string {
   const pick = (type: 'SIZE' | 'SPEED') => species.traits.find((t) => isTrait(t, type))?.desc;
-  return [pick('SIZE'), pick('SPEED')].filter(Boolean).map((s) => firstSentence(s)).join(' · ');
+  const size = pick('SIZE');
+  return [size && sizeLabel(size), pick('SPEED')].filter(Boolean).join(' · ');
 }
 
 function otherTraits(species: SrdSpecies) {

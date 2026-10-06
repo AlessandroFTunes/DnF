@@ -67,7 +67,7 @@ export default function RootLayout() {
           <Stack.Screen name="mesa/join" options={{ headerShown: false, presentation: 'modal' }} />
         </Stack.Protected>
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </>
   );
 }

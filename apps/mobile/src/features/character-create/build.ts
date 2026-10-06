@@ -14,7 +14,7 @@ export function startingHitPoints(c: Creation): number | null {
 
 /**
  * Converte o rascunho no personagem salvo. Só entram as escolhas do jogador e o estado inicial
- * (PV, itens, moedas); o que a classe/espécie/antecedente já dá é lido da Open5e na ficha.
+ * (PV, itens, moedas); o que a classe/espécie/antecedente já dá é lido da 5e-FastAPI na ficha.
  */
 export function buildCharacter(c: Creation, inventory: Inventory): CharacterInput | null {
   const { draft, scores } = c;

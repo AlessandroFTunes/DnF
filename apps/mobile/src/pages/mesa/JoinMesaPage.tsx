@@ -9,6 +9,7 @@ import { ClientResponseError } from '@dnf/core/pocketbase';
 import { Button, DnfSpinner, fonts, OptionCard, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { classIcon } from '../../features/character-create/labels';
 import { formatCode } from '../../features/mesa/code';
+import { srd, useSrd } from '../../lib/srd';
 
 /** Jogador entra numa mesa: digita o código, vê a mesa e escolhe o personagem da mesma edição. */
 export default function JoinMesaPage() {
@@ -21,6 +22,10 @@ export default function JoinMesaPage() {
   const [characterID, setCharacterID] = useState<string | null>(params.characterID ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Nome das classes (em cache) para o ícone de cada personagem.
+  const classes = useSrd(mesa && `classes:${mesa.edition}`, () => srd.classes(mesa!.edition));
+  const className = (key = '') => (classes.status === 'ready' ? classes.data.find((k) => k.key === key)?.name : undefined) ?? '';
 
   const clean = code.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 8);
 
@@ -139,7 +144,7 @@ export default function JoinMesaPage() {
                     subtitle={`Nível ${c.level} · PV ${c.combat.hpCurrent}/${c.combat.hpMax}`}
                     selected={characterID === c.id}
                     onPress={() => setCharacterID(c.id)}
-                    leading={(color) => <MaterialCommunityIcons name={classIcon(c.classes[0]?.classKey ?? '')} size={22} color={color} />}
+                    leading={(color) => <MaterialCommunityIcons name={classIcon(className(c.classes[0]?.classKey))} size={22} color={color} />}
                   />
                 ))
               )}

@@ -3,11 +3,11 @@ import { levelSchema } from './abilities';
 
 /**
  * Seções da ficha. Aqui só fica o que o jogador escolheu e o estado da mesa;
- * regras e dados de D&D (dado de vida, magias, itens, habilidades…) vêm da Open5e pelas `*Key`.
+ * regras e dados de D&D (dado de vida, magias, itens, habilidades…) vêm da 5e-FastAPI pelas `*Key`.
  */
 export namespace Sheet {
   const text = (max: number) => z.string().trim().max(max);
-  const key = z.string().min(1).max(128).meta({ description: 'Open5e key (see DiferenteKey).' });
+  const key = z.string().min(1).max(128).meta({ description: 'Rules key from the 5e-FastAPI (id as text; items are "arma:3", "armadura:1"…).' });
   const count = z.number().int().min(0);
 
   /** Multiclasse: o nível do personagem é a soma dos níveis de classe. */
@@ -46,7 +46,7 @@ export namespace Sheet {
     attuned: z.boolean().default(false),
   });
 
-  /** Item sem chave na Open5e (ex.: "explorer's pack" no SRD 2014, foco arcano). */
+  /** Item sem ficha na API (ex.: "Kit de Jogos (o mesmo que acima)", foco arcano). */
   export const CustomItem = z.object({
     name: text(128).min(1),
     quantity: count.default(1),

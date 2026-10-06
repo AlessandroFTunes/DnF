@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SRD_DOCUMENTS } from '@dnf/sdk/srd';
 import { Chip, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
 import { useCharacterDraft } from '../../features/character-create/draft';
@@ -31,8 +30,6 @@ export default function DetailsPage() {
     });
   const [focused, setFocused] = useState(false);
 
-  const selected = alignments.status === 'ready' ? alignments.data.find((a) => a.key === draft.alignmentKey) : undefined;
-  const description = selected?.descriptions.find((d) => d.document === SRD_DOCUMENTS[draft.edition ?? '2024'])?.desc;
 
   return (
     <StepScreen
@@ -131,11 +128,6 @@ export default function DetailsPage() {
               </View>
             ))}
           </View>
-          {selected && description ? (
-            <View style={[styles.quote, { borderLeftColor: theme.gold, backgroundColor: theme.goldSoft }]}>
-              <Text style={[typography.caption, { color: theme.text }]}>{description}</Text>
-            </View>
-          ) : null}
         </>
       )}
     </StepScreen>

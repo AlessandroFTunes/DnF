@@ -36,7 +36,7 @@ export default function ReviewPage() {
   const spellKeys = [...draft.cantrips, ...draft.spells, ...draft.featCantrips, ...(draft.featSpell ? [draft.featSpell] : [])];
   const spells = useSrd(spellKeys.length ? `spellsByKey:${spellKeys.join(',')}` : null, () => srd.spellsByKey(spellKeys));
 
-  const load = combined(c.queries.classQ, c.queries.itemsQ, c.queries.abilitiesQ, c.queries.speciesQ);
+  const load = combined(c.queries.classQ, c.queries.itemsQ, c.queries.speciesQ);
   if (!klass || !scores || !items || !skills) {
     return (
       <StepScreen step="review" title="Tudo pronto?" canContinue={false}>
@@ -87,9 +87,9 @@ export default function ReviewPage() {
       onContinue={create}
     >
       <View style={[styles.hero, { backgroundColor: theme.surfaceRaised, borderColor: theme.gold }, shadow(theme, 2)]}>
-        <View pointerEvents="none" style={[styles.heroFrame, { borderColor: theme.goldSoft }]} />
+        <View style={[styles.heroFrame, { pointerEvents: 'none' }, { borderColor: theme.goldSoft }]} />
         <View style={[styles.heroMedallion, { backgroundColor: theme.accent }]}>
-          <MaterialCommunityIcons name={classIcon(draft.classKey ?? '')} size={34} color={theme.accentText} />
+          <MaterialCommunityIcons name={classIcon(cls?.name ?? '')} size={34} color={theme.accentText} />
         </View>
         <Text style={[styles.heroName, { color: theme.text }]} numberOfLines={2}>
           {draft.name.trim() || 'Sem nome'}
@@ -108,7 +108,7 @@ export default function ReviewPage() {
         <Combat label="CA" value={String(ac.value)} icon="shield-half-full" />
         <Combat label="PV" value={String(hp ?? '—')} icon="heart" />
         <Combat label="Iniciativa" value={formatBonus(abilityModifier(scores.dex))} icon="lightning-bolt" />
-        <Combat label="Desloc." value={`${species?.speed ?? 30}`} icon="run" />
+        <Combat label="Desloc." value={(species?.speed || '—').replace(/\s*metros?$/i, ' m')} icon="run" />
         <Combat label="Prof." value={formatBonus(PB)} icon="star-four-points-outline" />
       </View>
 

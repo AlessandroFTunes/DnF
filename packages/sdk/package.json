@@ -8,8 +8,8 @@
   },
   "scripts": {
     "typecheck": "tsc",
-    "srd:spec": "curl -sf https://api.open5e.com/schema/ | sed \"s|#/components/schemas/Race'|#/components/schemas/Species'|\" > openapi/open5e.yaml",
-    "srd:gen": "openapi-typescript openapi/open5e.yaml -o src/srd/open5e.d.ts"
+    "srd:spec": "curl -sf -H \"CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID\" -H \"CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET\" ${SRD_URL:-https://5e-fastapi.developale.com}/openapi.json | python3 -m json.tool --indent 2 > openapi/5e-fastapi.json",
+    "srd:gen": "openapi-typescript openapi/5e-fastapi.json -o src/srd/5e-fastapi.d.ts"
   },
   "dependencies": {
     "@dnf/core": "workspace:*",

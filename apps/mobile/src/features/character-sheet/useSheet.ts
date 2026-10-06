@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { abilityModifier, Character, proficiencyBonus, type Ability } from '@dnf/core/character';
 import {
+  applyFeatureIncreases,
   armorClass,
   asiLevels,
   backgroundRules,
@@ -10,7 +11,7 @@ import {
   isShield,
   isWeaponProficient,
   skillBonus,
-  skillsFromAbilities,
+  SKILLS,
   speciesRules,
   spellcastingAbility,
   spellSlots,
@@ -24,7 +25,7 @@ import { srd, useSrd } from '../../lib/srd';
 
 type Patch = Omit<Parameters<typeof Character.update>[0], 'id'>;
 
-/** Personagem + regras da Open5e já aplicadas, e as ações da ficha (PV, espaços, itens…). */
+/** Personagem + regras da 5e-FastAPI já aplicadas, e as ações da ficha (PV, espaços, itens…). */
 export function useSheet(id: string) {
   const session = useSession();
   const [character, setCharacter] = useState<Character.Info | null>(null);
@@ -49,17 +50,19 @@ export function useSheet(id: string) {
     };
   }, [id, attempt]);
 
-  /** Salva uma mudança; a tela atualiza na hora e volta atrás se o servidor recusar. */
+  /** Salva uma mudança; a tela atualiza na hora e volta atrás se o servidor recusar. Diz se salvou. */
   const save = useCallback(
-    async (patch: Patch, optimistic?: (c: Character.Info) => Character.Info) => {
-      if (!character) return;
+    async (patch: Patch, optimistic?: (c: Character.Info) => Character.Info): Promise<boolean> => {
+      if (!character) return false;
       const previous = character;
       if (optimistic) setCharacter(optimistic(character));
       setSaving(true);
       try {
         setCharacter(await Character.update({ id: character.id, ...patch }));
+        return true;
       } catch {
         setCharacter(previous);
+        return false;
       } finally {
         setSaving(false);
       }
@@ -71,7 +74,6 @@ export function useSheet(id: string) {
   const classKey = character?.classes[0]?.classKey ?? null;
   const level = character?.level ?? 1;
 
-  const abilitiesQ = useSrd('abilities', () => srd.abilities());
   const classQ = useSrd(classKey && `class:${classKey}`, () => srd.classDetail(classKey!));
   const subclassesQ = useSrd(classKey && `subclasses:${classKey}`, () => srd.subclasses(classKey!));
   const speciesQ = useSrd(edition && `species:${edition}`, () => srd.species(edition!));
@@ -88,12 +90,18 @@ export function useSheet(id: string) {
   );
 
   const derived = useMemo(() => {
-    if (!character || abilitiesQ.status !== 'ready' || classQ.status !== 'ready') return null;
-    const scores = character.abilities;
+    if (!character || classQ.status !== 'ready') return null;
     const pb = proficiencyBonus(level);
-    const skills = skillsFromAbilities(abilitiesQ.data);
+    const skills = SKILLS;
     const cls = classQ.data;
     const klass = classRules(cls, skills);
+    const subclasses = subclassesQ.status === 'ready' ? subclassesQ.data : [];
+    const subclassKey = character.classes[0]?.subclassKey ?? null;
+    const subclass = subclasses.find((s) => s.key === subclassKey) ?? null;
+    const features = classFeaturesUpTo(cls, level);
+    const subclassFeatures = subclass ? classFeaturesUpTo(subclass, level) : [];
+    // A ficha guarda os valores base + escolhas; aumentos de características (Campeão Primitivo…) vêm da API.
+    const scores = applyFeatureIncreases(character.abilities, [...features, ...subclassFeatures]);
 
     let chain: SrdSpecies[] = [];
     if (speciesQ.status === 'ready') {
@@ -109,7 +117,7 @@ export function useSheet(id: string) {
       backgroundsQ.status === 'ready' ? (backgroundsQ.data.find((b) => b.key === character.backgroundKey) ?? null) : null;
     const bg = background ? backgroundRules(background, skills) : null;
 
-    // Proficiências: o que a ficha guarda (escolhas) + o que vem da Open5e.
+    // Proficiências: o que a ficha guarda (escolhas) + o que vem da API.
     const skillLevels: Record<string, 'proficient' | 'expertise'> = {};
     for (const key of [...(bg?.skills ?? []), ...(species?.skills ?? [])]) skillLevels[key] = 'proficient';
     for (const [key, level] of Object.entries(character.proficiencies.skills)) {
@@ -158,10 +166,6 @@ export function useSheet(id: string) {
       ...languages.filter((l) => character.proficiencies.languages.includes(l.key)),
     ];
 
-    const subclasses = subclassesQ.status === 'ready' ? subclassesQ.data : [];
-    const subclassKey = character.classes[0]?.subclassKey ?? null;
-    const subclass = subclasses.find((s) => s.key === subclassKey) ?? null;
-
     return {
       scores,
       pb,
@@ -188,19 +192,19 @@ export function useSheet(id: string) {
       slots,
       magic,
       knownLanguages,
-      features: classFeaturesUpTo(cls, level),
-      subclassFeatures: subclass ? classFeaturesUpTo(subclass, level) : [],
+      features,
+      subclassFeatures,
       spells: spellsQ.status === 'ready' ? spellsQ.data : [],
-      /** Magias/subclasses ainda chegando (a Open5e pode demorar). */
+      /** Magias/subclasses ainda chegando. */
       spellsLoading: character.spellcasting.spells.length > 0 && spellsQ.status === 'loading',
       subclassesLoading: subclassesQ.status === 'loading',
       hitDie: klass.hitDie,
     };
-  }, [character, level, edition, abilitiesQ, classQ, subclassesQ, speciesQ, backgroundsQ, languagesQ, featsQ, itemsQ, spellsQ]);
+  }, [character, level, edition, classQ, subclassesQ, speciesQ, backgroundsQ, languagesQ, featsQ, itemsQ, spellsQ]);
 
   const viewerID = session.status === 'signedIn' ? session.session.userID : null;
   const isOwner = !!character && character.ownerID === viewerID;
-  const srdFailed = [abilitiesQ, classQ].some((q) => q.status === 'error');
+  const srdFailed = [classQ].some((q) => q.status === 'error');
 
   return {
     character,
@@ -211,7 +215,7 @@ export function useSheet(id: string) {
     save,
     reload: load,
     srdFailed,
-    retrySrd: () => [abilitiesQ, classQ, subclassesQ, speciesQ, backgroundsQ, itemsQ, spellsQ].forEach((q) => q.retry()),
+    retrySrd: () => [classQ, subclassesQ, speciesQ, backgroundsQ, itemsQ, spellsQ].forEach((q) => q.retry()),
   };
 }
 

@@ -3,7 +3,7 @@ import { featuresByLevel, plainText } from '@dnf/sdk/srd';
 import { OptionCard } from '@dnf/ui-react-native';
 import { InfoRow, LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
 import { useCharacterDraft } from '../../features/character-create/draft';
-import { abilityName, CASTER_LABEL, classIcon, skillLabel, subclassOrigin } from '../../features/character-create/labels';
+import { abilityName, classIcon, skillLabel, subclassOrigin } from '../../features/character-create/labels';
 import { useCreation } from '../../features/character-create/useCreation';
 import { srd, tr, useSrd } from '../../lib/srd';
 
@@ -31,12 +31,12 @@ export default function ClassPage() {
             <OptionCard
               key={c.key}
               title={tr.name(c)}
-              subtitle={[`Dado de vida ${c.hit_dice?.toLowerCase() ?? '—'}`, c.caster_type && CASTER_LABEL[c.caster_type]]
+              subtitle={[`Dado de vida ${c.hit_dice.toLowerCase() || '—'}`, c.api?.atributo_primario && `Atributo primário: ${c.api.atributo_primario}`]
                 .filter(Boolean)
                 .join(' · ')}
               selected={selected}
               onPress={() => setClass(c.key)}
-              leading={(color) => <MaterialCommunityIcons name={classIcon(c.key)} size={24} color={color} />}
+              leading={(color) => <MaterialCommunityIcons name={classIcon(c.name)} size={24} color={color} />}
             >
               {selected && !klass ? (
                 <LoadState

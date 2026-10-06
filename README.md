@@ -24,49 +24,34 @@ import { User } from '@dnf/core/user';
 import { characterSchema } from '@dnf/core/character';
 ```
 
-## SRD (regras de D&D)
+## Regras de D&D (5e-FastAPI)
 
-Conteúdo do SRD 5.1 (5e) e 5.2 (5.5e) vem online da [Open5e](https://api.open5e.com), com cliente tipado
-gerado do spec OpenAPI em `packages/sdk/openapi/open5e.yaml`:
+Classes, espécies, antecedentes, talentos, magias e equipamento vêm da
+[5e-FastAPI](https://github.com/AlessandroFTunes/5e-FastAPI) (`https://5e-fastapi.developale.com`), já em
+português, com cliente tipado gerado do spec OpenAPI em `packages/sdk/openapi/5e-fastapi.json`:
 
 ```ts
-import { createSrdClient, SRD_DOCUMENTS } from '@dnf/sdk/srd';
+import { createSrdCatalog, createSrdClient } from '@dnf/sdk/srd';
 
-const srd = createSrdClient();
-const { data } = await srd.GET('/v2/spells/', {
-  params: { query: { document__key: SRD_DOCUMENTS['2024'], level: 3 } },
-});
+const client = createSrdClient({ accessToken: { clientId, clientSecret } });
+const { data } = await client.GET('/api/v1/magias', { params: { query: { circulo: 3 } } });
+
+const srd = createSrdCatalog(client); // consultas do app: srd.classes('2024'), srd.classDetail('1')…
 ```
 
-Para atualizar o spec e os tipos: `cd packages/sdk && bun run srd:spec && bun run srd:gen`.
+A API fica atrás do Cloudflare Access: o app manda um service token em toda requisição. Configure em
+`apps/mobile/.env` (veja `.env.example`): `EXPO_PUBLIC_DND_API_ACCESS_ID` e `EXPO_PUBLIC_DND_API_ACCESS_SECRET`
+(e `EXPO_PUBLIC_DND_API_URL` para apontar para outra instância, ex.: `http://localhost:8000`).
 
-### Complemento próprio (2024, Xanathar e Tasha)
+A edição de cada registro vem do livro (`fonte.edicao`): `5e` = regras de 2014, `5.5e` = regras de 2024.
+Uma edição sem classes na API aparece desabilitada na criação. O personagem guarda só os ids da API
+(`classKey: "1"`, itens como `"arma:3"`); as regras são lidas da API na ficha.
 
-A Open5e só tem o que está no SRD — de 2024, só 4 dos 16 antecedentes, e nada do Guia de Xanathar nem
-do Caldeirão de Tasha (não são conteúdo aberto). O resto vem da nossa API:
-coleções públicas (somente leitura) no PocketBase, no mesmo formato da Open5e, que o catálogo junta
-com a Open5e (`createSrdCatalog(client, { complement: createPocketBaseComplement(pb) })`).
+Perícias, idiomas e alinhamentos ainda não têm endpoint na API: vêm de listas fixas em
+`packages/sdk/src/srd/reference.ts` até a API ganhar esses endpoints.
 
-| Coleção | Conteúdo |
-|---|---|
-| `srd_backgrounds` | Os 12 antecedentes de 2024 fora do SRD (Artesão, Charlatão, Artista, Fazendeiro, Guarda, Guia, Eremita, Mercador, Nobre, Marinheiro, Escriba, Andarilho) |
-| `srd_feats` | Talentos de origem que eles usam (Fabricante, Curandeiro, Sortudo, Músico, Brigão de Taverna, Robusto); talentos raciais do Xanathar (15) e talentos do Tasha (15) |
-| `srd_species` | Aasimar; Linhagem Customizada (Tasha) |
-| `srd_subclasses` | Subclasses do Xanathar (31) e do Tasha (26, sem as do Artífice), com as habilidades por nível |
-| `srd_spells` | Magias do Xanathar (94) e do Tasha (21), com as listas de classe (sem o Artífice) |
-
-Só a mecânica vem dos livros; as descrições são texto próprio e resumido (o texto dos livros não é livre).
-O conteúdo dos livros é de 2014: numa classe de 2024, as subclasses entram adaptadas (habilidades de nível
-1 e 2 passam para o 3), como as subclasses de 2014 da Open5e.
-Cada registro tem `i18n` com a tradução em pt-BR, que o app registra no tradutor (`tr`).
-
-O conteúdo fica em `core/seed/srd-complement.json` (2024) e `core/seed/books/` (Xanathar e Tasha). Para importar (ou atualizar) num PocketBase:
-
-```sh
-cd core && bun run seed:complement   # local; em outro servidor: PB_URL, PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD
-```
-
-Dá para adicionar conteúdo pelo painel do PocketBase também; o app pega na próxima vez que abrir.
+Para atualizar o spec e os tipos (com o token no ambiente: `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`):
+`cd packages/sdk && bun run srd:spec && bun run srd:gen`.
 
 ## Desenvolvimento
 

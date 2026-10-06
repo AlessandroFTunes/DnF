@@ -1,68 +1,53 @@
 import { useCallback, useEffect, useState } from 'react';
-import { PocketBase } from '@dnf/core/pocketbase';
-import {
-  createPocketBaseComplement,
-  createSrdCatalog,
-  createSrdClient,
-  createTranslator,
-  PT_BR,
-  SRD_URL,
-  type SrdTranslationSource,
-} from '@dnf/sdk/srd';
+import { createSrdCatalog, createSrdClient, SRD_URL } from '@dnf/sdk/srd';
 import { persistentCache } from './persistent-cache';
-import './pocketbase';
+
+const accessId = process.env.EXPO_PUBLIC_DND_API_ACCESS_ID;
+const accessSecret = process.env.EXPO_PUBLIC_DND_API_ACCESS_SECRET;
 
 /**
- * Tradução para exibição (a Open5e só tem inglês). Use nas telas: `tr.name(classe)`, `tr.name(magia, 'spell')`.
- * O catálogo e as regras continuam com o texto original.
+ * Compêndio de regras: a 5e-FastAPI (dados em português). A API fica atrás do Cloudflare Access; o app
+ * manda o service token configurado no `.env` (veja `.env.example`).
  */
-export const tr = createTranslator('pt-BR', [PT_BR]);
+const baseUrl = process.env.EXPO_PUBLIC_DND_API_URL || SRD_URL;
+// O token só vale para a API publicada (https, atrás do Cloudflare). Numa API local (http://localhost:8000)
+// ele não serve e ainda atrapalha: cabeçalhos extras fazem o navegador pedir CORS para eles.
+const behindAccess = baseUrl.startsWith('https://');
+
+export const srd = createSrdCatalog(
+  createSrdClient({
+    baseUrl,
+    accessToken: behindAccess && accessId && accessSecret ? { clientId: accessId, clientSecret: accessSecret } : null,
+  }),
+);
 
 /**
- * Catálogo do SRD, juntando duas fontes:
- *  - Open5e (SRD 5.1 e 5.2 + livros abertos);
- *  - nosso complemento (conteúdo de 2024 que a Open5e não tem), com as traduções que vêm junto.
+ * Os textos da API já vêm em português; `tr` só mantém a forma das telas (`tr.name(classe)`) caso um dia
+ * entre outro idioma.
  */
-export const srd = createSrdCatalog(createSrdClient(process.env.EXPO_PUBLIC_SRD_URL ?? SRD_URL), {
-  complements: [
-    createPocketBaseComplement(PocketBase.client, (locale, source) => {
-      if (locale !== tr.locale) return;
-      tr.register(source);
-      rememberTranslations(source);
-    }),
-  ],
-});
+export const tr = {
+  locale: 'pt-BR' as const,
+  name: (entity: { name: string }, _kind?: string) => entity.name,
+  desc: (entity: { desc?: string | null }) => entity.desc ?? '',
+  text: (text: string, _kind?: string) => text,
+  field: (_key: string, _field: string, fallback: string) => fallback,
+};
 
 /**
  * Versão dos dados do compêndio guardados no aparelho. AUMENTE sempre que o SDK mudar o que uma
- * consulta devolve (ex.: subclasses passaram a juntar as duas edições): ao abrir, o app apaga o cache
- * antigo inteiro e busca de novo.
+ * consulta devolve: ao abrir, o app apaga o cache antigo inteiro e busca de novo.
  *  1: primeira versão
  *  2: subclasses das duas edições em cada classe
  *  3: subclasses e magias do Guia de Xanathar e do Caldeirão de Tasha (complemento)
+ *  4: troca da Open5e pela 5e-FastAPI
+ *  5: característica repetida em níveis maiores (Golpe Brutal Fortalecido 13 e 17) vira uma só
  */
-const SRD_CACHE_VERSION = 3;
-const cacheVersionReady = persistentCache.get<number>('meta:version').then(async (stored) => {
+const SRD_CACHE_VERSION = 5;
+const cacheReady = persistentCache.get<number>('meta:version').then(async (stored) => {
   if (stored === SRD_CACHE_VERSION) return;
   await persistentCache.clear();
   await persistentCache.set('meta:version', SRD_CACHE_VERSION);
 });
-
-// As traduções do complemento chegam junto com os dados. Como os dados podem vir do disco (sem chamar a
-// API), elas também ficam guardadas e são registradas assim que o app abre.
-const TRANSLATIONS_KEY = `translations:${tr.locale}`;
-let savedTranslations: SrdTranslationSource[] = [];
-const translationsReady = cacheVersionReady.then(() => persistentCache.get<SrdTranslationSource[]>(TRANSLATIONS_KEY)).then((sources) => {
-  savedTranslations = sources ?? [];
-  savedTranslations.forEach((source) => tr.register(source));
-});
-
-function rememberTranslations(source: SrdTranslationSource) {
-  void translationsReady.then(() => {
-    savedTranslations = [...savedTranslations, source];
-    void persistentCache.set(TRANSLATIONS_KEY, savedTranslations);
-  });
-}
 
 /**
  * Cada consulta do compêndio é feita uma vez só: primeiro a memória (mesma sessão), depois o disco
@@ -73,7 +58,7 @@ const cache = new Map<string, Promise<unknown>>();
 function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
   let promise = cache.get(key) as Promise<T> | undefined;
   if (!promise) {
-    promise = translationsReady.then(async () => {
+    promise = cacheReady.then(async () => {
       const saved = await persistentCache.get<T>(key);
       if (saved !== undefined) return saved;
       const data = await load();
@@ -93,7 +78,6 @@ function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
  */
 export function prefetchSrd(timeoutMs = 8000): Promise<void> {
   const loads: [string, () => Promise<unknown>][] = [
-    ['abilities', () => srd.abilities()],
     ['languages', () => srd.languages()],
     ['alignments', () => srd.alignments()],
     ...(['2014', '2024'] as const).flatMap((edition) => [
@@ -112,7 +96,6 @@ export function prefetchSrd(timeoutMs = 8000): Promise<void> {
 /** Apaga o compêndio guardado (memória e disco): a próxima consulta busca tudo de novo na rede. */
 export async function refreshSrd() {
   cache.clear();
-  savedTranslations = [];
   await persistentCache.clear();
 }
 

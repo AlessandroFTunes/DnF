@@ -14,7 +14,7 @@ export default function EditionPage() {
   return (
     <StepScreen
       title="Escolha a edição"
-      subtitle="As regras mudam entre as edições. Todo o resto da criação usa o compêndio da edição escolhida."
+      subtitle="As regras mudam entre as edições. Todo o resto da criação usa os livros da edição escolhida."
       canContinue={draft.edition !== null}
     >
       {DiferenteKey.EDITIONS.map((edition) => (
@@ -45,12 +45,15 @@ function EditionCard({
   const species = useSrd(`species:${edition}`, () => srd.species(edition));
   const backgrounds = useSrd(`backgrounds:${edition}`, () => srd.backgrounds(edition));
   const count = (s: { status: string; data?: unknown[] }) => (s.status === 'ready' ? String(s.data?.length) : '–');
+  // Edição ainda sem classes na API: não dá para criar personagem nela.
+  const empty = classes.status === 'ready' && classes.data.length === 0;
 
   return (
     <Pressable
       onPress={onPress}
+      disabled={empty && !selected}
       accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, disabled: empty && !selected }}
       accessibilityLabel={`D&D ${info.title}, ${info.subtitle}`}
       style={({ pressed }) => [
         styles.card,
@@ -58,12 +61,13 @@ function EditionCard({
           backgroundColor: selected ? theme.accentSoft : theme.surfaceRaised,
           borderColor: selected ? theme.accent : theme.border,
           transform: [{ scale: pressed ? 0.985 : 1 }],
+          opacity: empty && !selected ? 0.5 : 1,
         },
         shadow(theme, selected ? 3 : 1),
       ]}
     >
       {/* moldura dourada interna */}
-      <View pointerEvents="none" style={[styles.innerFrame, { borderColor: selected ? theme.gold : theme.goldSoft }]} />
+      <View style={[styles.innerFrame, { pointerEvents: 'none' }, { borderColor: selected ? theme.gold : theme.goldSoft }]} />
       <MaterialCommunityIcons
         name="dice-d20-outline"
         size={120}
@@ -85,7 +89,9 @@ function EditionCard({
 
       <Text style={[styles.year, { color: selected ? theme.accent : theme.text }]}>{info.title}</Text>
       <Text style={[typography.bodyStrong, { color: theme.text }]}>{info.subtitle}</Text>
-      <Text style={[typography.caption, { color: theme.textMuted }]}>{info.tagline}</Text>
+      <Text style={[typography.caption, { color: theme.textMuted }]}>
+        {empty ? 'Ainda não há livros desta edição na API.' : info.tagline}
+      </Text>
 
       <View style={[styles.stats, { borderTopColor: theme.border }]}>
         <Stat label="classes" value={count(classes)} />

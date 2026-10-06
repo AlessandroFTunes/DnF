@@ -1,0 +1,4054 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API de Regras de D&D",
+    "description": "API para consulta de regras e elementos de Dungeons & Dragons.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/antecedentes": {
+      "get": {
+        "tags": [
+          "Antecedentes"
+        ],
+        "summary": "Listar Antecedentes",
+        "description": "Lista os antecedentes dispon\u00edveis, ordenados por id.",
+        "operationId": "listar_antecedentes_api_v1_antecedentes_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Antecedente"
+                  },
+                  "title": "Response Listar Antecedentes Api V1 Antecedentes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/antecedentes/{antecedente_id}": {
+      "get": {
+        "tags": [
+          "Antecedentes"
+        ],
+        "summary": "Buscar Antecedente",
+        "description": "Retorna um antecedente pelo identificador.",
+        "operationId": "buscar_antecedente_api_v1_antecedentes__antecedente_id__get",
+        "parameters": [
+          {
+            "name": "antecedente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Antecedente Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Antecedente"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/classes": {
+      "get": {
+        "tags": [
+          "Classes"
+        ],
+        "summary": "Listar Classes",
+        "description": "Lista as classes dispon\u00edveis, ordenadas por id.",
+        "operationId": "listar_classes_api_v1_classes_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Classe"
+                  },
+                  "title": "Response Listar Classes Api V1 Classes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/classes/{classe_id}": {
+      "get": {
+        "tags": [
+          "Classes"
+        ],
+        "summary": "Buscar Classe",
+        "description": "Retorna uma classe pelo identificador.",
+        "operationId": "buscar_classe_api_v1_classes__classe_id__get",
+        "parameters": [
+          {
+            "name": "classe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Classe Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Classe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/criaturas": {
+      "get": {
+        "tags": [
+          "Criaturas"
+        ],
+        "summary": "Listar Criaturas",
+        "description": "Lista as criaturas, ordenadas por id.",
+        "operationId": "listar_criaturas_api_v1_criaturas_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Criatura"
+                  },
+                  "title": "Response Listar Criaturas Api V1 Criaturas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/criaturas/{criatura_id}": {
+      "get": {
+        "tags": [
+          "Criaturas"
+        ],
+        "summary": "Buscar Criatura",
+        "description": "Retorna uma criatura pelo identificador.",
+        "operationId": "buscar_criatura_api_v1_criaturas__criatura_id__get",
+        "parameters": [
+          {
+            "name": "criatura_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Criatura Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Criatura"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/armas": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Listar Armas",
+        "description": "Lista as armas, ordenadas por id.",
+        "operationId": "listar_armas_api_v1_equipamentos_armas_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Arma"
+                  },
+                  "title": "Response Listar Armas Api V1 Equipamentos Armas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/armas/{arma_id}": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Buscar Arma",
+        "description": "Retorna uma arma pelo identificador.",
+        "operationId": "buscar_arma_api_v1_equipamentos_armas__arma_id__get",
+        "parameters": [
+          {
+            "name": "arma_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Arma Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Arma"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/armaduras": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Listar Armaduras",
+        "description": "Lista as armaduras e escudos, ordenados por id.",
+        "operationId": "listar_armaduras_api_v1_equipamentos_armaduras_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Armadura"
+                  },
+                  "title": "Response Listar Armaduras Api V1 Equipamentos Armaduras Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/armaduras/{armadura_id}": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Buscar Armadura",
+        "description": "Retorna uma armadura ou escudo pelo identificador.",
+        "operationId": "buscar_armadura_api_v1_equipamentos_armaduras__armadura_id__get",
+        "parameters": [
+          {
+            "name": "armadura_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Armadura Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Armadura"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/ferramentas": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Listar Ferramentas",
+        "description": "Lista as ferramentas, ordenadas por id.",
+        "operationId": "listar_ferramentas_api_v1_equipamentos_ferramentas_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Ferramenta"
+                  },
+                  "title": "Response Listar Ferramentas Api V1 Equipamentos Ferramentas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/ferramentas/{ferramenta_id}": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Buscar Ferramenta",
+        "description": "Retorna uma ferramenta pelo identificador.",
+        "operationId": "buscar_ferramenta_api_v1_equipamentos_ferramentas__ferramenta_id__get",
+        "parameters": [
+          {
+            "name": "ferramenta_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Ferramenta Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ferramenta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/itens": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Listar Itens",
+        "description": "Lista os itens de equipamento de aventura, ordenados por id.",
+        "operationId": "listar_itens_api_v1_equipamentos_itens_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemAventura"
+                  },
+                  "title": "Response Listar Itens Api V1 Equipamentos Itens Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/itens/{item_id}": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Buscar Item",
+        "description": "Retorna um item de equipamento de aventura pelo identificador.",
+        "operationId": "buscar_item_api_v1_equipamentos_itens__item_id__get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemAventura"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/propriedades": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Listar Propriedades",
+        "description": "Lista as propriedades e as propriedades de maestria das armas, ordenadas por id.",
+        "operationId": "listar_propriedades_api_v1_equipamentos_propriedades_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Propriedade"
+                  },
+                  "title": "Response Listar Propriedades Api V1 Equipamentos Propriedades Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipamentos/propriedades/{propriedade_id}": {
+      "get": {
+        "tags": [
+          "Equipamentos"
+        ],
+        "summary": "Buscar Propriedade",
+        "description": "Retorna uma propriedade de arma pelo identificador.",
+        "operationId": "buscar_propriedade_api_v1_equipamentos_propriedades__propriedade_id__get",
+        "parameters": [
+          {
+            "name": "propriedade_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Propriedade Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Propriedade"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/especies": {
+      "get": {
+        "tags": [
+          "Esp\u00e9cies"
+        ],
+        "summary": "Listar Especies",
+        "description": "Lista as esp\u00e9cies dispon\u00edveis, ordenadas por id.",
+        "operationId": "listar_especies_api_v1_especies_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Especie"
+                  },
+                  "title": "Response Listar Especies Api V1 Especies Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/especies/{especie_id}": {
+      "get": {
+        "tags": [
+          "Esp\u00e9cies"
+        ],
+        "summary": "Buscar Especie",
+        "description": "Retorna uma esp\u00e9cie pelo identificador.",
+        "operationId": "buscar_especie_api_v1_especies__especie_id__get",
+        "parameters": [
+          {
+            "name": "especie_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Especie Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Especie"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fontes": {
+      "get": {
+        "tags": [
+          "Fontes"
+        ],
+        "summary": "Listar Fontes",
+        "description": "Lista as fontes, ordenadas por id.",
+        "operationId": "listar_fontes_api_v1_fontes_get",
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Fonte"
+                  },
+                  "title": "Response Listar Fontes Api V1 Fontes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fontes/{fonte_id}": {
+      "get": {
+        "tags": [
+          "Fontes"
+        ],
+        "summary": "Buscar Fonte",
+        "description": "Retorna uma fonte pelo identificador.",
+        "operationId": "buscar_fonte_api_v1_fontes__fonte_id__get",
+        "parameters": [
+          {
+            "name": "fonte_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Fonte Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fonte"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/magias": {
+      "get": {
+        "tags": [
+          "Magias"
+        ],
+        "summary": "Listar Magias",
+        "description": "Lista as magias, ordenadas por id, opcionalmente de um c\u00edrculo e/ou da lista de uma classe.",
+        "operationId": "listar_magias_api_v1_magias_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "circulo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pelo c\u00edrculo (0 para truques)",
+              "title": "Circulo"
+            },
+            "description": "Filtra pelo c\u00edrculo (0 para truques)"
+          },
+          {
+            "name": "classe_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pelas magias da lista de uma classe",
+              "title": "Classe Id"
+            },
+            "description": "Filtra pelas magias da lista de uma classe"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Magia"
+                  },
+                  "title": "Response Listar Magias Api V1 Magias Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/magias/{magia_id}": {
+      "get": {
+        "tags": [
+          "Magias"
+        ],
+        "summary": "Buscar Magia",
+        "description": "Retorna uma magia pelo identificador.",
+        "operationId": "buscar_magia_api_v1_magias__magia_id__get",
+        "parameters": [
+          {
+            "name": "magia_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Magia Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Magia"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subclasses": {
+      "get": {
+        "tags": [
+          "Subclasses"
+        ],
+        "summary": "Listar Subclasses",
+        "description": "Lista as subclasses dispon\u00edveis, ordenadas por id, opcionalmente de uma \u00fanica classe.",
+        "operationId": "listar_subclasses_api_v1_subclasses_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "classe_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pelas subclasses de uma classe",
+              "title": "Classe Id"
+            },
+            "description": "Filtra pelas subclasses de uma classe"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Subclasse"
+                  },
+                  "title": "Response Listar Subclasses Api V1 Subclasses Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subclasses/{subclasse_id}": {
+      "get": {
+        "tags": [
+          "Subclasses"
+        ],
+        "summary": "Buscar Subclasse",
+        "description": "Retorna uma subclasse pelo identificador.",
+        "operationId": "buscar_subclasse_api_v1_subclasses__subclasse_id__get",
+        "parameters": [
+          {
+            "name": "subclasse_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Subclasse Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subclasse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/talentos": {
+      "get": {
+        "tags": [
+          "Talentos"
+        ],
+        "summary": "Listar Talentos",
+        "description": "Lista os talentos dispon\u00edveis, ordenados por id, opcionalmente de uma \u00fanica categoria.",
+        "operationId": "listar_talentos_api_v1_talentos_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")",
+              "title": "Nome"
+            },
+            "description": "Filtra por trecho do nome, sem diferenciar mai\u00fasculas nem acentos (\"acido\" acha \"\u00c1cido\")"
+          },
+          {
+            "name": "fonte_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela fonte (veja /api/v1/fontes)",
+              "title": "Fonte Id"
+            },
+            "description": "Filtra pela fonte (veja /api/v1/fontes)"
+          },
+          {
+            "name": "categoria",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtra pela categoria, exatamente como no livro (ex.: \"Origem\")",
+              "title": "Categoria"
+            },
+            "description": "Filtra pela categoria, exatamente como no livro (ex.: \"Origem\")"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Talento"
+                  },
+                  "title": "Response Listar Talentos Api V1 Talentos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/talentos/{talento_id}": {
+      "get": {
+        "tags": [
+          "Talentos"
+        ],
+        "summary": "Buscar Talento",
+        "description": "Retorna um talento pelo identificador.",
+        "operationId": "buscar_talento_api_v1_talentos__talento_id__get",
+        "parameters": [
+          {
+            "name": "talento_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Talento Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Talento"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso n\u00e3o encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Antecedente": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID do antecedente"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome do antecedente"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o do antecedente"
+          },
+          "valores_atributo": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Valores Atributo",
+            "description": "Atributos cujos valores o antecedente permite aumentar"
+          },
+          "talento": {
+            "type": "string",
+            "title": "Talento",
+            "description": "Talento concedido, como no livro (ex.: \"Art\u00edfista (veja o cap\u00edtulo 5)\")"
+          },
+          "proficiencias_pericias": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Proficiencias Pericias",
+            "description": "Per\u00edcias em que o antecedente concede profici\u00eancia"
+          },
+          "proficiencia_ferramentas": {
+            "type": "string",
+            "title": "Proficiencia Ferramentas",
+            "description": "Profici\u00eancia com ferramentas, como no livro"
+          },
+          "equipamento": {
+            "items": {
+              "$ref": "#/components/schemas/OpcaoEquipamento"
+            },
+            "type": "array",
+            "title": "Equipamento",
+            "description": "Op\u00e7\u00f5es de equipamento inicial, \u00e0 escolha"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "descricao",
+          "valores_atributo",
+          "talento",
+          "proficiencias_pericias",
+          "proficiencia_ferramentas",
+          "equipamento"
+        ],
+        "title": "Antecedente",
+        "description": "Antecedente de personagem, como retornado pela API."
+      },
+      "Arma": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da arma"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da arma"
+          },
+          "categoria": {
+            "type": "string",
+            "title": "Categoria",
+            "description": "Categoria da arma, como no livro (ex.: \"Simples\", \"Marcial\")"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo",
+            "description": "Tipo da arma, como no livro (ex.: \"Corpo a Corpo\", \"\u00c0 Dist\u00e2ncia\")"
+          },
+          "dano": {
+            "type": "string",
+            "title": "Dano",
+            "description": "Dano e tipo de dano, como no livro (ex.: \"1d4 Perfurante\")"
+          },
+          "propriedades": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Propriedades",
+            "description": "Propriedades da arma, como no livro (ex.: \"Arremesso (Alcance 6/18)\"); vazia se n\u00e3o houver"
+          },
+          "maestria": {
+            "type": "string",
+            "title": "Maestria",
+            "description": "Propriedade de maestria da arma"
+          },
+          "peso": {
+            "type": "string",
+            "title": "Peso",
+            "description": "Peso, como no livro (ex.: \"0,5 kg\", \"\u2014\")"
+          },
+          "custo": {
+            "type": "string",
+            "title": "Custo",
+            "description": "Custo, como no livro (ex.: \"2 PO\")"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "categoria",
+          "tipo",
+          "dano",
+          "propriedades",
+          "maestria",
+          "peso",
+          "custo"
+        ],
+        "title": "Arma",
+        "description": "Arma da tabela Armas, como retornada pela API."
+      },
+      "Armadura": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da armadura"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da armadura"
+          },
+          "categoria": {
+            "type": "string",
+            "title": "Categoria",
+            "description": "Categoria, como no livro (ex.: \"Leve\", \"M\u00e9dia\", \"Pesada\", \"Escudo\")"
+          },
+          "vestir_despir": {
+            "type": "string",
+            "title": "Vestir Despir",
+            "description": "Tempo para vestir e despir, como no livro (ex.: \"1 Minuto para Vestir ou Despir\")"
+          },
+          "classe_armadura": {
+            "type": "string",
+            "title": "Classe Armadura",
+            "description": "Classe de Armadura (CA), como no livro (ex.: \"11 + modificador de Des\")"
+          },
+          "forca": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forca",
+            "description": "Valor de For\u00e7a exigido, como no livro (ex.: \"For 13\"); nulo se n\u00e3o houver"
+          },
+          "furtividade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Furtividade",
+            "description": "Efeito em Furtividade, como no livro (ex.: \"Desvantagem\"); nulo se n\u00e3o houver"
+          },
+          "peso": {
+            "type": "string",
+            "title": "Peso",
+            "description": "Peso, como no livro (ex.: \"4 kg\")"
+          },
+          "custo": {
+            "type": "string",
+            "title": "Custo",
+            "description": "Custo, como no livro (ex.: \"5 PO\")"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "categoria",
+          "vestir_despir",
+          "classe_armadura",
+          "peso",
+          "custo"
+        ],
+        "title": "Armadura",
+        "description": "Armadura ou escudo da tabela Armaduras, como retornada pela API."
+      },
+      "AtributoCriatura": {
+        "properties": {
+          "atributo": {
+            "type": "string",
+            "title": "Atributo",
+            "description": "Abrevia\u00e7\u00e3o do atributo, como no livro (ex.: \"For\")"
+          },
+          "valor": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Valor",
+            "description": "Valor do atributo"
+          },
+          "modificador": {
+            "type": "integer",
+            "title": "Modificador",
+            "description": "Modificador (coluna MOD)"
+          },
+          "salvaguarda": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salvaguarda",
+            "description": "Modificador de salvaguarda (coluna SG); nulo quando o bloco n\u00e3o tem a coluna (2014)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "atributo",
+          "valor",
+          "modificador"
+        ],
+        "title": "AtributoCriatura",
+        "description": "Linha da tabela de atributos do bloco de estat\u00edsticas."
+      },
+      "Beneficio": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome do benef\u00edcio"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o do benef\u00edcio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "descricao"
+        ],
+        "title": "Beneficio",
+        "description": "Benef\u00edcio nomeado de um talento (ex.: \"Profici\u00eancia em Iniciativa\")."
+      },
+      "Capacidade": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome, como no livro (ex.: \"Teia (Recarga 5\u20136)\")"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "descricao"
+        ],
+        "title": "Capacidade",
+        "description": "Tra\u00e7o, a\u00e7\u00e3o, a\u00e7\u00e3o b\u00f4nus, rea\u00e7\u00e3o ou a\u00e7\u00e3o lend\u00e1ria do bloco de estat\u00edsticas."
+      },
+      "Caracteristica": {
+        "properties": {
+          "nivel": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Nivel",
+            "description": "N\u00edvel da classe em que a caracter\u00edstica \u00e9 obtida"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da caracter\u00edstica"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o da caracter\u00edstica"
+          },
+          "opcoes": {
+            "items": {
+              "$ref": "#/components/schemas/OpcaoCaracteristica"
+            },
+            "type": "array",
+            "title": "Opcoes",
+            "description": "Op\u00e7\u00f5es \u00e0 escolha dentro da caracter\u00edstica; vazia quando n\u00e3o h\u00e1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nivel",
+          "nome",
+          "descricao"
+        ],
+        "title": "Caracteristica",
+        "description": "Caracter\u00edstica de classe ou de subclasse obtida em um n\u00edvel."
+      },
+      "Classe": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da classe"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da classe"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o da classe"
+          },
+          "atributo_primario": {
+            "type": "string",
+            "title": "Atributo Primario",
+            "description": "Atributo prim\u00e1rio, como no livro (ex.: \"For\u00e7a\")"
+          },
+          "dado_vida": {
+            "type": "string",
+            "title": "Dado Vida",
+            "description": "Dado de Ponto de Vida, como no livro (ex.: \"D12 por n\u00edvel de B\u00e1rbaro\")"
+          },
+          "proficiencias_salvaguardas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Proficiencias Salvaguardas",
+            "description": "Atributos em cujas salvaguardas a classe \u00e9 proficiente"
+          },
+          "proficiencias_pericias": {
+            "type": "string",
+            "title": "Proficiencias Pericias",
+            "description": "Profici\u00eancia em per\u00edcias, como no livro (ex.: \"Escolha 2: ...\")"
+          },
+          "proficiencias_armas": {
+            "type": "string",
+            "title": "Proficiencias Armas",
+            "description": "Profici\u00eancias com armas, como no livro"
+          },
+          "treinamento_armaduras": {
+            "type": "string",
+            "title": "Treinamento Armaduras",
+            "description": "Treinamento com armadura, como no livro"
+          },
+          "equipamento": {
+            "items": {
+              "$ref": "#/components/schemas/OpcaoEquipamentoClasse"
+            },
+            "type": "array",
+            "title": "Equipamento",
+            "description": "Op\u00e7\u00f5es de equipamento inicial, \u00e0 escolha"
+          },
+          "multiclasse": {
+            "type": "string",
+            "title": "Multiclasse",
+            "description": "O que se adquire ao entrar na classe como personagem multiclasse"
+          },
+          "progressao": {
+            "items": {
+              "$ref": "#/components/schemas/NivelClasse"
+            },
+            "type": "array",
+            "title": "Progressao",
+            "description": "Tabela de caracter\u00edsticas da classe, por n\u00edvel"
+          },
+          "caracteristicas": {
+            "items": {
+              "$ref": "#/components/schemas/Caracteristica"
+            },
+            "type": "array",
+            "title": "Caracteristicas",
+            "description": "Caracter\u00edsticas de classe, ordenadas por n\u00edvel"
+          },
+          "subclasses": {
+            "items": {
+              "$ref": "#/components/schemas/ResumoSubclasse"
+            },
+            "type": "array",
+            "title": "Subclasses",
+            "description": "Subclasses da classe"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "descricao",
+          "atributo_primario",
+          "dado_vida",
+          "proficiencias_salvaguardas",
+          "proficiencias_pericias",
+          "proficiencias_armas",
+          "treinamento_armaduras",
+          "equipamento",
+          "multiclasse",
+          "progressao",
+          "caracteristicas",
+          "subclasses"
+        ],
+        "title": "Classe",
+        "description": "Classe de personagem, como retornada pela API."
+      },
+      "ColunaProgressao": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da coluna, como no livro (ex.: \"Dano da F\u00faria\")"
+          },
+          "valor": {
+            "type": "string",
+            "title": "Valor",
+            "description": "Valor da coluna no n\u00edvel, como no livro (ex.: \"+2\")"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "valor"
+        ],
+        "title": "ColunaProgressao",
+        "description": "Valor de uma coluna espec\u00edfica da classe na tabela de caracter\u00edsticas (ex.: F\u00farias)."
+      },
+      "Criatura": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da criatura"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da criatura"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo",
+            "description": "Tipo e tamanho, como no livro (ex.: \"Fera Grande\", \"\u00cdnfero Min\u00fasculo (Diabo)\")"
+          },
+          "alinhamento": {
+            "type": "string",
+            "title": "Alinhamento",
+            "description": "Alinhamento, como no livro (ex.: \"Sem Alinhamento\")"
+          },
+          "classe_armadura": {
+            "type": "string",
+            "title": "Classe Armadura",
+            "description": "Classe de Armadura (CA), como no livro (ex.: \"14 (armadura natural)\")"
+          },
+          "iniciativa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iniciativa",
+            "description": "Iniciativa, como no livro (ex.: \"+2 (12)\"); nula quando o bloco n\u00e3o tem a linha (2014)"
+          },
+          "pontos_vida": {
+            "type": "string",
+            "title": "Pontos Vida",
+            "description": "Pontos de Vida, como no livro (ex.: \"26 (4d10 + 4)\")"
+          },
+          "deslocamento": {
+            "type": "string",
+            "title": "Deslocamento",
+            "description": "Deslocamento, como no livro (ex.: \"9 m, Escalada 9 m\")"
+          },
+          "atributos": {
+            "items": {
+              "$ref": "#/components/schemas/AtributoCriatura"
+            },
+            "type": "array",
+            "title": "Atributos",
+            "description": "Os seis atributos, na ordem do bloco"
+          },
+          "salvaguardas": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salvaguardas",
+            "description": "Linha de Salvaguardas, como no livro (ex.: \"Des +5, Con +5\"); nula se o bloco n\u00e3o tiver"
+          },
+          "pericias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pericias",
+            "description": "Per\u00edcias, como no livro; nulo se o bloco n\u00e3o tiver a linha"
+          },
+          "resistencias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resistencias",
+            "description": "Resist\u00eancias a dano; nulo se o bloco n\u00e3o tiver a linha"
+          },
+          "vulnerabilidades": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vulnerabilidades",
+            "description": "Vulnerabilidades a dano; nulo se o bloco n\u00e3o tiver a linha"
+          },
+          "imunidades_dano": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imunidades Dano",
+            "description": "Imunidades a dano (no formato de 2024, a parte antes do \";\"); nulo se n\u00e3o houver"
+          },
+          "imunidades_condicao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imunidades Condicao",
+            "description": "Imunidades a condi\u00e7\u00e3o (no formato de 2024, a parte ap\u00f3s o \";\"); nulo se n\u00e3o houver"
+          },
+          "equipamento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipamento",
+            "description": "Equipamento; nulo se o bloco n\u00e3o tiver a linha"
+          },
+          "sentidos": {
+            "type": "string",
+            "title": "Sentidos",
+            "description": "Sentidos, como no livro (ex.: \"Vis\u00e3o no Escuro 18 m, Percep\u00e7\u00e3o Passiva 12\")"
+          },
+          "idiomas": {
+            "type": "string",
+            "title": "Idiomas",
+            "description": "Idiomas, como no livro (\"\u2014\" quando n\u00e3o h\u00e1)"
+          },
+          "nivel_desafio": {
+            "type": "string",
+            "title": "Nivel Desafio",
+            "description": "N\u00edvel de Desafio, como no livro (ex.: \"1/4 (XP 50; BP +2)\", \"1/2 (100 XP)\")"
+          },
+          "bonus_proficiencia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bonus Proficiencia",
+            "description": "B\u00f4nus de Profici\u00eancia quando o bloco o mostra \u00e0 parte (ex.: \"+2\"); nulo se vier no ND"
+          },
+          "tracos": {
+            "items": {
+              "$ref": "#/components/schemas/Capacidade"
+            },
+            "type": "array",
+            "title": "Tracos",
+            "description": "Tra\u00e7os; vazia quando n\u00e3o h\u00e1"
+          },
+          "acoes": {
+            "items": {
+              "$ref": "#/components/schemas/Capacidade"
+            },
+            "type": "array",
+            "title": "Acoes",
+            "description": "A\u00e7\u00f5es; vazia quando n\u00e3o h\u00e1"
+          },
+          "acoes_bonus": {
+            "items": {
+              "$ref": "#/components/schemas/Capacidade"
+            },
+            "type": "array",
+            "title": "Acoes Bonus",
+            "description": "A\u00e7\u00f5es B\u00f4nus; vazia quando n\u00e3o h\u00e1"
+          },
+          "reacoes": {
+            "items": {
+              "$ref": "#/components/schemas/Capacidade"
+            },
+            "type": "array",
+            "title": "Reacoes",
+            "description": "Rea\u00e7\u00f5es; vazia quando n\u00e3o h\u00e1"
+          },
+          "descricao_acoes_lendarias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descricao Acoes Lendarias",
+            "description": "Par\u00e1grafo de introdu\u00e7\u00e3o das A\u00e7\u00f5es Lend\u00e1rias; nulo quando a criatura n\u00e3o as tem"
+          },
+          "acoes_lendarias": {
+            "items": {
+              "$ref": "#/components/schemas/Capacidade"
+            },
+            "type": "array",
+            "title": "Acoes Lendarias",
+            "description": "A\u00e7\u00f5es Lend\u00e1rias; vazia quando n\u00e3o h\u00e1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "tipo",
+          "alinhamento",
+          "classe_armadura",
+          "pontos_vida",
+          "deslocamento",
+          "atributos",
+          "sentidos",
+          "idiomas",
+          "nivel_desafio"
+        ],
+        "title": "Criatura",
+        "description": "Bloco de estat\u00edsticas de uma criatura, como retornado pela API.\n\nAceita os formatos de 2024 e de 2014: linhas que s\u00f3 existem em um deles s\u00e3o nulas no outro."
+      },
+      "DetalheValidacao": {
+        "properties": {
+          "campo": {
+            "type": "string",
+            "title": "Campo",
+            "description": "Par\u00e2metro com problema"
+          },
+          "mensagem": {
+            "type": "string",
+            "title": "Mensagem",
+            "description": "Descri\u00e7\u00e3o do problema"
+          }
+        },
+        "type": "object",
+        "required": [
+          "campo",
+          "mensagem"
+        ],
+        "title": "DetalheValidacao",
+        "description": "Problema encontrado em um par\u00e2metro da requisi\u00e7\u00e3o."
+      },
+      "Especie": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da esp\u00e9cie"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da esp\u00e9cie"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o da esp\u00e9cie"
+          },
+          "deslocamento": {
+            "type": "string",
+            "title": "Deslocamento",
+            "description": "Deslocamento da esp\u00e9cie, como no livro (ex.: \"9 metros\")"
+          },
+          "tamanho": {
+            "type": "string",
+            "title": "Tamanho",
+            "description": "Tamanho da esp\u00e9cie, como no livro, incluindo as op\u00e7\u00f5es de escolha"
+          },
+          "habilidades": {
+            "items": {
+              "$ref": "#/components/schemas/Habilidade"
+            },
+            "type": "array",
+            "title": "Habilidades",
+            "description": "Habilidades da esp\u00e9cie"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "descricao",
+          "deslocamento",
+          "tamanho",
+          "habilidades"
+        ],
+        "title": "Especie",
+        "description": "Esp\u00e9cie jog\u00e1vel, como retornada pela API."
+      },
+      "Ferramenta": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da ferramenta"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da ferramenta"
+          },
+          "categoria": {
+            "type": "string",
+            "title": "Categoria",
+            "description": "Se\u00e7\u00e3o do livro (ex.: \"Ferramentas de Artes\u00e3o\", \"Outras Ferramentas\")"
+          },
+          "custo": {
+            "type": "string",
+            "title": "Custo",
+            "description": "Custo, como no livro (ex.: \"8 PO\", \"Varia\")"
+          },
+          "atributo": {
+            "type": "string",
+            "title": "Atributo",
+            "description": "Atributo usado nos testes com a ferramenta"
+          },
+          "peso": {
+            "type": "string",
+            "title": "Peso",
+            "description": "Peso, como no livro (ex.: \"3 kg\", \"Varia\")"
+          },
+          "usar_objeto": {
+            "type": "string",
+            "title": "Usar Objeto",
+            "description": "O que a a\u00e7\u00e3o Usar Objeto permite fazer com a ferramenta, com a CD"
+          },
+          "fabricacao": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fabricacao",
+            "description": "Itens que a ferramenta permite fabricar; vazia quando n\u00e3o h\u00e1"
+          },
+          "variantes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Variantes",
+            "description": "Variantes, como no livro (ex.: \"Ala\u00fade (35 PO, 1 kg)\"); vazia quando n\u00e3o h\u00e1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "categoria",
+          "custo",
+          "atributo",
+          "peso",
+          "usar_objeto"
+        ],
+        "title": "Ferramenta",
+        "description": "Ferramenta da se\u00e7\u00e3o Ferramentas, como retornada pela API."
+      },
+      "Fonte": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da fonte"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da fonte (ex.: \"Livro do Jogador (2024)\")"
+          },
+          "edicao": {
+            "type": "string",
+            "title": "Edicao",
+            "description": "Edi\u00e7\u00e3o: \"5e\" (2014), \"5.5e\" (2024) ou \"homebrew\""
+          },
+          "abreviacao": {
+            "type": "string",
+            "title": "Abreviacao",
+            "description": "Abrevia\u00e7\u00e3o da fonte (ex.: \"LDJ24\")"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nome",
+          "edicao",
+          "abreviacao"
+        ],
+        "title": "Fonte",
+        "description": "Livro ou homebrew de onde v\u00eam os dados, como retornado pela API."
+      },
+      "Habilidade": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da habilidade"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o da habilidade"
+          },
+          "opcoes": {
+            "items": {
+              "$ref": "#/components/schemas/OpcaoHabilidade"
+            },
+            "type": "array",
+            "title": "Opcoes",
+            "description": "Op\u00e7\u00f5es \u00e0 escolha dentro da habilidade; vazia quando n\u00e3o h\u00e1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "descricao"
+        ],
+        "title": "Habilidade",
+        "description": "Habilidade concedida por uma esp\u00e9cie."
+      },
+      "ItemAventura": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID do item"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome do item, como no livro (ex.: \"Cantil (cheio)\")"
+          },
+          "peso": {
+            "type": "string",
+            "title": "Peso",
+            "description": "Peso, como no livro (ex.: \"0,5 kg\", \"\u2014\", \"Varia\")"
+          },
+          "custo": {
+            "type": "string",
+            "title": "Custo",
+            "description": "Custo, como no livro (ex.: \"25 PO\", \"Varia\")"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o do item"
+          },
+          "tabelas": {
+            "items": {
+              "$ref": "#/components/schemas/Tabela"
+            },
+            "type": "array",
+            "title": "Tabelas",
+            "description": "Tabelas da descri\u00e7\u00e3o (ex.: tipos de Muni\u00e7\u00e3o); vazia quando n\u00e3o h\u00e1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "peso",
+          "custo",
+          "descricao"
+        ],
+        "title": "ItemAventura",
+        "description": "Item da tabela Equipamento de Aventura, como retornado pela API."
+      },
+      "ItemEquipamento": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome do item, como no livro (ex.: \"Algibeira\")"
+          },
+          "quantidade": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Quantidade",
+            "description": "Quantidade do item",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome"
+        ],
+        "title": "ItemEquipamento",
+        "description": "Item de uma op\u00e7\u00e3o de equipamento, com a quantidade separada do nome."
+      },
+      "Magia": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da magia"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da magia"
+          },
+          "circulo": {
+            "type": "integer",
+            "maximum": 9.0,
+            "minimum": 0.0,
+            "title": "Circulo",
+            "description": "C\u00edrculo da magia; 0 para truques"
+          },
+          "escola": {
+            "type": "string",
+            "title": "Escola",
+            "description": "Escola de magia (ex.: \"Evoca\u00e7\u00e3o\")"
+          },
+          "classes": {
+            "items": {
+              "$ref": "#/components/schemas/ResumoClasse"
+            },
+            "type": "array",
+            "title": "Classes",
+            "description": "Classes cuja lista de magias inclui a magia"
+          },
+          "tempo_conjuracao": {
+            "type": "string",
+            "title": "Tempo Conjuracao",
+            "description": "Tempo de Conjura\u00e7\u00e3o, como no livro (ex.: \"1 minuto ou Ritual\")"
+          },
+          "alcance": {
+            "type": "string",
+            "title": "Alcance",
+            "description": "Alcance, como no livro (ex.: \"18 metros\", \"Toque\")"
+          },
+          "componentes": {
+            "type": "string",
+            "title": "Componentes",
+            "description": "Componentes, como no livro (ex.: \"V, S, M (um sino e um fio de prata)\")"
+          },
+          "duracao": {
+            "type": "string",
+            "title": "Duracao",
+            "description": "Dura\u00e7\u00e3o, como no livro (ex.: \"Concentra\u00e7\u00e3o, at\u00e9 1 minuto\")"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o da magia"
+          },
+          "circulo_superior": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Circulo Superior",
+            "description": "Texto de \"Usando um Espa\u00e7o de Magia de C\u00edrculo Superior\"; nulo se n\u00e3o houver"
+          },
+          "aprimoramento_truque": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aprimoramento Truque",
+            "description": "Texto de \"Aprimoramento de Truque\"; nulo se n\u00e3o houver"
+          },
+          "tabelas": {
+            "items": {
+              "$ref": "#/components/schemas/Tabela"
+            },
+            "type": "array",
+            "title": "Tabelas",
+            "description": "Tabelas da magia; vazia quando n\u00e3o h\u00e1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "circulo",
+          "escola",
+          "classes",
+          "tempo_conjuracao",
+          "alcance",
+          "componentes",
+          "duracao",
+          "descricao"
+        ],
+        "title": "Magia",
+        "description": "Magia, como retornada pela API."
+      },
+      "MagiasNivel": {
+        "properties": {
+          "nivel": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Nivel",
+            "description": "N\u00edvel da classe a partir do qual as magias ficam preparadas"
+          },
+          "magias": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Magias",
+            "description": "Magias sempre preparadas, como no livro"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nivel",
+          "magias"
+        ],
+        "title": "MagiasNivel",
+        "description": "Linha da tabela de magias da subclasse (ex.: \"Magias de Dom\u00ednio da Guerra\")."
+      },
+      "NivelClasse": {
+        "properties": {
+          "nivel": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Nivel",
+            "description": "N\u00edvel da classe"
+          },
+          "bonus_proficiencia": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Bonus Proficiencia",
+            "description": "B\u00f4nus de Profici\u00eancia no n\u00edvel"
+          },
+          "caracteristicas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Caracteristicas",
+            "description": "Caracter\u00edsticas de classe obtidas no n\u00edvel; vazia onde o livro mostra \"\u2014\""
+          },
+          "colunas": {
+            "items": {
+              "$ref": "#/components/schemas/ColunaProgressao"
+            },
+            "type": "array",
+            "title": "Colunas",
+            "description": "Colunas espec\u00edficas da classe (ex.: F\u00farias, Truques, Magias Preparadas)"
+          },
+          "espacos_magia": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Espacos Magia",
+            "description": "Espa\u00e7os de magia por c\u00edrculo, a partir do 1\u00ba (0 onde o livro mostra \"\u2014\"); vazia se n\u00e3o houver"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nivel",
+          "bonus_proficiencia"
+        ],
+        "title": "NivelClasse",
+        "description": "Linha da tabela \"Caracter\u00edsticas de <Classe>\" para um n\u00edvel."
+      },
+      "NivelOpcao": {
+        "properties": {
+          "nivel": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Nivel",
+            "description": "N\u00edvel de personagem em que o benef\u00edcio \u00e9 obtido"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o do benef\u00edcio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nivel",
+          "descricao"
+        ],
+        "title": "NivelOpcao",
+        "description": "Benef\u00edcio de uma op\u00e7\u00e3o a partir de um n\u00edvel de personagem (ex.: uma linha da tabela Legados \u00cdnferos)."
+      },
+      "OpcaoCaracteristica": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da op\u00e7\u00e3o"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o da op\u00e7\u00e3o"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "descricao"
+        ],
+        "title": "OpcaoCaracteristica",
+        "description": "Op\u00e7\u00e3o \u00e0 escolha dentro de uma caracter\u00edstica (ex.: os efeitos de Golpe Brutal)."
+      },
+      "OpcaoEquipamento": {
+        "properties": {
+          "opcao": {
+            "type": "string",
+            "title": "Opcao",
+            "description": "Identificador da op\u00e7\u00e3o, como no livro (ex.: \"A\")"
+          },
+          "ouro": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Ouro",
+            "description": "Pe\u00e7as de ouro (PO) da op\u00e7\u00e3o",
+            "default": 0
+          },
+          "ferramentas": {
+            "items": {
+              "$ref": "#/components/schemas/ItemEquipamento"
+            },
+            "type": "array",
+            "title": "Ferramentas",
+            "description": "Ferramentas da op\u00e7\u00e3o"
+          },
+          "armas": {
+            "items": {
+              "$ref": "#/components/schemas/ItemEquipamento"
+            },
+            "type": "array",
+            "title": "Armas",
+            "description": "Armas da op\u00e7\u00e3o"
+          },
+          "outros": {
+            "items": {
+              "$ref": "#/components/schemas/ItemEquipamento"
+            },
+            "type": "array",
+            "title": "Outros",
+            "description": "Demais itens da op\u00e7\u00e3o (ex.: algibeiras, roupas)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "opcao"
+        ],
+        "title": "OpcaoEquipamento",
+        "description": "Uma das op\u00e7\u00f5es de equipamento inicial do antecedente (ex.: a op\u00e7\u00e3o A)."
+      },
+      "OpcaoEquipamentoClasse": {
+        "properties": {
+          "opcao": {
+            "type": "string",
+            "title": "Opcao",
+            "description": "Identificador da op\u00e7\u00e3o, como no livro (ex.: \"A\")"
+          },
+          "ouro": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Ouro",
+            "description": "Pe\u00e7as de ouro (PO) da op\u00e7\u00e3o",
+            "default": 0
+          },
+          "ferramentas": {
+            "items": {
+              "$ref": "#/components/schemas/ItemEquipamento"
+            },
+            "type": "array",
+            "title": "Ferramentas",
+            "description": "Ferramentas da op\u00e7\u00e3o"
+          },
+          "armas": {
+            "items": {
+              "$ref": "#/components/schemas/ItemEquipamento"
+            },
+            "type": "array",
+            "title": "Armas",
+            "description": "Armas da op\u00e7\u00e3o"
+          },
+          "outros": {
+            "items": {
+              "$ref": "#/components/schemas/ItemEquipamento"
+            },
+            "type": "array",
+            "title": "Outros",
+            "description": "Demais itens da op\u00e7\u00e3o (ex.: algibeiras, roupas)"
+          },
+          "armaduras": {
+            "items": {
+              "$ref": "#/components/schemas/ItemEquipamento"
+            },
+            "type": "array",
+            "title": "Armaduras",
+            "description": "Armaduras e escudos da op\u00e7\u00e3o (ex.: \"Escudo\")"
+          }
+        },
+        "type": "object",
+        "required": [
+          "opcao"
+        ],
+        "title": "OpcaoEquipamentoClasse",
+        "description": "Uma das op\u00e7\u00f5es de equipamento inicial da classe (ex.: a op\u00e7\u00e3o A), que pode incluir armaduras."
+      },
+      "OpcaoHabilidade": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da op\u00e7\u00e3o"
+          },
+          "descricao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o da op\u00e7\u00e3o; nula quando a op\u00e7\u00e3o s\u00f3 tem benef\u00edcios por n\u00edvel"
+          },
+          "por_nivel": {
+            "items": {
+              "$ref": "#/components/schemas/NivelOpcao"
+            },
+            "type": "array",
+            "title": "Por Nivel",
+            "description": "Benef\u00edcios da op\u00e7\u00e3o por n\u00edvel de personagem; vazia quando n\u00e3o h\u00e1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome"
+        ],
+        "title": "OpcaoHabilidade",
+        "description": "Op\u00e7\u00e3o \u00e0 escolha dentro de uma habilidade (ex.: as transforma\u00e7\u00f5es da Revela\u00e7\u00e3o Celestial)."
+      },
+      "Propriedade": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da propriedade"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da propriedade (ex.: \"Acuidade\", \"Afligir\")"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo",
+            "description": "\"Propriedade\" (coluna Propriedades) ou \"Maestria\" (propriedade de maestria)"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Defini\u00e7\u00e3o da propriedade"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "tipo",
+          "descricao"
+        ],
+        "title": "Propriedade",
+        "description": "Propriedade de arma ou propriedade de maestria, como definida no cap\u00edtulo 6."
+      },
+      "RespostaErro": {
+        "properties": {
+          "erro": {
+            "type": "string",
+            "title": "Erro",
+            "description": "Mensagem do erro"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo",
+            "description": "C\u00f3digo est\u00e1vel do erro"
+          },
+          "detalhes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DetalheValidacao"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detalhes",
+            "description": "Problemas de valida\u00e7\u00e3o, quando houver"
+          }
+        },
+        "type": "object",
+        "required": [
+          "erro",
+          "codigo"
+        ],
+        "title": "RespostaErro",
+        "description": "Formato de todas as respostas de erro da API."
+      },
+      "ResumoClasse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da classe"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da classe"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nome"
+        ],
+        "title": "ResumoClasse",
+        "description": "Classe em cuja lista de magias a magia aparece; os detalhes ficam em /api/v1/classes/{id}."
+      },
+      "ResumoFonte": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da fonte"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da fonte (ex.: \"Livro do Jogador (2024)\")"
+          },
+          "edicao": {
+            "type": "string",
+            "title": "Edicao",
+            "description": "Edi\u00e7\u00e3o: \"5e\" (2014), \"5.5e\" (2024) ou \"homebrew\""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nome",
+          "edicao"
+        ],
+        "title": "ResumoFonte",
+        "description": "Fonte de um registro, presente em todos os dom\u00ednios."
+      },
+      "ResumoSubclasse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da subclasse"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da subclasse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nome"
+        ],
+        "title": "ResumoSubclasse",
+        "description": "Identifica\u00e7\u00e3o de uma subclasse da classe; os detalhes ficam em /api/v1/subclasses/{id}."
+      },
+      "Subclasse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID da subclasse"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "classe_id": {
+            "type": "integer",
+            "title": "Classe Id",
+            "description": "ID da classe \u00e0 qual a subclasse pertence"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome da subclasse"
+          },
+          "subtitulo": {
+            "type": "string",
+            "title": "Subtitulo",
+            "description": "Subt\u00edtulo da subclasse, como no livro"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Descri\u00e7\u00e3o da subclasse"
+          },
+          "magias_preparadas": {
+            "items": {
+              "$ref": "#/components/schemas/MagiasNivel"
+            },
+            "type": "array",
+            "title": "Magias Preparadas",
+            "description": "Magias sempre preparadas por n\u00edvel da classe; vazia quando a subclasse n\u00e3o tem"
+          },
+          "caracteristicas": {
+            "items": {
+              "$ref": "#/components/schemas/Caracteristica"
+            },
+            "type": "array",
+            "title": "Caracteristicas",
+            "description": "Caracter\u00edsticas da subclasse, ordenadas por n\u00edvel"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "classe_id",
+          "nome",
+          "subtitulo",
+          "descricao",
+          "magias_preparadas",
+          "caracteristicas"
+        ],
+        "title": "Subclasse",
+        "description": "Subclasse de uma classe de personagem, como retornada pela API."
+      },
+      "Tabela": {
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "title": "Titulo",
+            "description": "T\u00edtulo da tabela, como no livro"
+          },
+          "colunas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Colunas",
+            "description": "Cabe\u00e7alho das colunas"
+          },
+          "linhas": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Linhas",
+            "description": "Linhas da tabela, com os valores na ordem das colunas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "titulo",
+          "colunas",
+          "linhas"
+        ],
+        "title": "Tabela",
+        "description": "Tabela apresentada dentro de um texto do livro (ex.: Fabrica\u00e7\u00e3o R\u00e1pida)."
+      },
+      "Talento": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID do talento"
+          },
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome do talento"
+          },
+          "categoria": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Categoria",
+            "description": "Categoria, como no livro (ex.: \"Origem\", \"Geral\"); nula nos talentos de 2014"
+          },
+          "pre_requisito": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pre Requisito",
+            "description": "Pr\u00e9-requisito, como no livro (ex.: \"N\u00edvel 4 ou superior\"); nulo se n\u00e3o houver"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao",
+            "description": "Texto do talento antes dos benef\u00edcios nomeados"
+          },
+          "beneficios": {
+            "items": {
+              "$ref": "#/components/schemas/Beneficio"
+            },
+            "type": "array",
+            "title": "Beneficios",
+            "description": "Benef\u00edcios nomeados do talento; vazia quando o texto n\u00e3o os separa"
+          },
+          "repetivel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repetivel",
+            "description": "Texto da subse\u00e7\u00e3o \"Repet\u00edvel\"; nulo se o talento n\u00e3o for repet\u00edvel"
+          },
+          "tabelas": {
+            "items": {
+              "$ref": "#/components/schemas/Tabela"
+            },
+            "type": "array",
+            "title": "Tabelas",
+            "description": "Tabelas do talento; vazia quando n\u00e3o h\u00e1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fonte",
+          "nome",
+          "descricao"
+        ],
+        "title": "Talento",
+        "description": "Talento, como retornado pela API."
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Animated,
   Pressable,
@@ -11,7 +11,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Button, DnfSpinner, duration, fonts, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { Character } from '@dnf/core/character';
+import {
+  Button,
+  defaultTheme,
+  DnfSpinner,
+  duration,
+  fonts,
+  legendaryTheme,
+  mixTheme,
+  radius,
+  RpgThemeOverride,
+  shadow,
+  spacing,
+  typography,
+  useRpgTheme,
+} from '@dnf/ui-react-native';
 import { classIcon, type IconName } from '../../features/character-create/labels';
 import { Features, Story } from '../../features/character-sheet/sections/Features';
 import { Inventory } from '../../features/character-sheet/sections/Inventory';
@@ -20,6 +35,7 @@ import { Progression } from '../../features/character-sheet/sections/Progression
 import { Skills } from '../../features/character-sheet/sections/Skills';
 import { Spells } from '../../features/character-sheet/sections/Spells';
 import { Tables } from '../../features/character-sheet/sections/Tables';
+import { ThemeHold, useBlend } from '../../features/character-sheet/themeBlend';
 import { useSheet, type Sheet } from '../../features/character-sheet/useSheet';
 import { tr } from '../../lib/srd';
 
@@ -38,12 +54,36 @@ const SECTIONS: { id: SectionId; label: string; icon: IconName }[] = [
 
 const SIDEBAR_WIDTH = 264;
 
-/** Ficha do personagem: barra lateral de seções, conteúdo e (em telas largas) PV fixo à direita. */
+/** Nível em que o personagem vira herói lendário: a ficha inteira fica preta e amarela. */
+const LEGENDARY_LEVEL = 20;
+
 export default function SheetPage() {
-  const theme = useRpgTheme();
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const sheet = useSheet(id);
+  const legendary = (sheet.character?.level ?? 0) >= LEGENDARY_LEVEL;
+  // Remonta ao carregar: quem abre a ficha de um herói já lendário vê o tema dourado direto, sem transição.
+  return (
+    <LegendaryTheme key={sheet.character ? 'loaded' : 'loading'} legendary={legendary}>
+      <SheetScreen sheet={sheet} />
+    </LegendaryTheme>
+  );
+}
+
+/** Tema da ficha: passa suavemente do vermelho para o amarelo quando o personagem vira lendário. */
+function LegendaryTheme({ legendary, children }: { legendary: boolean; children: ReactNode }) {
+  const [held, setHeld] = useState(false);
+  const blend = useBlend(legendary ? 1 : 0, held);
+  return (
+    <ThemeHold.Provider value={setHeld}>
+      <RpgThemeOverride.Provider value={mixTheme(defaultTheme, legendaryTheme, blend)}>{children}</RpgThemeOverride.Provider>
+    </ThemeHold.Provider>
+  );
+}
+
+/** Ficha do personagem: barra lateral de seções, conteúdo e (em telas largas) PV fixo à direita. */
+function SheetScreen({ sheet }: { sheet: Sheet }) {
+  const theme = useRpgTheme();
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const wide = width >= 900;
   const veryWide = width >= 1250;
@@ -74,7 +114,15 @@ export default function SheetPage() {
     );
   }
 
-  const sidebar = <Sidebar sheet={sheet} active={section} onSelect={select} onExit={() => (router.canGoBack() ? router.back() : router.replace('/'))} />;
+  const sidebar = (
+    <Sidebar
+      sheet={sheet}
+      active={section}
+      onSelect={select}
+      onExit={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+      onDeleted={() => router.replace('/')}
+    />
+  );
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.surface }]} edges={['top', 'bottom']}>
@@ -112,7 +160,7 @@ export default function SheetPage() {
             <View style={styles.loading}>
               {sheet.srdFailed ? (
                 <>
-                  <Text style={[typography.bodyStrong, { color: theme.text }]}>Não deu para falar com a Open5e</Text>
+                  <Text style={[typography.bodyStrong, { color: theme.text }]}>Não deu para falar com a API de regras</Text>
                   <Button label="Tentar de novo" variant="secondary" onPress={sheet.retrySrd} />
                 </>
               ) : (
@@ -155,15 +203,41 @@ function Sidebar({
   active,
   onSelect,
   onExit,
+  onDeleted,
 }: {
   sheet: Sheet;
   active: SectionId;
   onSelect: (id: SectionId) => void;
   onExit: () => void;
+  onDeleted: () => void;
 }) {
   const theme = useRpgTheme();
   const { character, derived } = sheet;
+  const [deleteState, setDeleteState] = useState<'idle' | 'confirming' | 'deleting' | 'error'>('idle');
+
+  // O pedido de confirmação some sozinho se o jogador não tocar de novo.
+  useEffect(() => {
+    if (deleteState !== 'confirming') return;
+    const timer = setTimeout(() => setDeleteState('idle'), 4000);
+    return () => clearTimeout(timer);
+  }, [deleteState]);
+
   if (!character) return null;
+
+  /** Exclusão pede um segundo toque (Alert não existe na web). */
+  const remove = async () => {
+    if (deleteState !== 'confirming') {
+      setDeleteState('confirming');
+      return;
+    }
+    setDeleteState('deleting');
+    try {
+      await Character.remove(character.id);
+      onDeleted();
+    } catch {
+      setDeleteState('error');
+    }
+  };
   const species = derived?.chain.at(-1);
   const subtitle = [species && tr.name(species), derived && tr.name(derived.cls), `nível ${character.level}`]
     .filter(Boolean)
@@ -173,7 +247,7 @@ function Sidebar({
     <ScrollView contentContainerStyle={styles.sidebarContent}>
       <View style={styles.identity}>
         <View style={[styles.medallion, { backgroundColor: theme.accent }, shadow(theme, 2)]}>
-          <MaterialCommunityIcons name={classIcon(character.classes[0]?.classKey ?? '')} size={34} color={theme.accentText} />
+          <MaterialCommunityIcons name={classIcon(derived?.cls.name ?? '')} size={34} color={theme.accentText} />
         </View>
         <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>
           {character.name}
@@ -182,6 +256,12 @@ function Sidebar({
         <View style={[styles.edition, { borderColor: theme.gold, backgroundColor: theme.goldSoft }]}>
           <Text style={[styles.editionText, { color: theme.gold }]}>D&D {character.edition}</Text>
         </View>
+        {character.level >= LEGENDARY_LEVEL && (
+          <View style={[styles.legendary, { borderColor: theme.gold }]}>
+            <MaterialCommunityIcons name="crown" size={14} color={theme.gold} />
+            <Text style={[styles.legendaryText, { color: theme.gold }]}>Herói Lendário</Text>
+          </View>
+        )}
         {!sheet.isOwner && (
           <Text style={[typography.caption, { color: theme.gold }]}>Somente leitura (visão do mestre)</Text>
         )}
@@ -211,6 +291,47 @@ function Sidebar({
         })}
       </View>
 
+      {sheet.isOwner && (
+        <View style={styles.danger}>
+          <Pressable
+            onPress={() => void remove()}
+            disabled={deleteState === 'deleting'}
+            accessibilityRole="button"
+            accessibilityLabel={deleteState === 'confirming' ? 'Confirmar exclusão do personagem' : 'Excluir personagem'}
+            style={({ pressed }) => [
+              styles.deleteButton,
+              {
+                borderColor: theme.negative,
+                backgroundColor: deleteState === 'confirming' ? theme.negative : pressed ? theme.surface : 'transparent',
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name={deleteState === 'confirming' ? 'alert-outline' : 'trash-can-outline'}
+              size={18}
+              color={deleteState === 'confirming' ? theme.accentText : theme.negative}
+            />
+            <Text
+              style={[
+                typography.caption,
+                { color: deleteState === 'confirming' ? theme.accentText : theme.negative, fontWeight: '700' },
+              ]}
+            >
+              {deleteState === 'confirming'
+                ? 'Toque de novo para excluir'
+                : deleteState === 'deleting'
+                  ? 'Excluindo…'
+                  : 'Excluir personagem'}
+            </Text>
+          </Pressable>
+          {deleteState === 'error' && (
+            <Text style={[typography.caption, { color: theme.negative, textAlign: 'center' }]}>
+              Não deu para excluir. Tente de novo.
+            </Text>
+          )}
+        </View>
+      )}
+
       <Pressable onPress={onExit} accessibilityRole="button" style={styles.exit}>
         <MaterialCommunityIcons name="arrow-left" size={18} color={theme.textMuted} />
         <Text style={[typography.caption, { color: theme.textMuted, fontWeight: '700' }]}>Voltar</Text>
@@ -230,7 +351,7 @@ function Drawer({ open, onClose, children }: { open: boolean; onClose: () => voi
 
   // Sempre montada (fora da tela quando fechada); só recebe toques quando aberta.
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents={open ? 'auto' : 'none'}>
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: open ? 'auto' : 'none' }]}>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlay, opacity: progress }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar seções" />
       </Animated.View>
@@ -279,6 +400,17 @@ const styles = StyleSheet.create({
   name: { fontFamily: fonts.display, fontSize: 22, textAlign: 'center' },
   edition: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 2, marginTop: spacing.xs },
   editionText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.8 },
+  legendary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 3,
+    marginTop: spacing.xs,
+  },
+  legendaryText: { fontFamily: fonts.display, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' },
   nav: { gap: spacing.xxs },
   navItem: {
     flexDirection: 'row',
@@ -288,6 +420,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: radius.md,
     borderWidth: 1,
+  },
+  danger: { marginTop: 'auto', gap: spacing.xs },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   exit: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 'auto', padding: spacing.sm },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },

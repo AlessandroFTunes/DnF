@@ -222,7 +222,7 @@ function MemberCard({
     <View style={[styles.member, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }, shadow(theme, 1)]}>
       <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={`Abrir ficha de ${c.name}`} style={styles.memberTop}>
         <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-          <MaterialCommunityIcons name={classIcon(classKey)} size={24} color={theme.accentText} />
+          <MaterialCommunityIcons name={classIcon(className ?? '')} size={24} color={theme.accentText} />
         </View>
         <View style={styles.flex}>
           <Text style={[typography.subheading, { color: theme.text }]} numberOfLines={1}>

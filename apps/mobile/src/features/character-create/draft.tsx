@@ -35,7 +35,7 @@ export interface CharacterDraft {
   classSkills: string[];
   /** Perícias à escolha dadas pela espécie (Elfo 2024, Humano 2024, Meio-elfo 2014). */
   speciesSkills: string[];
-  /** Perícias à escolha do antecedente (livros fora do SRD: "either X or Y"). */
+  /** Perícias à escolha do antecedente (quando o livro deixa escolher). */
   backgroundSkills: string[];
   /** Especialização (Ladino 1º nível). */
   expertise: string[];
@@ -123,7 +123,7 @@ const CLASS_DEPENDENT: Partial<CharacterDraft> = {
 interface DraftContext {
   draft: CharacterDraft;
   update: (patch: Partial<CharacterDraft>) => void;
-  /** Troca a edição; as chaves da Open5e são por edição, então as escolhas de regra são descartadas. */
+  /** Troca a edição; as chaves da 5e-FastAPI são por edição, então as escolhas de regra são descartadas. */
   setEdition: (edition: DiferenteKey.Edition) => void;
   setClass: (classKey: string) => void;
   setSpecies: (speciesKey: string) => void;

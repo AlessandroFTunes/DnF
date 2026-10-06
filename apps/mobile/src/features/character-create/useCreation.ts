@@ -1,11 +1,12 @@
 import { ABILITIES, type Ability, type AbilityScores } from '@dnf/core/character';
-import { DiferenteKey } from '@dnf/core/util';
 import {
   applyBonuses,
   subclassLevel,
   backgroundRules,
   classRules,
-  skillsFromAbilities,
+  MAGIC_INITIATE,
+  normalize,
+  SKILLS,
   speciesRules,
   spellsToChoose,
   type SrdSpecies,
@@ -24,14 +25,13 @@ export function baseScores(draft: CharacterDraft): AbilityScores | null {
 }
 
 /**
- * Dados da Open5e + regras aplicadas às escolhas do rascunho.
+ * Dados da 5e-FastAPI + regras aplicadas às escolhas do rascunho.
  * Cada etapa usa só o que precisa; tudo vem do cache depois da primeira busca.
  */
 export function useCreation() {
   const { draft } = useCharacterDraft();
   const edition = draft.edition;
 
-  const abilitiesQ = useSrd('abilities', () => srd.abilities());
   const classQ = useSrd(draft.classKey && `class:${draft.classKey}`, () => srd.classDetail(draft.classKey!));
   const subclassesQ = useSrd(draft.classKey && `subclasses:${draft.classKey}`, () => srd.subclasses(draft.classKey!));
   const speciesQ = useSrd(edition && `species:${edition}`, () => srd.species(edition!));
@@ -39,9 +39,10 @@ export function useCreation() {
   const languagesQ = useSrd('languages', () => srd.languages());
   const featsQ = useSrd(edition && `feats:${edition}`, () => srd.feats(edition!));
   const itemsQ = useSrd(edition && `items:${edition}`, () => srd.items(edition!));
+  const classesQ = useSrd(edition && `classes:${edition}`, () => srd.classes(edition!));
 
   // Sem useMemo manual: o React Compiler memoiza estes cálculos.
-  const skills = abilitiesQ.status === 'ready' ? skillsFromAbilities(abilitiesQ.data) : null;
+  const skills = SKILLS;
   const cls = classQ.status === 'ready' ? classQ.data : null;
   const klass = cls && skills ? classRules(cls, skills) : null;
   const subclasses = subclassesQ.status === 'ready' ? subclassesQ.data : [];
@@ -65,9 +66,10 @@ export function useCreation() {
   const originFeat = feats && draft.originFeatKey ? (feats.find((f) => f.key === draft.originFeatKey) ?? null) : null;
 
   // Iniciado em Magia (Clérigo/Mago…): lista de magias da classe citada.
+  const spellList = bg?.feat?.name === MAGIC_INITIATE ? bg.feat.spellList : null;
   const magicInitiateClassKey =
-    edition && bg?.feat?.name === 'Magic Initiate' && bg.feat.spellList
-      ? DiferenteKey.build(edition, bg.feat.spellList.toLowerCase())
+    spellList && classesQ.status === 'ready'
+      ? (classesQ.data.find((k) => normalize(k.name) === normalize(spellList))?.key ?? null)
       : null;
 
   const base = baseScores(draft);
@@ -107,7 +109,7 @@ export function useCreation() {
     (l) => !l.is_secret && !fixedLanguages.some((f) => f.key === l.key),
   );
 
-  const queries = { abilitiesQ, classQ, subclassesQ, speciesQ, backgroundsQ, languagesQ, featsQ, itemsQ };
+  const queries = { classesQ, classQ, subclassesQ, speciesQ, backgroundsQ, languagesQ, featsQ, itemsQ };
   const items = itemsQ.status === 'ready' ? itemsQ.data : null;
 
   return {

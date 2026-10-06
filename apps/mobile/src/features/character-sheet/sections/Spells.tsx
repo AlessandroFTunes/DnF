@@ -179,7 +179,6 @@ function SpellRow({
             {tags.join(' · ')}
           </Text>
         </Pressable>
-        {spell.damage_roll ? <Text style={[typography.caption, { color: theme.gold, fontWeight: '800' }]}>{spell.damage_roll}</Text> : null}
         <MaterialCommunityIcons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={theme.textMuted} />
       </View>
       {open && (

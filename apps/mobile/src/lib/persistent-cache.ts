@@ -1,14 +1,14 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 /**
- * Cache em disco dos dados do compêndio (Open5e + complemento): cada consulta é baixada uma vez
+ * Cache em disco dos dados do compêndio (5e-FastAPI): cada consulta é baixada uma vez
  * e as próximas aberturas do app leem daqui. Fica no diretório de documentos (o de cache o sistema
  * pode apagar quando falta espaço). Web: ver `persistent-cache.web.ts`.
  */
 
 // Formato do envelope no disco. A versão dos *dados* fica em `lib/srd.ts` (SRD_CACHE_VERSION).
 const VERSION = 1;
-// Os dados do SRD quase não mudam; depois disso, busca de novo para pegar correções.
+// Os dados de regra quase não mudam; depois disso, busca de novo para pegar correções.
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 interface Envelope<T> {

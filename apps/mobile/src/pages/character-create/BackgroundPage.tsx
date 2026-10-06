@@ -11,19 +11,6 @@ import { useSteps } from '../../features/character-create/steps';
 import { useCreation } from '../../features/character-create/useCreation';
 import { tr } from '../../lib/srd';
 
-/** Nome curto do livro de origem. */
-const SOURCE_LABEL: Record<string, string> = {
-  'srd-2014': 'SRD 5.1 (oficial)',
-  'srd-2024': 'SRD 5.2 (oficial)',
-  'dnf-2024': 'Livro do Jogador 2024 · complemento DnF',
-  open5e: 'Open5e Originals',
-  tdcs: "Tal'Dorei Campaign Setting",
-  toh: 'Tome of Heroes',
-  'a5e-ag': "Level Up · Adventurer's Guide",
-  'a5e-ddg': "Level Up · Dungeon Delver's Guide",
-  'a5e-gpg': 'Level Up · Gate Pass Gazette',
-};
-
 export default function BackgroundPage() {
   const theme = useRpgTheme();
   const router = useRouter();
@@ -58,7 +45,7 @@ export default function BackgroundPage() {
       subtitle={
         draft.edition === '2024'
           ? 'O que você fazia antes da aventura: dá atributos, perícias, um talento de origem e equipamento.'
-          : 'O que você fazia antes da aventura: perícias, idiomas e equipamento inicial. Inclui livros abertos além do SRD.'
+          : 'O que você fazia antes da aventura: perícias, idiomas e equipamento inicial.'
       }
       canContinue={draft.backgroundKey !== null}
       secondary={{ label: 'Pular', onPress: skip }}
@@ -84,7 +71,7 @@ export default function BackgroundPage() {
 
           {list.map((bg, i) => {
             const rules = backgroundRules(bg, skills);
-            const source = bg.document.key ?? '';
+            const source = bg.document.key;
             const newSource = i === 0 || list[i - 1]!.document.key !== source;
             const skillText = [
               ...rules.skills.map((k) => skillLabel(k)),
@@ -99,7 +86,7 @@ export default function BackgroundPage() {
             const feature = bg.benefits.find((b) => b.type === 'feature');
             return (
               <View key={bg.key} style={styles.item}>
-                {newSource && <SectionLabel>{SOURCE_LABEL[source] ?? bg.document.name ?? source}</SectionLabel>}
+                {newSource && <SectionLabel>{bg.document.name}</SectionLabel>}
                 <OptionCard
                   title={tr.name(bg)}
                   subtitle={skillText ? `Perícias: ${skillText}` : undefined}

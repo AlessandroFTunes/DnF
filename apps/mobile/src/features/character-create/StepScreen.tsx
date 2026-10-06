@@ -130,7 +130,7 @@ function IconButton({ icon, label, onPress }: { icon: IconName; label: string; o
   );
 }
 
-/** Carregando / falhou ao buscar na Open5e. */
+/** Carregando / falhou ao buscar na 5e-FastAPI. */
 export function LoadState({ status, onRetry }: { status: 'loading' | 'error'; onRetry: () => void }) {
   const theme = useRpgTheme();
   if (status === 'loading') {
@@ -144,7 +144,7 @@ export function LoadState({ status, onRetry }: { status: 'loading' | 'error'; on
   return (
     <View style={styles.loadState}>
       <MaterialCommunityIcons name="wifi-off" size={28} color={theme.textMuted} />
-      <Text style={[typography.bodyStrong, { color: theme.text }]}>Não deu para falar com a Open5e</Text>
+      <Text style={[typography.bodyStrong, { color: theme.text }]}>Não deu para falar com a API de regras</Text>
       <Button label="Tentar de novo" variant="secondary" onPress={onRetry} />
     </View>
   );

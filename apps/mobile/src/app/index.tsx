@@ -195,7 +195,7 @@ function Empty({ title, text, logo, icon }: { title: string; text: string; logo?
 function CharacterCard({ theme, character, onPress }: { theme: RpgTheme; character: Character.Info; onPress: () => void }) {
   const { edition } = character;
   const classKey = character.classes[0]?.classKey;
-  // Nome da classe vem da Open5e (em cache; enquanto carrega, mostra só nível e edição).
+  // Nome da classe vem da 5e-FastAPI (em cache; enquanto carrega, mostra só nível e edição).
   const classes = useSrd(`classes:${edition}`, () => srd.classes(edition));
   const found = classes.status === 'ready' ? classes.data.find((c) => c.key === classKey) : undefined;
   const className = found ? tr.name(found) : undefined;
@@ -213,7 +213,7 @@ function CharacterCard({ theme, character, onPress }: { theme: RpgTheme; charact
       ]}
     >
       <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-        <MaterialCommunityIcons name={classKey ? classIcon(classKey) : 'dice-d20'} size={24} color={theme.accentText} />
+        <MaterialCommunityIcons name={className ? classIcon(className) : 'dice-d20'} size={24} color={theme.accentText} />
       </View>
       <View style={styles.cardBody}>
         <Text style={[typography.subheading, { color: theme.text }]} numberOfLines={1}>

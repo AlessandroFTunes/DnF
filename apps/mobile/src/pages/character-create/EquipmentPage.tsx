@@ -114,7 +114,7 @@ export default function EquipmentPage() {
 
       {inventory.custom.length > 0 && (
         <Text style={[typography.caption, { color: theme.textMuted }]}>
-          Também vão na mochila (sem ficha no SRD): {inventory.custom.map((c) => (c.quantity > 1 ? `${c.quantity}× ${c.name}` : c.name)).join(', ')}.
+          Também vão na mochila (sem ficha na API): {inventory.custom.map((c) => (c.quantity > 1 ? `${c.quantity}× ${c.name}` : c.name)).join(', ')}.
         </Text>
       )}
     </StepScreen>

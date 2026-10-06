@@ -8,7 +8,7 @@ import { Panel } from '../components';
 import type { Sheet, SheetData } from '../useSheet';
 import { tr } from '../../../lib/srd';
 
-/** Item expansível: nome + nível; o texto completo da Open5e ao abrir. */
+/** Item expansível: nome + nível; o texto completo da 5e-FastAPI ao abrir. */
 function Feature({ name, badge, desc }: { name: string; badge?: string; desc?: string }) {
   const theme = useRpgTheme();
   const [open, setOpen] = useState(false);

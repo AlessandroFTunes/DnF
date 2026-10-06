@@ -34,14 +34,14 @@ export namespace Character {
     classes: z.array(Sheet.ClassLevel).min(1).meta({
       description: 'Class levels (multiclass); the character level is their sum.',
     }),
-    speciesKey: optionalKey('Open5e species key (race in 2014; subspecies are species too), or null.'),
-    backgroundKey: optionalKey('Open5e background key, or null.'),
-    alignmentKey: optionalKey('Open5e alignment key, or null.'),
+    speciesKey: optionalKey('5e-FastAPI species id (as text), or null.'),
+    backgroundKey: optionalKey('5e-FastAPI background id (as text), or null.'),
+    alignmentKey: optionalKey('Alignment key (e.g. lawful-good), or null.'),
     featKeys: z.array(z.string().min(1).max(128)).meta({ description: 'Feats chosen by the player.' }),
     abilities: abilityScoresSchema.meta({ description: 'Ability scores.' }),
     xp: z.number().int().min(0).meta({ description: 'Experience points.' }),
     inspiration: z.boolean().meta({ description: 'Has (Heroic) Inspiration.' }),
-    /** Usos gastos de habilidades limitadas (ex.: Fúria), pela chave da habilidade na Open5e. */
+    /** Usos gastos de habilidades limitadas (ex.: Fúria), pela chave da característica. */
     featureUses: z.record(z.string().min(1).max(128), z.number().int().min(0)).meta({
       description: 'Spent uses of limited features, by feature key.',
     }),
@@ -56,7 +56,7 @@ export namespace Character {
     timeUpdated: z.iso.datetime().meta({ description: 'When it was last updated.' }),
   }).meta({
     ref: 'Character',
-    description: "A player character: the player's choices and state. Rules data comes from Open5e.",
+    description: "A player character: the player's choices and state. Rules data comes from the 5e-FastAPI.",
     example: Examples.Character,
   });
   export type Info = z.infer<typeof Info>;

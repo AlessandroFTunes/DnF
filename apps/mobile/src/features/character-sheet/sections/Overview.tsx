@@ -6,12 +6,12 @@ import { ABILITY_LABEL } from '../../character-create/labels';
 import { HpTracker, Panel, SmallButton, StatBox } from '../components';
 import type { Sheet, SheetData } from '../useSheet';
 
-export function CombatStats({ data, speed }: { data: SheetData; speed: number }) {
+export function CombatStats({ data, speed }: { data: SheetData; speed: string }) {
   return (
     <View style={styles.stats}>
       <StatBox label="CA" value={String(data.ac.value)} icon="shield-half-full" accent />
       <StatBox label="Iniciativa" value={formatBonus(abilityModifier(data.scores.dex))} icon="lightning-bolt" />
-      <StatBox label="Deslocamento" value={`${speed} pés`} icon="run" />
+      <StatBox label="Deslocamento" value={speed.replace(/\s*metros?$/i, ' m')} icon="run" />
       <StatBox label="Proficiência" value={formatBonus(data.pb)} icon="star-four-points-outline" />
       <StatBox label="Percepção passiva" value={String(data.passivePerception)} icon="eye-outline" />
     </View>
@@ -48,7 +48,7 @@ export function VitalsPanel({ sheet }: { sheet: Sheet }) {
 
   /** Descanso curto: gasta um dado de vida (média + CON). */
   const spendHitDie = () => {
-    const heal = Math.max(1, Math.floor(derived.hitDie / 2) + 1 + abilityModifier(character.abilities.con));
+    const heal = Math.max(1, Math.floor(derived.hitDie / 2) + 1 + abilityModifier(derived.scores.con));
     const hpCurrent = Math.min(combat.hpMax, combat.hpCurrent + heal);
     void save(
       { combat: { hpCurrent, hitDiceSpent: combat.hitDiceSpent + 1 } },
@@ -107,7 +107,7 @@ export function Overview({ sheet, showVitals }: { sheet: Sheet; showVitals: bool
           </Pressable>
         }
       >
-        <CombatStats data={derived} speed={derived.species?.speed ?? 30} />
+        <CombatStats data={derived} speed={derived.species?.speed || '—'} />
         <Text style={[typography.caption, { color: theme.textMuted }]}>
           CA: {derived.ac.parts.map((p, i) => `${p.label} ${i === 0 ? p.value : formatBonus(p.value)}`).join(' · ')}
         </Text>

@@ -26,9 +26,14 @@ export default function SpellsPage() {
   const [chosenTab, setTab] = useState<Tab | null>(null);
   const tab: Tab = chosenTab ?? (casting?.cantrips ? 'cantrips' : casting ? 'spells' : 'feat');
 
-  const cantripsNeeded = casting?.cantrips ?? 0;
-  const spellsNeeded = casting ? spellCount : 0;
-  const featNeeded = magicInitiateClassKey ? 3 : 0;
+  // A API ainda pode não ter todas as magias de uma lista: não exige mais do que existe para escolher.
+  const available = (q: typeof classSpells, level: number, wanted: number) =>
+    q.status === 'ready' ? Math.min(wanted, q.data.filter((s) => s.level === level).length) : wanted;
+  const cantripsNeeded = available(classSpells, 0, casting?.cantrips ?? 0);
+  const spellsNeeded = available(classSpells, 1, casting ? spellCount : 0);
+  const featCantripsNeeded = magicInitiateClassKey ? available(featSpells, 0, 2) : 0;
+  const featSpellNeeded = magicInitiateClassKey ? available(featSpells, 1, 1) : 0;
+  const featNeeded = featCantripsNeeded + featSpellNeeded;
   const featDone = draft.featCantrips.length + (draft.featSpell ? 1 : 0);
 
   const complete =
@@ -110,7 +115,7 @@ export default function SpellsPage() {
         <LoadState status={failed ? 'error' : 'loading'} onRetry={() => failed?.retry()} />
       ) : tab === 'feat' ? (
         <>
-          <SectionLabel>{`Truques ${draft.featCantrips.length}/2`}</SectionLabel>
+          <SectionLabel>{`Truques ${draft.featCantrips.length}/${featCantripsNeeded}`}</SectionLabel>
           {list
             .filter((s) => s.level === 0)
             .map((s) => (
@@ -118,10 +123,10 @@ export default function SpellsPage() {
                 key={s.key}
                 spell={s}
                 selected={draft.featCantrips.includes(s.key)}
-                onPress={() => toggle('featCantrips', s.key, 2)}
+                onPress={() => toggle('featCantrips', s.key, featCantripsNeeded)}
               />
             ))}
-          <SectionLabel>{`1º círculo ${draft.featSpell ? 1 : 0}/1`}</SectionLabel>
+          <SectionLabel>{`1º círculo ${draft.featSpell ? 1 : 0}/${featSpellNeeded}`}</SectionLabel>
           {list
             .filter((s) => s.level === 1)
             .map((s) => (
@@ -208,9 +213,6 @@ export function SpellCard({ spell, selected, onPress }: { spell: SrdSpell; selec
             {tags.join(' · ')}
           </Text>
         </View>
-        {spell.damage_roll ? (
-          <Text style={[typography.caption, { color: theme.gold, fontWeight: '800' }]}>{spell.damage_roll}</Text>
-        ) : null}
       </View>
       {selected && spell.desc ? (
         <Text style={[typography.caption, { color: theme.text }]} numberOfLines={6}>

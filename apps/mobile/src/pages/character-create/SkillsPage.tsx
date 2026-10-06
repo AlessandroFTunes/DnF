@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ABILITIES, abilityModifier, proficiencyBonus } from '@dnf/core/character';
-import { plainText, skillBonus } from '@dnf/sdk/srd';
+import { MAGIC_INITIATE, plainText, skillBonus } from '@dnf/sdk/srd';
 import { Chip, formatBonus, OptionCard, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
 import { useCharacterDraft } from '../../features/character-create/draft';
@@ -16,7 +16,7 @@ export default function SkillsPage() {
   const { draft, update } = useCharacterDraft();
   const c = useCreation();
   const { klass, species, skills, scores, grantedSkills, feats } = c;
-  const load = combined(c.queries.abilitiesQ, c.queries.classQ, c.queries.featsQ);
+  const load = combined(c.queries.classQ, c.queries.featsQ);
 
   if (!klass || !skills || !scores) {
     return (
@@ -42,7 +42,7 @@ export default function SkillsPage() {
   const expertiseNeeded = klass.expertiseAtLevel1;
 
   const originFeatOptions = species?.originFeat
-    ? (feats ?? []).filter((f) => /origin/i.test(f.type ?? '') && f.name !== 'Magic Initiate' && f.name !== c.bg?.feat?.name)
+    ? (feats ?? []).filter((f) => /origem/i.test(f.type ?? '') && f.name !== MAGIC_INITIATE && f.name !== c.bg?.feat?.name)
     : [];
 
   function toggleSkill(key: string) {

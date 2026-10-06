@@ -23,7 +23,7 @@ export interface InventoryItem {
 
 export interface Inventory {
   items: InventoryItem[];
-  /** Itens sem chave na Open5e (guardados pelo nome). */
+  /** Itens sem chave na 5e-FastAPI (guardados pelo nome). */
   custom: { name: string; quantity: number }[];
   gp: number;
   /** Escolhas ainda pendentes (grupo sem opção ou arma genérica sem escolha). */

@@ -1,42 +1,37 @@
 import type { ComponentProps } from 'react';
 import type { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Ability } from '@dnf/core/character';
-import { DiferenteKey } from '@dnf/core/util';
+import type { DiferenteKey } from '@dnf/core/util';
+import { normalize } from '@dnf/sdk/srd';
 
-// Rótulos de interface. Os nomes de classes, espécies etc. vêm da Open5e como estão.
+// Rótulos de interface. Os nomes de classes, espécies etc. vêm da 5e-FastAPI como estão.
 
 export type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 export const EDITION_INFO: Record<DiferenteKey.Edition, { title: string; subtitle: string; tagline: string }> = {
-  '2014': { title: '2014', subtitle: '5ª edição · SRD 5.1', tagline: 'O clássico: raças com sub-raças e bônus de atributo pela raça.' },
-  '2024': { title: '2024', subtitle: 'Edição revisada · SRD 5.2', tagline: 'Regras atualizadas: espécies, antecedentes que dão atributos e talentos.' },
+  '2014': { title: '2014', subtitle: '5ª edição · livros "5e"', tagline: 'O clássico: raças com sub-raças e bônus de atributo pela raça.' },
+  '2024': { title: '2024', subtitle: 'Edição revisada · livros "5.5e"', tagline: 'Regras atualizadas: espécies, antecedentes que dão atributos e talentos.' },
 };
 
+/** Ícone pelo nome da classe (sem acento, em minúsculas). */
 const CLASS_ICONS: Record<string, IconName> = {
-  barbarian: 'axe-battle',
-  bard: 'music',
-  cleric: 'cross',
-  druid: 'leaf',
-  fighter: 'sword',
-  monk: 'karate',
-  paladin: 'shield-sword',
-  ranger: 'bow-arrow',
-  rogue: 'knife',
-  sorcerer: 'fire',
-  warlock: 'eye',
-  wizard: 'wizard-hat',
+  barbaro: 'axe-battle',
+  bardo: 'music',
+  clerigo: 'cross',
+  druida: 'leaf',
+  guerreiro: 'sword',
+  monge: 'karate',
+  paladino: 'shield-sword',
+  patrulheiro: 'bow-arrow',
+  ladino: 'knife',
+  feiticeiro: 'fire',
+  bruxo: 'eye',
+  mago: 'wizard-hat',
 };
 
-export function classIcon(key: string): IconName {
-  return CLASS_ICONS[DiferenteKey.parse(key)?.slug ?? ''] ?? 'dice-d20';
+export function classIcon(name: string): IconName {
+  return CLASS_ICONS[normalize(name)] ?? 'dice-d20';
 }
-
-export const CASTER_LABEL: Record<string, string> = {
-  FULL: 'Conjurador completo',
-  HALF: 'Meio-conjurador',
-  THIRD: 'Um terço de conjurador',
-  PACT: 'Magia de pacto',
-};
 
 export const ABILITY_LABEL: Record<Ability, { name: string; short: string; english: string; icon: IconName }> = {
   str: { name: 'Força', short: 'FOR', english: 'Strength', icon: 'arm-flex' },
@@ -67,7 +62,7 @@ export function alignmentShort(attitude: string, morality: string): string {
 
 const SKILL_PT: Record<string, string> = {
   acrobatics: 'Acrobacia',
-  'animal-handling': 'Adestrar Animais',
+  'animal-handling': 'Lidar com Animais',
   arcana: 'Arcanismo',
   athletics: 'Atletismo',
   deception: 'Enganação',
@@ -86,7 +81,7 @@ const SKILL_PT: Record<string, string> = {
   survival: 'Sobrevivência',
 };
 
-/** Nome da perícia em português (as chaves da Open5e não têm prefixo de edição). */
+/** Nome da perícia em português pela chave (ver SKILLS no SDK). */
 export function skillLabel(key: string, fallback?: string): string {
   return SKILL_PT[key] ?? fallback ?? key;
 }
@@ -106,9 +101,8 @@ export function rangeLabel(range: string): string {
     .replace(/\bmiles?\b/gi, (m) => (m.toLowerCase() === 'mile' ? 'milha' : 'milhas'));
 }
 
-/** Livro de origem de uma subclasse para exibir ao lado do nome ("TOH", "regras de 2014"…). */
-export function subclassOrigin(sub: { key: string; adaptedFrom?: string }): string {
-  const prefix = sub.key.split('_')[0] ?? '';
-  const book = prefix === 'srd' || prefix === 'srd-2024' ? '' : prefix.toUpperCase();
+/** Livro de origem de uma subclasse para exibir ao lado do nome (só quando não é o Livro do Jogador). */
+export function subclassOrigin(sub: { source?: { name: string }; adaptedFrom?: string }): string {
+  const book = sub.source && !/livro do jogador/i.test(sub.source.name) ? sub.source.name : '';
   return [book, sub.adaptedFrom ? `regras de ${sub.adaptedFrom}` : ''].filter(Boolean).join(' · ');
 }
