@@ -7,6 +7,10 @@ services:
     environment:
       PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@dnf.local}
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-dnf-dev-password}
+      # Token do Cloudflare Access usado pela rota /srd (core/pb_hooks/srd.pb.js). Vem do .env da raiz.
+      DND_API_ACCESS_ID: ${DND_API_ACCESS_ID:-}
+      DND_API_ACCESS_SECRET: ${DND_API_ACCESS_SECRET:-}
+      DND_API_URL: ${DND_API_URL:-}
     # Cria/atualiza o superuser de dev e sobe em modo --dev (logs SQL, migrations geradas pelo Dashboard).
     command: >
       sh -c './pocketbase superuser upsert "$$PB_ADMIN_EMAIL" "$$PB_ADMIN_PASSWORD"

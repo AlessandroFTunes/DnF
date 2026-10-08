@@ -4,7 +4,8 @@
 
 As regras de D&D (classes, espécies, antecedentes, talentos, magias, equipamento) vêm da
 [5e-FastAPI](https://github.com/AlessandroFTunes/5e-FastAPI), em `https://5e-fastapi.developale.com`, atrás do
-Cloudflare Access (service token em `apps/mobile/.env`: `EXPO_PUBLIC_DND_API_ACCESS_ID`/`_SECRET`).
+Cloudflare Access. O app não tem o token: chama `/srd/*` no PocketBase (`core/pb_hooks/srd.pb.js`), que repassa
+com o service token das variáveis `DND_API_ACCESS_ID`/`_SECRET` do servidor.
 O PocketBase só guarda as escolhas do jogador (ids da API como texto; itens como `"arma:3"`).
 
 Onde fica cada parte:

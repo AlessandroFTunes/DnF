@@ -39,9 +39,9 @@ const { data } = await client.GET('/api/v1/magias', { params: { query: { circulo
 const srd = createSrdCatalog(client); // consultas do app: srd.classes('2024'), srd.classDetail('1')…
 ```
 
-A API fica atrás do Cloudflare Access: o app manda um service token em toda requisição. Configure em
-`apps/mobile/.env` (veja `.env.example`): `EXPO_PUBLIC_DND_API_ACCESS_ID` e `EXPO_PUBLIC_DND_API_ACCESS_SECRET`
-(e `EXPO_PUBLIC_DND_API_URL` para apontar para outra instância, ex.: `http://localhost:8000`).
+A API fica atrás do Cloudflare Access. O token não vai no app: ele chama `/srd/*` no PocketBase
+(`core/pb_hooks/srd.pb.js`), que exige login e repassa com `DND_API_ACCESS_ID`/`DND_API_ACCESS_SECRET` (variáveis
+do servidor). `EXPO_PUBLIC_DND_API_URL` aponta o app direto para outra instância, ex.: `http://localhost:8000`.
 
 A edição de cada registro vem do livro (`fonte.edicao`): `5e` = regras de 2014, `5.5e` = regras de 2024.
 Uma edição sem classes na API aparece desabilitada na criação. O personagem guarda só os ids da API

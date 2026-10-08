@@ -1,25 +1,32 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createSrdCatalog, createSrdClient, SRD_URL } from '@dnf/sdk/srd';
+import { createSrdCatalog, createSrdClient } from '@dnf/sdk/srd';
+import Constants from 'expo-constants';
 import { persistentCache } from './persistent-cache';
 
-const accessId = process.env.EXPO_PUBLIC_DND_API_ACCESS_ID;
-const accessSecret = process.env.EXPO_PUBLIC_DND_API_ACCESS_SECRET;
+import './pocketbase';
+import { PocketBase } from '@dnf/core/pocketbase';
 
 /**
- * Compêndio de regras: a 5e-FastAPI (dados em português). A API fica atrás do Cloudflare Access; o app
- * manda o service token configurado no `.env` (veja `.env.example`).
+ * Compêndio de regras: a 5e-FastAPI (dados em português). O app não fala direto com ela: passa pelo
+ * PocketBase (`core/pb_hooks/srd.pb.js`), que guarda o token do Cloudflare Access e só atende logados.
+ * `EXPO_PUBLIC_DND_API_URL` aponta para outra instância (ex.: uma API local, sem login).
  */
-const baseUrl = process.env.EXPO_PUBLIC_DND_API_URL || SRD_URL;
-// O token só vale para a API publicada (https, atrás do Cloudflare). Numa API local (http://localhost:8000)
-// ele não serve e ainda atrapalha: cabeçalhos extras fazem o navegador pedir CORS para eles.
-const behindAccess = baseUrl.startsWith('https://');
+// No celular (Expo Go), "localhost" é o próprio celular: troca pelo IP da máquina que roda o Metro.
+const devHost = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
+const directUrl = process.env.EXPO_PUBLIC_DND_API_URL?.replace('//localhost', `//${devHost}`);
 
-export const srd = createSrdCatalog(
-  createSrdClient({
-    baseUrl,
-    accessToken: behindAccess && accessId && accessSecret ? { clientId: accessId, clientSecret: accessSecret } : null,
-  }),
-);
+const client = createSrdClient({ baseUrl: directUrl ?? `${PocketBase.client().baseURL}/srd` });
+if (!directUrl) {
+  client.use({
+    onRequest({ request }) {
+      const token = PocketBase.client().authStore.token;
+      if (token) request.headers.set('Authorization', token);
+      return request;
+    },
+  });
+}
+
+export const srd = createSrdCatalog(client);
 
 /**
  * Os textos da API já vêm em português; `tr` só mantém a forma das telas (`tr.name(classe)`) caso um dia

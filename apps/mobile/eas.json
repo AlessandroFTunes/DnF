@@ -1,0 +1,27 @@
+{
+  "cli": {
+    "version": ">= 24.12.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_PB_URL": "https://dnf-db.developale.com"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_PB_URL": "https://dnf-db.developale.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
