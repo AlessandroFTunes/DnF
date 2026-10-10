@@ -251,6 +251,8 @@ export interface SpellcastingRules {
   slots: number;
   /** Prepara magias da lista inteira em vez de escolher uma quantidade fixa. */
   preparesFromList: boolean;
+  /** Com `spells: null`: atributo + metade do nível, em vez do nível inteiro (Artífice de 2014). */
+  halfLevel?: boolean;
 }
 
 const CASTING_FEATURE = /^(conjura[çc][ãa]o|magia de pacto)$/i;
@@ -271,12 +273,17 @@ export function spellcastingRules(cls: SrdClassDetail): SpellcastingRules | null
   const spells = tableNumber(cls, /magias (preparadas|conhecidas)/i, 1);
   const slots = spellSlots(cls, 1)['1'] ?? 0;
   if (cantrips === 0 && spells === 0) return null; // só conjura em níveis mais altos
+  // Classes de 2014 sem coluna de magias (Artífice): prepara "modificador + (metade do) nível", como diz o texto.
+  if (spells === 0 && slots > 0) {
+    const desc = cls.features.find((f) => CASTING_FEATURE.test(f.name))?.desc ?? '';
+    return { ability, cantrips, spells: null, slots, preparesFromList: false, halfLevel: /metade do seu n[íi]vel/i.test(desc) };
+  }
   return { ability, cantrips, spells, slots, preparesFromList: false };
 }
 
 /** Quantas magias de 1º círculo escolher, já resolvendo "atributo + nível". */
 export function spellsToChoose(rules: SpellcastingRules, scores: AbilityScores, level = 1): number {
-  return rules.spells ?? Math.max(1, abilityModifier(scores[rules.ability]) + level);
+  return rules.spells ?? Math.max(1, abilityModifier(scores[rules.ability]) + (rules.halfLevel ? Math.floor(level / 2) : level));
 }
 
 // ---------------------------------------------------------------------------

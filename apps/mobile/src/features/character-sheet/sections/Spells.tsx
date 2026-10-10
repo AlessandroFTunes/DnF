@@ -16,7 +16,10 @@ export function Spells({ sheet }: { sheet: Sheet }) {
   const [learning, setLearning] = useState(false);
   const classKey = character?.classes[0]?.classKey ?? null;
   const maxLevel = derived ? Math.max(0, ...Object.keys(derived.slots).map(Number)) : 0;
-  const available = useSrd(learning && classKey ? `spells:${classKey}:${maxLevel}` : null, () => srd.spells(classKey!, maxLevel));
+  const edition = character?.edition;
+  const available = useSrd(learning && classKey ? `spells:${classKey}:${maxLevel}:${edition}` : null, () =>
+    srd.spells(classKey!, maxLevel, edition),
+  );
   if (!character || !derived) return null;
   const { castAbility, magic, slots, spells } = derived;
   const used = character.spellcasting.slotsUsed;

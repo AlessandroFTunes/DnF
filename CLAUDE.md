@@ -23,7 +23,10 @@ Onde fica cada parte:
 
 **Só dados novos** (outras classes, magias, itens, livros de 2014): não precisa mudar código, porque as
 regras são genéricas e uma edição passa a aparecer na criação quando ganha classes (`fonte.edicao`: `5e` =
-2014, `5.5e` = 2024). O app guarda as consultas no aparelho por 30 dias (`MAX_AGE_MS` em
+2014, `5.5e` = 2024). Homebrew (`edicao: homebrew`) vale para as duas edições. Na criação, uma classe da outra
+edição sem equivalente nesta também entra (`adaptedFrom`, ex.: o Artífice do Tasha na criação 2024), e
+`srd.spells(classe, círculo, edição)` mostra uma vez só a magia que existe nos dois livros, ficando a da edição
+do personagem. O app guarda as consultas no aparelho por 30 dias (`MAX_AGE_MS` em
 `apps/mobile/src/lib/persistent-cache.ts`). Para todos verem os dados novos já, aumente `SRD_CACHE_VERSION`
 em `apps/mobile/src/lib/srd.ts` e publique o app.
 

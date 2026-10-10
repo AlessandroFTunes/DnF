@@ -48,8 +48,9 @@ export const tr = {
  *  3: subclasses e magias do Guia de Xanathar e do Caldeirão de Tasha (complemento)
  *  4: troca da Open5e pela 5e-FastAPI
  *  5: característica repetida em níveis maiores (Golpe Brutal Fortalecido 13 e 17) vira uma só
+ *  6: talentos, equipamento e magias dos três livros carregados (o cache tinha as listas vazias); Artífice na criação 2024
  */
-const SRD_CACHE_VERSION = 5;
+const SRD_CACHE_VERSION = 6;
 const cacheReady = persistentCache.get<number>('meta:version').then(async (stored) => {
   if (stored === SRD_CACHE_VERSION) return;
   await persistentCache.clear();

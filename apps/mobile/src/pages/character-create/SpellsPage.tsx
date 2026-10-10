@@ -16,11 +16,12 @@ export default function SpellsPage() {
   const theme = useRpgTheme();
   const { draft, update } = useCharacterDraft();
   const { casting, spellCount, scores, magicInitiateClassKey, bg } = useCreation();
-  const classSpells = useSrd(casting && draft.classKey ? `spells:${draft.classKey}` : null, () =>
-    srd.spells(draft.classKey!, 1),
+  const edition = draft.edition ?? undefined;
+  const classSpells = useSrd(casting && draft.classKey ? `spells:${draft.classKey}:${edition}` : null, () =>
+    srd.spells(draft.classKey!, 1, edition),
   );
-  const featSpells = useSrd(magicInitiateClassKey && `spells:${magicInitiateClassKey}`, () =>
-    srd.spells(magicInitiateClassKey!, 1),
+  const featSpells = useSrd(magicInitiateClassKey && `spells:${magicInitiateClassKey}:${edition}`, () =>
+    srd.spells(magicInitiateClassKey!, 1, edition),
   );
   // Enquanto o jogador não escolhe, a aba segue a classe (que pode ainda estar carregando).
   const [chosenTab, setTab] = useState<Tab | null>(null);

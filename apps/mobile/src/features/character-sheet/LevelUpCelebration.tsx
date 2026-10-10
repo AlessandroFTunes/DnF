@@ -165,7 +165,8 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
                 <Stop offset="1" stopColor={GLOW} stopOpacity={0} />
               </RadialGradient>
             </Defs>
-            <Circle cx={center} cy={center} r={(size / 2) * scale} fill="url(#d20-glow)" opacity={glow} />
+            {/* No Android, gradiente com raio 0 derruba o app (o primeiro quadro tem scale 0). */}
+            {scale > 0 && <Circle cx={center} cy={center} r={(size / 2) * scale} fill="url(#d20-glow)" opacity={glow} />}
 
             {SPARKS.map((spark, i) => {
               const r = size * 0.18 + easeOut(burst) * size * 0.42 * spark.reach;

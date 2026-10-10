@@ -156,8 +156,11 @@ export function sourceOf(fonte: Schemas['ResumoFonte']): SrdSource {
   return { key: String(fonte.id), name: fonte.nome, edition: EDITION_BY_API[fonte.edicao] ?? null };
 }
 
-const fromEdition = (edition: SrdEdition) => (r: { fonte: Schemas['ResumoFonte'] }) =>
-  sourceOf(r.fonte).edition === edition;
+/** Homebrew (edição `null`) vale para as duas edições. */
+const fromEdition = (edition: SrdEdition) => (r: { fonte: Schemas['ResumoFonte'] }) => {
+  const own = sourceOf(r.fonte).edition;
+  return own === null || own === edition;
+};
 
 /** Texto da característica com as opções dela (ex.: as transformações da Revelação Celestial). */
 function withOptions(desc: string, options: { nome: string; descricao?: string | null }[] = []): string {
@@ -306,7 +309,8 @@ const slug = (s: string) =>
 /** "1d8 Cortante" → dado + tipo de dano. */
 function parseDamage(text: string) {
   const dice = text.match(/\d+d\d+(?:\s*[+-]\s*\d+)?|^\d+\b/)?.[0]?.replace(/\s+/g, '') ?? text;
-  const type = text.replace(dice, '').replace(/^[\s,;-]+/, '').trim();
+  // O livro tem "1d6 Perfurante," (Espada Curta): a vírgula sobra.
+  const type = text.replace(dice, '').replace(/^[\s,;-]+|[\s,;-]+$/g, '').trim();
   return { dice, type: { name: type, key: slug(type) } };
 }
 
@@ -465,7 +469,13 @@ export function createSrdCatalog(client: SrdClient) {
     },
 
     async classes(edition: SrdEdition): Promise<SrdClass[]> {
-      return (await allClasses()).filter(fromEdition(edition)).map(toClass).sort(byName);
+      // Classes da outra edição sem equivalente nesta (ex.: Artífice do Tasha na criação 2024) também entram.
+      const list = (await allClasses()).map(toClass);
+      const own = list.filter((c) => c.source.edition === null || c.source.edition === edition);
+      const others = list
+        .filter((c) => !own.some((o) => slug(o.name) === slug(c.name)) && !own.includes(c))
+        .map((c) => ({ ...c, adaptedFrom: c.source.edition ?? undefined }));
+      return [...own, ...others].sort(byName);
     },
 
     /** Classe completa: características, progressão, equipamento e proficiências. */
@@ -544,15 +554,23 @@ export function createSrdCatalog(client: SrdClient) {
       return found.filter((i): i is SrdItem => !!i);
     },
 
-    /** Magias da lista de uma classe, até o círculo `maxLevel` (0 = truques). */
-    async spells(classKey: string, maxLevel: number): Promise<SrdSpell[]> {
+    /**
+     * Magias da lista de uma classe, até o círculo `maxLevel` (0 = truques). A mesma magia em livros das duas
+     * edições (Faca de Gelo no Livro do Jogador 2024 e no Xanathar) aparece uma vez só: a da `edition`.
+     */
+    async spells(classKey: string, maxLevel: number, edition?: SrdEdition): Promise<SrdSpell[]> {
       const classe_id = numericId(classKey);
       if (!classe_id) return [];
       const list = await all('magias', (pagina) =>
         client.GET('/api/v1/magias', { params: { query: { classe_id, pagina, limite: PAGE } } }),
       );
-      return list
-        .filter((m) => m.circulo <= maxLevel)
+      const own = (m: Schemas['Magia']) => sourceOf(m.fonte).edition === edition;
+      const best = new Map<string, Schemas['Magia']>();
+      for (const m of list.filter((m) => m.circulo <= maxLevel)) {
+        const seen = best.get(slug(m.nome));
+        if (!seen || (!own(seen) && own(m))) best.set(slug(m.nome), m);
+      }
+      return [...best.values()]
         .map(toSpell)
         .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
     },
