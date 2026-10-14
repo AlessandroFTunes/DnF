@@ -34,7 +34,7 @@ export namespace Examples {
       hpMax: 17,
       hpCurrent: 12,
       hpTemp: 0,
-      hitDiceSpent: 1,
+      hitDiceSpent: { '6': 1 },
       deathSaves: { successes: 0, failures: 0 },
       exhaustion: 0,
       conditionKeys: [],

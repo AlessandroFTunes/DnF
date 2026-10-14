@@ -32,6 +32,8 @@ export interface SrdClassDetail {
   /** "d12", como a ficha mostra. */
   hit_dice: string;
   features: SrdClassFeature[];
+  /** Como entra na conta dos espaços de magia de multiclasse; null se não conjura (subclasses: Cavaleiro Místico…). */
+  casting: Schemas['Conjuracao'] | null;
   /** Registro da classe na API (ausente nas subclasses). */
   api?: Schemas['Classe'];
   /** Subclasse feita para a outra edição (a API ainda não mistura edições; fica para o futuro). */
@@ -121,6 +123,8 @@ export interface SrdItem {
   armor: SrdArmorData | null;
   cost?: string | null;
   weight?: string;
+  /** Ferramenta com variantes ("Instrumento Musical": Alaúde, Flauta…): a proficiência é numa delas. */
+  variants?: string[];
 }
 
 export interface SrdSpell {
@@ -140,6 +144,12 @@ export interface SrdSpell {
   material: boolean;
   higher_level: string | null;
   classes: { key: string; name: string }[];
+}
+
+/** Linha da tabela "Conjurador Multiclasse": espaços por círculo (do 1º ao 9º) no nível de conjurador. */
+export interface SrdMulticlassSlots {
+  casterLevel: number;
+  slots: number[];
 }
 
 export type { SrdAlignment, SrdLanguage };
@@ -210,6 +220,7 @@ export function toClass(c: Schemas['Classe']): SrdClassDetail {
     source: sourceOf(c.fonte),
     hit_dice: die ? `d${die}` : c.dado_vida,
     features: features(`classe:${key}`, c.caracteristicas, c.progressao),
+    casting: c.conjuracao,
     api: c,
   };
 }
@@ -223,6 +234,7 @@ export function toSubclass(s: Schemas['Subclasse']): SrdClassDetail {
     source: sourceOf(s.fonte),
     hit_dice: '',
     features: features(`subclasse:${key}`, s.caracteristicas),
+    casting: s.conjuracao,
   };
 }
 
@@ -401,6 +413,8 @@ export function toTool(f: Schemas['Ferramenta']): SrdItem {
     armor: null,
     cost: f.custo,
     weight: f.peso,
+    // "Alaúde (35 PO, 1 kg)" → "Alaúde".
+    variants: (f.variantes ?? []).map((v) => v.replace(/\s*\(.*\)\s*$/, '')),
   };
 }
 
@@ -493,6 +507,15 @@ export function createSrdCatalog(client: SrdClient) {
         client.GET('/api/v1/subclasses', { params: { query: { classe_id, pagina, limite: PAGE } } }),
       );
       return list.map(toSubclass).sort(byName);
+    },
+
+    /** Tabela de espaços de magia do conjurador multiclasse da edição. */
+    async multiclassSlots(edition: SrdEdition): Promise<SrdMulticlassSlots[]> {
+      const list = await all('espaços de magia multiclasse', (p) => client.GET('/api/v1/regras/multiclasse/espacos-magia', query(p)));
+      return list
+        .filter(fromEdition(edition))
+        .map((r) => ({ casterLevel: r.nivel_conjurador, slots: r.espacos_magia }))
+        .sort((a, b) => a.casterLevel - b.casterLevel);
     },
 
     async species(edition: SrdEdition): Promise<SrdSpeciesGroup[]> {

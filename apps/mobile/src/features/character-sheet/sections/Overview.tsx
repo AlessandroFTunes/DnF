@@ -24,7 +24,20 @@ export function VitalsPanel({ sheet }: { sheet: Sheet }) {
   const { character, derived, isOwner, save } = sheet;
   if (!character || !derived) return null;
   const combat = character.combat;
-  const hitDiceLeft = character.level - combat.hitDiceSpent;
+  const pools = derived.hitDice;
+
+  /** Descanso longo: em 2024 todos os dados de vida voltam; em 2014, metade do nível (mínimo 1), dos maiores primeiro. */
+  const recovered = () => {
+    if (character.edition === '2024') return {};
+    let left = Math.max(1, Math.floor(character.level / 2));
+    const spent: Record<string, number> = {};
+    for (const p of pools) {
+      const back = Math.min(p.spent, left);
+      left -= back;
+      if (p.spent - back > 0) spent[String(p.die)] = p.spent - back;
+    }
+    return spent;
+  };
 
   const longRest = () =>
     save(
@@ -33,8 +46,7 @@ export function VitalsPanel({ sheet }: { sheet: Sheet }) {
           hpCurrent: combat.hpMax,
           hpTemp: 0,
           deathSaves: { successes: 0, failures: 0 },
-          // Recupera metade dos dados de vida (mínimo 1).
-          hitDiceSpent: Math.max(0, combat.hitDiceSpent - Math.max(1, Math.floor(character.level / 2))),
+          hitDiceSpent: recovered(),
         },
         spellcasting: { slotsUsed: {}, pactSlotsUsed: 0 },
         featureUses: {},
@@ -46,13 +58,19 @@ export function VitalsPanel({ sheet }: { sheet: Sheet }) {
       }),
     );
 
-  /** Descanso curto: gasta um dado de vida (média + CON). */
-  const spendHitDie = () => {
-    const heal = Math.max(1, Math.floor(derived.hitDie / 2) + 1 + abilityModifier(derived.scores.con));
+  /** Descanso curto: gasta um dado de vida do tipo escolhido (média do dado + CON). */
+  const spendHitDie = (die: number) => {
+    const heal = Math.max(1, Math.floor(die / 2) + 1 + abilityModifier(derived.scores.con));
     const hpCurrent = Math.min(combat.hpMax, combat.hpCurrent + heal);
+    const hitDiceSpent = { ...combat.hitDiceSpent, [die]: (combat.hitDiceSpent[die] ?? 0) + 1 };
     void save(
-      { combat: { hpCurrent, hitDiceSpent: combat.hitDiceSpent + 1 } },
-      (c) => ({ ...c, combat: { ...c.combat, hpCurrent, hitDiceSpent: c.combat.hitDiceSpent + 1 } }),
+      // A Magia de Pacto volta no descanso curto.
+      { combat: { hpCurrent, hitDiceSpent }, spellcasting: { pactSlotsUsed: 0 } },
+      (c) => ({
+        ...c,
+        combat: { ...c.combat, hpCurrent, hitDiceSpent },
+        spellcasting: { ...c.spellcasting, pactSlotsUsed: 0 },
+      }),
     );
   };
 
@@ -64,11 +82,19 @@ export function VitalsPanel({ sheet }: { sheet: Sheet }) {
         onChange={(next) => save({ combat: next }, (c) => ({ ...c, combat: { ...c.combat, ...next } }))}
       />
       <Text style={[typography.caption, { color: theme.textMuted }]}>
-        Dados de vida: {hitDiceLeft}/{character.level} d{derived.hitDie}
+        Dados de vida: {pools.map((p) => `${p.total - p.spent}/${p.total} d${p.die}`).join(' · ')}
       </Text>
       {isOwner && (
         <View style={styles.row}>
-          <SmallButton icon="campfire" label="Descanso curto (1 DV)" onPress={spendHitDie} disabled={hitDiceLeft <= 0 || combat.hpCurrent >= combat.hpMax} />
+          {pools.map((p) => (
+            <SmallButton
+              key={p.die}
+              icon="campfire"
+              label={pools.length > 1 ? `Descanso curto (d${p.die})` : 'Descanso curto (1 DV)'}
+              onPress={() => spendHitDie(p.die)}
+              disabled={p.spent >= p.total || combat.hpCurrent >= combat.hpMax}
+            />
+          ))}
           <SmallButton icon="bed" label="Descanso longo" onPress={() => void longRest()} />
         </View>
       )}

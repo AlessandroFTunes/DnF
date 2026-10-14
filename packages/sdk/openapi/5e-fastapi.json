@@ -1963,6 +1963,81 @@
         }
       }
     },
+    "/api/v1/regras/multiclasse/espacos-magia": {
+      "get": {
+        "tags": [
+          "Regras"
+        ],
+        "summary": "Listar Espacos Magia Multiclasse",
+        "description": "Lista os espa\u00e7os de magia do conjurador multiclasse, ordenados por n\u00edvel de conjurador.",
+        "operationId": "listar_espacos_magia_multiclasse_api_v1_regras_multiclasse_espacos_magia_get",
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "N\u00famero da p\u00e1gina",
+              "default": 1,
+              "title": "Pagina"
+            },
+            "description": "N\u00famero da p\u00e1gina"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por p\u00e1gina",
+              "default": 20,
+              "title": "Limite"
+            },
+            "description": "Itens por p\u00e1gina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NivelConjuradorMulticlasse"
+                  },
+                  "title": "Response Listar Espacos Magia Multiclasse Api V1 Regras Multiclasse Espacos Magia Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Par\u00e2metro inv\u00e1lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno inesperado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaErro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/subclasses": {
       "get": {
         "tags": [
@@ -2691,6 +2766,14 @@
             "type": "array",
             "title": "Opcoes",
             "description": "Op\u00e7\u00f5es \u00e0 escolha dentro da caracter\u00edstica; vazia quando n\u00e3o h\u00e1"
+          },
+          "tabelas": {
+            "items": {
+              "$ref": "#/components/schemas/Tabela"
+            },
+            "type": "array",
+            "title": "Tabelas",
+            "description": "Tabelas do texto da caracter\u00edstica (ex.: Formas de Feras); vazia quando n\u00e3o h\u00e1"
           }
         },
         "type": "object",
@@ -2724,9 +2807,16 @@
             "description": "Descri\u00e7\u00e3o da classe"
           },
           "atributo_primario": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Atributo Primario",
-            "description": "Atributo prim\u00e1rio, como no livro (ex.: \"For\u00e7a\")"
+            "description": "Atributo prim\u00e1rio, como no livro (ex.: \"For\u00e7a\"); nulo quando o livro n\u00e3o o define"
           },
           "dado_vida": {
             "type": "string",
@@ -2751,10 +2841,27 @@
             "title": "Proficiencias Armas",
             "description": "Profici\u00eancias com armas, como no livro"
           },
+          "proficiencias_ferramentas": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proficiencias Ferramentas",
+            "description": "Profici\u00eancias com ferramentas, como no livro; nulo se a classe n\u00e3o tiver"
+          },
           "treinamento_armaduras": {
             "type": "string",
             "title": "Treinamento Armaduras",
             "description": "Treinamento com armadura, como no livro"
+          },
+          "equipamento_inicial": {
+            "type": "string",
+            "title": "Equipamento Inicial",
+            "description": "Equipamento inicial, como no livro"
           },
           "equipamento": {
             "items": {
@@ -2762,12 +2869,34 @@
             },
             "type": "array",
             "title": "Equipamento",
-            "description": "Op\u00e7\u00f5es de equipamento inicial, \u00e0 escolha"
+            "description": "Pacotes de equipamento inicial, \u00e0 escolha; vazia quando o livro n\u00e3o os apresenta em pacotes"
           },
           "multiclasse": {
             "type": "string",
             "title": "Multiclasse",
             "description": "O que se adquire ao entrar na classe como personagem multiclasse"
+          },
+          "multiclasse_regras": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MulticlasseRegras"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Regras de multiclasse estruturadas; nulo quando ainda n\u00e3o foram cadastradas"
+          },
+          "conjuracao": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Conjuracao"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Conjura\u00e7\u00e3o da classe; nulo se ela n\u00e3o conjura magias"
           },
           "progressao": {
             "items": {
@@ -2806,8 +2935,11 @@
           "proficiencias_pericias",
           "proficiencias_armas",
           "treinamento_armaduras",
+          "equipamento_inicial",
           "equipamento",
           "multiclasse",
+          "multiclasse_regras",
+          "conjuracao",
           "progressao",
           "caracteristicas",
           "subclasses"
@@ -2835,6 +2967,33 @@
         ],
         "title": "ColunaProgressao",
         "description": "Valor de uma coluna espec\u00edfica da classe na tabela de caracter\u00edsticas (ex.: F\u00farias)."
+      },
+      "Conjuracao": {
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "completa",
+              "meia",
+              "terco",
+              "pacto"
+            ],
+            "title": "Tipo",
+            "description": "N\u00edvel de conjurador na multiclasse: \"completa\" soma todos os n\u00edveis, \"meia\" a metade (arredondada para cima), \"terco\" um ter\u00e7o (arredondado para baixo); \"pacto\" (Bruxo) n\u00e3o soma, os espa\u00e7os de Magia de Pacto ficam \u00e0 parte"
+          },
+          "atributo": {
+            "type": "string",
+            "title": "Atributo",
+            "description": "Atributo de conjura\u00e7\u00e3o (ex.: \"Sabedoria\")"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo",
+          "atributo"
+        ],
+        "title": "Conjuracao",
+        "description": "Como a classe ou a subclasse entra na conta dos espa\u00e7os de magia de multiclasse."
       },
       "Criatura": {
         "properties": {
@@ -3099,6 +3258,30 @@
         ],
         "title": "DetalheValidacao",
         "description": "Problema encontrado em um par\u00e2metro da requisi\u00e7\u00e3o."
+      },
+      "EscolhaPericias": {
+        "properties": {
+          "quantidade": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Quantidade",
+            "description": "Quantas per\u00edcias escolher"
+          },
+          "opcoes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Opcoes",
+            "description": "Per\u00edcias entre as quais escolher; vazia quando vale qualquer per\u00edcia"
+          }
+        },
+        "type": "object",
+        "required": [
+          "quantidade"
+        ],
+        "title": "EscolhaPericias",
+        "description": "Per\u00edcias \u00e0 escolha ganhas ao entrar na classe como multiclasse."
       },
       "Especie": {
         "properties": {
@@ -3498,6 +3681,69 @@
         "title": "MagiasNivel",
         "description": "Linha da tabela de magias da subclasse (ex.: \"Magias de Dom\u00ednio da Guerra\")."
       },
+      "MulticlasseRegras": {
+        "properties": {
+          "requisitos": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Requisitos",
+            "description": "Atributos exigidos: basta cumprir uma das alternativas, e dentro de cada uma valem todos (ex.: Guerreiro [[\"For\u00e7a\"], [\"Destreza\"]], Monge [[\"Destreza\", \"Sabedoria\"]])"
+          },
+          "minimo": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Minimo",
+            "description": "Valor m\u00ednimo de cada atributo exigido (ex.: 13)"
+          },
+          "armas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Armas",
+            "description": "Categorias de arma ganhas, como em /equipamentos/armas (ex.: \"Marcial\")"
+          },
+          "armaduras": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Armaduras",
+            "description": "Categorias de armadura ganhas, como em /equipamentos/armaduras (ex.: \"Leve\", \"Escudo\")"
+          },
+          "ferramentas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ferramentas",
+            "description": "Ferramentas ganhas, como em /equipamentos/ferramentas; uma ferramenta com variantes (ex.: \"Instrumento Musical\") \u00e9 uma escolha entre elas"
+          },
+          "pericias": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EscolhaPericias"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per\u00edcias \u00e0 escolha; nulo se a multiclasse n\u00e3o d\u00e1 per\u00edcia"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requisitos",
+          "minimo"
+        ],
+        "title": "MulticlasseRegras",
+        "description": "Regras de multiclasse da classe, estruturadas a partir do texto de `multiclasse` e do cap\u00edtulo 2."
+      },
       "NivelClasse": {
         "properties": {
           "nivel": {
@@ -3545,6 +3791,37 @@
         ],
         "title": "NivelClasse",
         "description": "Linha da tabela \"Caracter\u00edsticas de <Classe>\" para um n\u00edvel."
+      },
+      "NivelConjuradorMulticlasse": {
+        "properties": {
+          "fonte": {
+            "$ref": "#/components/schemas/ResumoFonte",
+            "description": "Fonte do registro (livro ou homebrew)"
+          },
+          "nivel_conjurador": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Nivel Conjurador",
+            "description": "N\u00edvel de conjurador somado das classes (veja `conjuracao` em /classes)"
+          },
+          "espacos_magia": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Espacos Magia",
+            "description": "Espa\u00e7os de magia por c\u00edrculo, do 1\u00ba ao 9\u00ba (0 onde o livro mostra \"\u2014\")"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fonte",
+          "nivel_conjurador",
+          "espacos_magia"
+        ],
+        "title": "NivelConjuradorMulticlasse",
+        "description": "Linha da tabela \"Conjurador Multiclasse: Espa\u00e7os de Magia por C\u00edrculo de Magia\"."
       },
       "NivelOpcao": {
         "properties": {
@@ -3889,14 +4166,32 @@
             "description": "Nome da subclasse"
           },
           "subtitulo": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Subtitulo",
-            "description": "Subt\u00edtulo da subclasse, como no livro"
+            "description": "Subt\u00edtulo da subclasse, como no livro; nulo quando o livro n\u00e3o o traz"
           },
           "descricao": {
             "type": "string",
             "title": "Descricao",
             "description": "Descri\u00e7\u00e3o da subclasse"
+          },
+          "conjuracao": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Conjuracao"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Conjura\u00e7\u00e3o dada pela subclasse (ex.: Cavaleiro M\u00edstico); nulo se ela n\u00e3o d\u00e1"
           },
           "magias_preparadas": {
             "items": {
@@ -3905,6 +4200,14 @@
             "type": "array",
             "title": "Magias Preparadas",
             "description": "Magias sempre preparadas por n\u00edvel da classe; vazia quando a subclasse n\u00e3o tem"
+          },
+          "tabelas": {
+            "items": {
+              "$ref": "#/components/schemas/Tabela"
+            },
+            "type": "array",
+            "title": "Tabelas",
+            "description": "Tabelas da descri\u00e7\u00e3o da subclasse (ex.: Origem da Besta); vazia quando n\u00e3o h\u00e1"
           },
           "caracteristicas": {
             "items": {
@@ -3923,6 +4226,7 @@
           "nome",
           "subtitulo",
           "descricao",
+          "conjuracao",
           "magias_preparadas",
           "caracteristicas"
         ],

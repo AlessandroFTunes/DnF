@@ -18,6 +18,8 @@ import { useCharacterDraft, type CharacterDraft } from './draft';
 /** Atributos base (antes dos bônus), ou null se ainda não foram todos distribuídos. */
 export function baseScores(draft: CharacterDraft): AbilityScores | null {
   if (draft.abilityMethod === 'pointBuy') return draft.pointBuy;
+  if (draft.abilityMethod === 'manual')
+    return ABILITIES.every((a) => draft.manualScores[a] !== undefined) ? (draft.manualScores as AbilityScores) : null;
   if (!ABILITIES.every((a) => draft.abilityAssignment[a] !== undefined)) return null;
   return Object.fromEntries(
     ABILITIES.map((a) => [a, draft.abilityPool[draft.abilityAssignment[a]!]!]),

@@ -444,6 +444,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/regras/multiclasse/espacos-magia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar Espacos Magia Multiclasse
+         * @description Lista os espaços de magia do conjurador multiclasse, ordenados por nível de conjurador.
+         */
+        get: operations["listar_espacos_magia_multiclasse_api_v1_regras_multiclasse_espacos_magia_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/subclasses": {
         parameters: {
             query?: never;
@@ -765,6 +785,11 @@ export interface components {
              * @description Opções à escolha dentro da característica; vazia quando não há
              */
             opcoes?: components["schemas"]["OpcaoCaracteristica"][];
+            /**
+             * Tabelas
+             * @description Tabelas do texto da característica (ex.: Formas de Feras); vazia quando não há
+             */
+            tabelas?: components["schemas"]["Tabela"][];
         };
         /**
          * Classe
@@ -790,9 +815,9 @@ export interface components {
             descricao: string;
             /**
              * Atributo Primario
-             * @description Atributo primário, como no livro (ex.: "Força")
+             * @description Atributo primário, como no livro (ex.: "Força"); nulo quando o livro não o define
              */
-            atributo_primario: string;
+            atributo_primario: string | null;
             /**
              * Dado Vida
              * @description Dado de Ponto de Vida, como no livro (ex.: "D12 por nível de Bárbaro")
@@ -814,13 +839,23 @@ export interface components {
              */
             proficiencias_armas: string;
             /**
+             * Proficiencias Ferramentas
+             * @description Proficiências com ferramentas, como no livro; nulo se a classe não tiver
+             */
+            proficiencias_ferramentas?: string | null;
+            /**
              * Treinamento Armaduras
              * @description Treinamento com armadura, como no livro
              */
             treinamento_armaduras: string;
             /**
+             * Equipamento Inicial
+             * @description Equipamento inicial, como no livro
+             */
+            equipamento_inicial: string;
+            /**
              * Equipamento
-             * @description Opções de equipamento inicial, à escolha
+             * @description Pacotes de equipamento inicial, à escolha; vazia quando o livro não os apresenta em pacotes
              */
             equipamento: components["schemas"]["OpcaoEquipamentoClasse"][];
             /**
@@ -828,6 +863,10 @@ export interface components {
              * @description O que se adquire ao entrar na classe como personagem multiclasse
              */
             multiclasse: string;
+            /** @description Regras de multiclasse estruturadas; nulo quando ainda não foram cadastradas */
+            multiclasse_regras: components["schemas"]["MulticlasseRegras"] | null;
+            /** @description Conjuração da classe; nulo se ela não conjura magias */
+            conjuracao: components["schemas"]["Conjuracao"] | null;
             /**
              * Progressao
              * @description Tabela de características da classe, por nível
@@ -859,6 +898,23 @@ export interface components {
              * @description Valor da coluna no nível, como no livro (ex.: "+2")
              */
             valor: string;
+        };
+        /**
+         * Conjuracao
+         * @description Como a classe ou a subclasse entra na conta dos espaços de magia de multiclasse.
+         */
+        Conjuracao: {
+            /**
+             * Tipo
+             * @description Nível de conjurador na multiclasse: "completa" soma todos os níveis, "meia" a metade (arredondada para cima), "terco" um terço (arredondado para baixo); "pacto" (Bruxo) não soma, os espaços de Magia de Pacto ficam à parte
+             * @enum {string}
+             */
+            tipo: "completa" | "meia" | "terco" | "pacto";
+            /**
+             * Atributo
+             * @description Atributo de conjuração (ex.: "Sabedoria")
+             */
+            atributo: string;
         };
         /**
          * Criatura
@@ -1015,6 +1071,22 @@ export interface components {
              * @description Descrição do problema
              */
             mensagem: string;
+        };
+        /**
+         * EscolhaPericias
+         * @description Perícias à escolha ganhas ao entrar na classe como multiclasse.
+         */
+        EscolhaPericias: {
+            /**
+             * Quantidade
+             * @description Quantas perícias escolher
+             */
+            quantidade: number;
+            /**
+             * Opcoes
+             * @description Perícias entre as quais escolher; vazia quando vale qualquer perícia
+             */
+            opcoes?: string[];
         };
         /**
          * Especie
@@ -1299,6 +1371,39 @@ export interface components {
             magias: string[];
         };
         /**
+         * MulticlasseRegras
+         * @description Regras de multiclasse da classe, estruturadas a partir do texto de `multiclasse` e do capítulo 2.
+         */
+        MulticlasseRegras: {
+            /**
+             * Requisitos
+             * @description Atributos exigidos: basta cumprir uma das alternativas, e dentro de cada uma valem todos (ex.: Guerreiro [["Força"], ["Destreza"]], Monge [["Destreza", "Sabedoria"]])
+             */
+            requisitos: string[][];
+            /**
+             * Minimo
+             * @description Valor mínimo de cada atributo exigido (ex.: 13)
+             */
+            minimo: number;
+            /**
+             * Armas
+             * @description Categorias de arma ganhas, como em /equipamentos/armas (ex.: "Marcial")
+             */
+            armas?: string[];
+            /**
+             * Armaduras
+             * @description Categorias de armadura ganhas, como em /equipamentos/armaduras (ex.: "Leve", "Escudo")
+             */
+            armaduras?: string[];
+            /**
+             * Ferramentas
+             * @description Ferramentas ganhas, como em /equipamentos/ferramentas; uma ferramenta com variantes (ex.: "Instrumento Musical") é uma escolha entre elas
+             */
+            ferramentas?: string[];
+            /** @description Perícias à escolha; nulo se a multiclasse não dá perícia */
+            pericias?: components["schemas"]["EscolhaPericias"] | null;
+        };
+        /**
          * NivelClasse
          * @description Linha da tabela "Características de <Classe>" para um nível.
          */
@@ -1328,6 +1433,24 @@ export interface components {
              * @description Espaços de magia por círculo, a partir do 1º (0 onde o livro mostra "—"); vazia se não houver
              */
             espacos_magia?: number[];
+        };
+        /**
+         * NivelConjuradorMulticlasse
+         * @description Linha da tabela "Conjurador Multiclasse: Espaços de Magia por Círculo de Magia".
+         */
+        NivelConjuradorMulticlasse: {
+            /** @description Fonte do registro (livro ou homebrew) */
+            fonte: components["schemas"]["ResumoFonte"];
+            /**
+             * Nivel Conjurador
+             * @description Nível de conjurador somado das classes (veja `conjuracao` em /classes)
+             */
+            nivel_conjurador: number;
+            /**
+             * Espacos Magia
+             * @description Espaços de magia por círculo, do 1º ao 9º (0 onde o livro mostra "—")
+             */
+            espacos_magia: number[];
         };
         /**
          * NivelOpcao
@@ -1577,19 +1700,26 @@ export interface components {
             nome: string;
             /**
              * Subtitulo
-             * @description Subtítulo da subclasse, como no livro
+             * @description Subtítulo da subclasse, como no livro; nulo quando o livro não o traz
              */
-            subtitulo: string;
+            subtitulo: string | null;
             /**
              * Descricao
              * @description Descrição da subclasse
              */
             descricao: string;
+            /** @description Conjuração dada pela subclasse (ex.: Cavaleiro Místico); nulo se ela não dá */
+            conjuracao: components["schemas"]["Conjuracao"] | null;
             /**
              * Magias Preparadas
              * @description Magias sempre preparadas por nível da classe; vazia quando a subclasse não tem
              */
             magias_preparadas: components["schemas"]["MagiasNivel"][];
+            /**
+             * Tabelas
+             * @description Tabelas da descrição da subclasse (ex.: Origem da Besta); vazia quando não há
+             */
+            tabelas?: components["schemas"]["Tabela"][];
             /**
              * Caracteristicas
              * @description Características da subclasse, ordenadas por nível
@@ -2708,6 +2838,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RespostaErro"];
+                };
+            };
+            /** @description Parâmetro inválido */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespostaErro"];
+                };
+            };
+            /** @description Erro interno inesperado */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespostaErro"];
+                };
+            };
+        };
+    };
+    listar_espacos_magia_multiclasse_api_v1_regras_multiclasse_espacos_magia_get: {
+        parameters: {
+            query?: {
+                /** @description Número da página */
+                pagina?: number;
+                /** @description Itens por página */
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NivelConjuradorMulticlasse"][];
                 };
             };
             /** @description Parâmetro inválido */

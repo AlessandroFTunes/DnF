@@ -77,6 +77,44 @@ const SHATTER_MS = 1100;
 /** Número fixo por aresta (direção e giro dos estilhaços sempre iguais). */
 const fixed = (i: number, n: number) => (((i + 1) * 9301 + n * 49297) % 233280) / 233280;
 
+/** Multiclasse: um d20 vermelho e um azul se chocam e viram um roxo ("nova trilha"). */
+const RED = '#FF5A4E';
+const BLUE = '#5AA8FF';
+const PURPLE = '#C08CFF';
+const PURPLE_GLOW = '#9B5CFF';
+const COLLIDE_AT = 950;
+
+/** d20 em arame num ponto qualquer do SVG (usado pelos dados da multiclasse). */
+function wireDie(key: string, cx: number, cy: number, radius: number, yaw: number, pitch: number, color: string, alpha: number) {
+  const points = VERTICES.map((v) => {
+    const [x, y, z] = rotate(v, yaw, pitch);
+    const k = (radius / RADIUS) * (4.2 / (4.2 - z));
+    return { x: cx + x * k, y: cy + y * k, z };
+  });
+  return [
+    ...EDGES.map(([a, b], i) => {
+      const pa = points[a]!;
+      const pb = points[b]!;
+      const depth = ((pa.z + pb.z) / 2 / RADIUS + 1) / 2;
+      return (
+        <Line
+          key={`${key}-e${i}`}
+          x1={pa.x}
+          y1={pa.y}
+          x2={pb.x}
+          y2={pb.y}
+          stroke={color}
+          strokeWidth={0.6 + depth * 0.8}
+          strokeOpacity={(0.18 + depth * 0.82) * alpha}
+        />
+      );
+    }),
+    ...points.map((pt, i) => (
+      <Circle key={`${key}-v${i}`} cx={pt.x} cy={pt.y} r={1.4} fill={color} opacity={(((pt.z / RADIUS + 1) / 2) * 0.9 + 0.1) * alpha} />
+    )),
+  ];
+}
+
 /** Brilhos que estouram do dado quando ele pousa (posições fixas, sem sorteio a cada quadro). */
 const SPARKS = Array.from({ length: 22 }, (_, i) => {
   const angle = (i / 22) * Math.PI * 2 + ((i * 7) % 5) * 0.11;
@@ -85,9 +123,20 @@ const SPARKS = Array.from({ length: 22 }, (_, i) => {
 
 /**
  * Celebração de subir de nível: um d20 transparente de arestas finas gira e pousa, e aparece o que o
- * personagem ganhou.
+ * personagem ganhou. Ao entrar numa classe nova (`multiclass`), dois d20, um vermelho e um azul, se chocam e
+ * viram um roxo: "nova trilha alcançada".
  */
-export function LevelUpCelebration({ level, gains, onClose }: { level: number; gains: LevelUpGain[]; onClose: () => void }) {
+export function LevelUpCelebration({
+  level,
+  gains,
+  multiclass = false,
+  onClose,
+}: {
+  level: number;
+  gains: LevelUpGain[];
+  multiclass?: boolean;
+  onClose: () => void;
+}) {
   const { width, height } = useWindowDimensions();
   const [elapsed, setElapsed] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -111,8 +160,10 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
   // Com "reduzir movimento", tudo já aparece no lugar.
   const t = reduceMotion ? 60_000 : elapsed;
   const legendary = level >= LEGENDARY_LEVEL;
-  const titleAt = legendary ? SHATTER_AT + 450 : TITLE_AT;
-  const gainsAt = legendary ? SHATTER_AT + 850 : GAINS_AT;
+  // No nível 20 a lenda tem prioridade sobre a multiclasse.
+  const merge = multiclass && !legendary;
+  const titleAt = legendary ? SHATTER_AT + 450 : merge ? COLLIDE_AT + 450 : TITLE_AT;
+  const gainsAt = legendary ? SHATTER_AT + 850 : merge ? COLLIDE_AT + 850 : GAINS_AT;
   const done = t >= gainsAt + gains.length * GAIN_STEP_MS;
 
   const size = Math.min(width * 0.62, height * 0.36, 280);
@@ -149,6 +200,22 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
   const titleIn = easeOut(phase(t, titleAt, 450));
   const backdrop = easeOut(phase(t, 0, 400));
 
+  // Multiclasse: os dois dados entram pelos lados, acelerando e girando, e se chocam no centro; do choque
+  // nasce o roxo, que pousa e segue girando devagar.
+  const stageWidth = merge ? Math.min(width - spacing.xl * 2, size * 2.4) : size;
+  const mid = stageWidth / 2;
+  const approach = phase(t, 0, COLLIDE_AT) ** 2;
+  const collided = t >= COLLIDE_AT;
+  const incoming = 1 - phase(t, COLLIDE_AT, 140);
+  const travel = (stageWidth / 2 + size * 0.2) * (1 - approach) + size * 0.16;
+  const born = Math.max(0, easeOutBack(phase(t, COLLIDE_AT, 650)));
+  const mergeFlash = phase(t, COLLIDE_AT, 560);
+  const mergeBurst = phase(t, COLLIDE_AT, 900);
+  const sinceBorn = Math.max(0, t - COLLIDE_AT);
+  const purpleYaw = reduceMotion ? 0.6 : sinceBorn * 0.0006 + 5 * (1 - Math.exp(-sinceBorn / 420));
+  const purplePitch = reduceMotion ? 0.35 : 0.35 + Math.sin(sinceBorn / 1400) * 0.18 + 1.6 * Math.exp(-sinceBorn / 380);
+  const mergeNumber = easeOut(phase(t, COLLIDE_AT + 200, 450));
+
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <Pressable
@@ -156,6 +223,52 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
         onPress={() => done && onClose()}
         accessibilityLabel="Fechar celebração"
       >
+        {merge ? (
+          <View style={{ width: stageWidth, height: size }}>
+            <Svg width={stageWidth} height={size}>
+              <Defs>
+                <RadialGradient id="d20-glow-merge" cx="50%" cy="50%" r="50%">
+                  <Stop offset="0" stopColor={PURPLE_GLOW} stopOpacity={0.6} />
+                  <Stop offset="0.5" stopColor={PURPLE_GLOW} stopOpacity={0.14} />
+                  <Stop offset="1" stopColor={PURPLE_GLOW} stopOpacity={0} />
+                </RadialGradient>
+              </Defs>
+              {/* Gradiente com raio 0 derruba o Android: só desenha depois que o roxo nasce. */}
+              {born > 0 && (
+                <Circle cx={mid} cy={center} r={(size / 2) * born} fill="url(#d20-glow-merge)" opacity={0.45 + 0.2 * Math.sin(t / 500)} />
+              )}
+              {incoming > 0 && [
+                ...wireDie('red', mid - travel, center, size * 0.3, t * 0.012, 0.4 + t * 0.004, RED, incoming),
+                ...wireDie('blue', mid + travel, center, size * 0.3, -t * 0.011, 0.7 - t * 0.005, BLUE, incoming),
+              ]}
+              {/* Choque: clarão e faíscas vermelhas e azuis que viram roxas. */}
+              {mergeFlash > 0 && mergeFlash < 1 && (
+                <Circle cx={mid} cy={center} r={size * (0.1 + 0.55 * easeOut(mergeFlash))} fill="#F1E4FF" opacity={0.9 * (1 - mergeFlash)} />
+              )}
+              {collided &&
+                SPARKS.map((spark, i) => {
+                  const r = size * 0.1 + easeOut(mergeBurst) * size * 0.5 * spark.reach;
+                  const color = mergeBurst < 0.35 ? (i % 2 ? RED : BLUE) : PURPLE;
+                  return (
+                    <Circle
+                      key={`m-${i}`}
+                      cx={mid + Math.cos(spark.angle) * r}
+                      cy={center + Math.sin(spark.angle) * r}
+                      r={spark.size}
+                      fill={color}
+                      opacity={mergeBurst < 1 ? 1 - mergeBurst : 0}
+                    />
+                  );
+                })}
+              {born > 0 && wireDie('purple', mid, center, size * 0.42 * born, purpleYaw, purplePitch, PURPLE, clamp01(born))}
+            </Svg>
+            <View style={[StyleSheet.absoluteFill, styles.center, { pointerEvents: 'none' }]}>
+              <Text style={[styles.levelNumber, styles.mergeNumber, { opacity: mergeNumber, transform: [{ scale: 0.6 + 0.4 * mergeNumber }] }]}>
+                {level}
+              </Text>
+            </View>
+          </View>
+        ) : (
         <View style={{ width: size, height: size }}>
           <Svg width={size} height={size}>
             <Defs>
@@ -242,9 +355,12 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
             )}
           </View>
         </View>
+        )}
 
         <View style={[styles.text, { opacity: titleIn, transform: [{ translateY: (1 - titleIn) * 16 }] }]}>
-          <Text style={styles.overline}>{legendary ? 'Lenda alcançada' : 'Novo nível alcançado'}</Text>
+          <Text style={[styles.overline, merge && styles.mergeOverline]}>
+            {legendary ? 'Lenda alcançada' : merge ? 'Nova trilha alcançada' : 'Novo nível alcançado'}
+          </Text>
           <Text style={styles.title}>Nível {level}</Text>
           {gains.length > 0 && <Text style={styles.youGot}>Você ganhou:</Text>}
           {gains.map((gain, i) => {
@@ -296,6 +412,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     ...textGlow(GLOW, 18),
   },
+  mergeNumber: { ...textGlow(PURPLE_GLOW, 16) },
+  mergeOverline: { color: PURPLE },
   text: { alignItems: 'center', gap: spacing.xs, maxWidth: 420 },
   overline: { color: GOLD, fontFamily: fonts.displayMedium, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase' },
   title: { color: TEXT, fontFamily: fonts.display, fontSize: 30, letterSpacing: 1 },

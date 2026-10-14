@@ -19,6 +19,7 @@ const REJECTED_TOKEN_STATUS = new Set([401, 403, 404]);
  * sem rede (status 0), rate limit (429) ou erro no servidor (5xx) mantém o token local enquanto não expirar.
  */
 export async function refreshSession(): Promise<User.SessionInfo | null> {
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- PocketBase.use() devolve o cliente, não é hook do React.
   const pb = PocketBase.use();
   if (!pb.authStore.isValid) {
     pb.authStore.clear();
@@ -55,6 +56,7 @@ export const signUp = fn(
 );
 
 export function logout() {
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- PocketBase.use() devolve o cliente, não é hook do React.
   PocketBase.use().authStore.clear();
 }
 
@@ -80,6 +82,7 @@ function start() {
   started = true;
 
   // Login, logout, refresh e token rejeitado passam todos pelo authStore.
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- PocketBase.use() devolve o cliente, não é hook do React.
   PocketBase.use().authStore.onChange(() => {
     if (state.status !== 'loading') sync();
   });

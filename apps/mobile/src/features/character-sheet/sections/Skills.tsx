@@ -41,7 +41,7 @@ export function Skills({ data }: { data: SheetData }) {
         <Line label="Armas" value={data.klass.weaponTraining || '—'} />
         <Line
           label="Ferramentas"
-          value={[data.klass.toolTraining, data.bg?.tools].filter((t) => t && !/^none$/i.test(t)).join('; ') || '—'}
+          value={[data.klass.toolTraining, data.bg?.tools, ...data.tools].filter((t) => t && !/^none$/i.test(t)).join('; ') || '—'}
         />
         <Line label="Idiomas" value={data.knownLanguages.map((l) => tr.name(l)).join(', ') || '—'} />
       </Panel>
