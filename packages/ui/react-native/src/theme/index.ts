@@ -54,7 +54,7 @@ export const legendaryTheme: RpgTheme = {
 };
 
 /** Mistura duas cores hex (#RRGGBB); `t` = 0 é `from`, 1 é `to`. Outros formatos trocam na metade. */
-function mixColor(from: string, to: string, t: number): string {
+export function mixColor(from: string, to: string, t: number): string {
   if (!/^#[0-9a-f]{6}$/i.test(from) || !/^#[0-9a-f]{6}$/i.test(to)) return t < 0.5 ? from : to;
   const a = parseInt(from.slice(1), 16);
   const b = parseInt(to.slice(1), 16);

@@ -3,6 +3,7 @@
 export * from './components/AbilityScoreCard';
 export * from './components/Button';
 export * from './components/Chip';
+export * from './components/D20';
 export * from './components/DnfLogo';
 export * from './components/OptionCard';
 export * from './components/ProficiencyMark';

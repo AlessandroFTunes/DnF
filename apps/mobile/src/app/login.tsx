@@ -13,7 +13,8 @@ import {
 import { z } from 'zod';
 import { ClientResponseError } from '@dnf/core/pocketbase';
 import { User } from '@dnf/core/user';
-import { Button, DnfLogo, radius, shadow, spacing, typography, useRpgTheme, type RpgTheme } from '@dnf/ui-react-native';
+import { Button, D20, radius, shadow, spacing, typography, useRpgTheme, type RpgTheme } from '@dnf/ui-react-native';
+import { Welcome } from '../features/welcome/Welcome';
 import { useSession } from '../hooks/hook.session';
 
 type Mode = 'login' | 'signUp';
@@ -24,6 +25,8 @@ export default function Login() {
   const theme = useRpgTheme();
   const { login, signUp } = useSession();
   const [mode, setMode] = useState<Mode>('login');
+  // Primeiro a abertura (Welcome); o formulário só aparece depois de "Começar" ou "Entrar".
+  const [welcome, setWelcome] = useState(true);
   const [form, setForm] = useState({ name: '', email: '', password: '', passwordConfirm: '' });
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
@@ -57,13 +60,21 @@ export default function Login() {
     setErrors({});
   }
 
+  function open(next: Mode) {
+    setMode(next);
+    setErrors({});
+    setWelcome(false);
+  }
+
+  if (welcome) return <Welcome onStart={() => open('signUp')} onLogin={() => open('login')} />;
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.surface }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <DnfLogo size={120} style={styles.logo} />
+        <D20 size={96} float shadow style={styles.logo} />
         <Text style={[typography.body, styles.subtitle, { color: theme.textMuted }]}>
           {isSignUp ? 'Crie sua conta para começar a aventura' : 'Entre para continuar sua aventura'}
         </Text>
@@ -144,6 +155,10 @@ export default function Login() {
             style={styles.button}
           />
         </View>
+
+        <Pressable onPress={() => setWelcome(true)} disabled={busy} accessibilityRole="button" style={styles.switch}>
+          <Text style={{ color: theme.textMuted }}>Voltar</Text>
+        </Pressable>
 
         <Pressable onPress={switchMode} disabled={busy} accessibilityRole="button" style={styles.switch}>
           <Text style={{ color: theme.textMuted }}>

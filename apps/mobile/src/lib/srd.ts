@@ -13,7 +13,8 @@ import { PocketBase } from '@dnf/core/pocketbase';
  */
 // No celular (Expo Go), "localhost" é o próprio celular: troca pelo IP da máquina que roda o Metro.
 const devHost = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
-const directUrl = process.env.EXPO_PUBLIC_DND_API_URL?.replace('//localhost', `//${devHost}`);
+// Vazia conta como ausente (o `bun phone` zera para passar pelo PocketBase).
+const directUrl = process.env.EXPO_PUBLIC_DND_API_URL?.replace('//localhost', `//${devHost}`) || undefined;
 
 const client = createSrdClient({ baseUrl: directUrl ?? `${PocketBase.client().baseURL}/srd` });
 if (!directUrl) {

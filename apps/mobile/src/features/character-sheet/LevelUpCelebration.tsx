@@ -10,8 +10,17 @@ export interface LevelUpGain {
   kind: 'feature' | 'subclass' | 'asi' | 'hp';
 }
 
-const GOLD = '#FFD9A0';
-const GLOW = '#FFB45C';
+/** Cores do dado: arestas/brilhos (`edge`), aura (`glow`) e clarão da quebra (`flash`). */
+export interface DicePalette {
+  edge: string;
+  glow: string;
+  flash: string;
+}
+
+/** Subida de nível comum. */
+export const GOLD_DIE: DicePalette = { edge: '#FFD9A0', glow: '#FFB45C', flash: '#FFF6DD' };
+/** Nível 20 (herói lendário). */
+export const PURPLE_DIE: DicePalette = { edge: '#D9C2FF', glow: '#9B5CFF', flash: '#F1E8FF' };
 const TEXT = '#F3EBDD';
 const MUTED = '#9AA0BE';
 
@@ -87,7 +96,18 @@ const SPARKS = Array.from({ length: 22 }, (_, i) => {
  * Celebração de subir de nível: um d20 transparente de arestas finas gira e pousa, e aparece o que o
  * personagem ganhou.
  */
-export function LevelUpCelebration({ level, gains, onClose }: { level: number; gains: LevelUpGain[]; onClose: () => void }) {
+export function LevelUpCelebration({
+  level,
+  gains,
+  palette,
+  onClose,
+}: {
+  level: number;
+  gains: LevelUpGain[];
+  palette: DicePalette;
+  onClose: () => void;
+}) {
+  const { edge: EDGE, glow: GLOW } = palette;
   const { width, height } = useWindowDimensions();
   const [elapsed, setElapsed] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -176,7 +196,7 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
                   cx={center + Math.cos(spark.angle) * r}
                   cy={center + Math.sin(spark.angle) * r}
                   r={spark.size}
-                  fill={GOLD}
+                  fill={EDGE}
                   opacity={burst > 0 && burst < 1 ? 1 - burst : 0}
                 />
               );
@@ -184,7 +204,7 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
 
             {/* Clarão da quebra */}
             {flash > 0 && flash < 1 && (
-              <Circle cx={center} cy={center} r={size * (0.12 + 0.5 * easeOut(flash))} fill="#FFF6DD" opacity={0.9 * (1 - flash)} />
+              <Circle cx={center} cy={center} r={size * (0.12 + 0.5 * easeOut(flash))} fill={palette.flash} opacity={0.9 * (1 - flash)} />
             )}
 
             {/* Arestas de trás mais apagadas: o dado é transparente, dá para ver através dele. Ao quebrar,
@@ -214,7 +234,7 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
                   y1={y1}
                   x2={x2}
                   y2={y2}
-                  stroke={GOLD}
+                  stroke={EDGE}
                   strokeWidth={broken ? 1.6 : 0.6 + depth * 0.8}
                   strokeOpacity={broken ? 1 - shatter : (0.18 + depth * 0.82) * clamp01(scale)}
                 />
@@ -222,7 +242,7 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
             })}
             {!broken &&
               projected.map((p, i) => (
-                <Circle key={i} cx={p.x} cy={p.y} r={1.4} fill={GOLD} opacity={(((p.z / RADIUS + 1) / 2) * 0.9 + 0.1) * clamp01(scale)} />
+                <Circle key={i} cx={p.x} cy={p.y} r={1.4} fill={EDGE} opacity={(((p.z / RADIUS + 1) / 2) * 0.9 + 0.1) * clamp01(scale)} />
               ))}
           </Svg>
           <View style={[StyleSheet.absoluteFill, styles.center, { pointerEvents: 'none' }]}>
@@ -230,13 +250,14 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
               <Text
                 style={[
                   styles.hero,
+                  { color: EDGE, ...textGlow(GLOW, 18) },
                   { opacity: clamp01(heroIn * 1.6), transform: [{ scale: 0.15 + 0.85 * easeOutBack(heroIn) }] },
                 ]}
               >
                 {'HERÓI\nLENDÁRIO'}
               </Text>
             ) : (
-              <Text style={[styles.levelNumber, { opacity: numberIn, transform: [{ scale: 0.6 + 0.4 * numberIn }] }]}>
+              <Text style={[styles.levelNumber, textGlow(GLOW, 16), { opacity: numberIn, transform: [{ scale: 0.6 + 0.4 * numberIn }] }]}>
                 {level}
               </Text>
             )}
@@ -244,14 +265,14 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
         </View>
 
         <View style={[styles.text, { opacity: titleIn, transform: [{ translateY: (1 - titleIn) * 16 }] }]}>
-          <Text style={styles.overline}>{legendary ? 'Lenda alcançada' : 'Novo nível alcançado'}</Text>
+          <Text style={[styles.overline, { color: EDGE }]}>{legendary ? 'Lenda alcançada' : 'Novo nível alcançado'}</Text>
           <Text style={styles.title}>Nível {level}</Text>
           {gains.length > 0 && <Text style={styles.youGot}>Você ganhou:</Text>}
           {gains.map((gain, i) => {
             const show = easeOut(phase(t, gainsAt + i * GAIN_STEP_MS, 380));
             return (
               <View key={`${gain.kind}-${gain.label}`} style={[styles.gain, { opacity: show, transform: [{ translateY: (1 - show) * 10 }] }]}>
-                <MaterialCommunityIcons name={GAIN_ICON[gain.kind]} size={16} color={GOLD} />
+                <MaterialCommunityIcons name={GAIN_ICON[gain.kind]} size={16} color={EDGE} />
                 <Text style={styles.gainText}>{gain.label}</Text>
               </View>
             );
@@ -262,9 +283,9 @@ export function LevelUpCelebration({ level, gains, onClose }: { level: number; g
           onPress={onClose}
           disabled={!done}
           accessibilityRole="button"
-          style={[styles.button, { opacity: done ? 1 : 0 }]}
+          style={[styles.button, { borderColor: EDGE, opacity: done ? 1 : 0 }]}
         >
-          <Text style={styles.buttonText}>Continuar</Text>
+          <Text style={[styles.buttonText, { color: EDGE }]}>Continuar</Text>
         </Pressable>
       </Pressable>
     </Modal>
@@ -285,29 +306,25 @@ const styles = StyleSheet.create({
     color: TEXT,
     fontFamily: fonts.displayHeavy,
     fontSize: 44,
-    ...textGlow(GLOW, 16),
   },
   hero: {
-    color: GOLD,
     fontFamily: fonts.displayHeavy,
     fontSize: 30,
     lineHeight: 38,
     letterSpacing: 2,
     textAlign: 'center',
-    ...textGlow(GLOW, 18),
   },
   text: { alignItems: 'center', gap: spacing.xs, maxWidth: 420 },
-  overline: { color: GOLD, fontFamily: fonts.displayMedium, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase' },
+  overline: { fontFamily: fonts.displayMedium, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase' },
   title: { color: TEXT, fontFamily: fonts.display, fontSize: 30, letterSpacing: 1 },
   youGot: { color: MUTED, fontSize: 13, letterSpacing: 1, marginTop: spacing.sm, marginBottom: spacing.xs },
   gain: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   gainText: { color: TEXT, fontFamily: fonts.displayMedium, fontSize: 17, letterSpacing: 0.5, textAlign: 'center' },
   button: {
     borderWidth: 1,
-    borderColor: 'rgba(255,217,160,0.6)',
     borderRadius: radius.pill,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
   },
-  buttonText: { color: GOLD, fontFamily: fonts.displayMedium, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase' },
+  buttonText: { fontFamily: fonts.displayMedium, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase' },
 });
