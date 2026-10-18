@@ -112,6 +112,12 @@ export default function SpellsPage() {
         </Text>
       )}
 
+      {!loading && cantripsNeeded + spellsNeeded + featNeeded === 0 && (
+        <Text style={[typography.caption, { color: theme.textMuted }]}>
+          O compêndio ainda não tem magias de 1º círculo nem truques desta lista. Você pode continuar sem escolher.
+        </Text>
+      )}
+
       {loading ? (
         <LoadState status={failed ? 'error' : 'loading'} onRetry={() => failed?.retry()} />
       ) : tab === 'feat' ? (

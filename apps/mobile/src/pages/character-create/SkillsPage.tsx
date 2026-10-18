@@ -45,21 +45,31 @@ export default function SkillsPage() {
     ? (feats ?? []).filter((f) => /origem/i.test(f.type ?? '') && f.name !== MAGIC_INITIATE && f.name !== c.bg?.feat?.name)
     : [];
 
+  // Uma perícia pode valer para mais de um grupo (Guardião + Elfo: Intuição e Percepção). Ao marcar, as
+  // escolhas são redistribuídas entre os grupos para que nenhum fique sem opção.
+  const buckets: Bucket[] = [
+    { options: classOptions, capacity: classNeeded, current: draft.classSkills },
+    { options: bgOptions, capacity: bgNeeded, current: draft.backgroundSkills },
+    { options: speciesOptions, capacity: speciesNeeded, current: draft.speciesSkills },
+  ];
+  const chosen = [...draft.classSkills, ...draft.backgroundSkills, ...draft.speciesSkills];
+  const canAdd = (key: string) => !granted.has(key) && !chosen.includes(key) && !!assignSkills([...chosen, key], buckets);
+
   function toggleSkill(key: string) {
     if (granted.has(key)) return;
-    if (draft.classSkills.includes(key)) {
-      update({ classSkills: draft.classSkills.filter((k) => k !== key), expertise: draft.expertise.filter((k) => k !== key) });
-    } else if (draft.speciesSkills.includes(key)) {
-      update({ speciesSkills: draft.speciesSkills.filter((k) => k !== key), expertise: draft.expertise.filter((k) => k !== key) });
-    } else if (classOptions.includes(key) && draft.classSkills.length < classNeeded) {
-      update({ classSkills: [...draft.classSkills, key] });
-    } else if (draft.backgroundSkills.includes(key)) {
-      update({ backgroundSkills: draft.backgroundSkills.filter((k) => k !== key), expertise: draft.expertise.filter((k) => k !== key) });
-    } else if (bgOptions.includes(key) && draft.backgroundSkills.length < bgNeeded) {
-      update({ backgroundSkills: [...draft.backgroundSkills, key] });
-    } else if (speciesOptions.includes(key) && draft.speciesSkills.length < speciesNeeded) {
-      update({ speciesSkills: [...draft.speciesSkills, key] });
+    if (chosen.includes(key)) {
+      update({
+        classSkills: draft.classSkills.filter((k) => k !== key),
+        backgroundSkills: draft.backgroundSkills.filter((k) => k !== key),
+        speciesSkills: draft.speciesSkills.filter((k) => k !== key),
+        expertise: draft.expertise.filter((k) => k !== key),
+      });
+      return;
     }
+    const assigned = assignSkills([...chosen, key], buckets);
+    if (!assigned) return;
+    const [classSkills, backgroundSkills, speciesSkills] = assigned;
+    update({ classSkills, backgroundSkills, speciesSkills });
   }
 
   function toggleExpertise(key: string) {
@@ -116,12 +126,7 @@ export default function SkillsPage() {
             draft.classSkills.includes(skill.key) ||
             draft.speciesSkills.includes(skill.key) ||
             draft.backgroundSkills.includes(skill.key);
-          const selectable =
-            !isGranted &&
-            (isChosen ||
-              (classOptions.includes(skill.key) && draft.classSkills.length < classNeeded) ||
-              (bgOptions.includes(skill.key) && draft.backgroundSkills.length < bgNeeded) ||
-              (speciesOptions.includes(skill.key) && draft.speciesSkills.length < speciesNeeded));
+          const selectable = !isGranted && (isChosen || canAdd(skill.key));
           const level = draft.expertise.includes(skill.key) ? 'expertise' : proficient.has(skill.key) ? 'proficient' : undefined;
           const source = isGranted
             ? c.bg?.skills.includes(skill.key)
@@ -129,6 +134,8 @@ export default function SkillsPage() {
               : 'Espécie'
             : draft.backgroundSkills.includes(skill.key)
               ? 'Antecedente'
+              : draft.speciesSkills.includes(skill.key)
+              ? 'Espécie'
               : classOptions.includes(skill.key)
               ? 'Classe'
               : bgOptions.includes(skill.key)
@@ -217,6 +224,32 @@ export default function SkillsPage() {
       )}
     </StepScreen>
   );
+}
+
+interface Bucket {
+  options: string[];
+  capacity: number;
+  current: string[];
+}
+
+/** Distribui as perícias entre os grupos (cada um com suas opções e vagas); null se não couberem. */
+function assignSkills(keys: string[], buckets: Bucket[]): string[][] | null {
+  const result: string[][] = buckets.map(() => []);
+  function place(i: number): boolean {
+    if (i === keys.length) return true;
+    const key = keys[i]!;
+    // Tenta primeiro o grupo em que a perícia já está, para não mudar a origem à toa.
+    const order = buckets.map((_, b) => b).sort((a, b) => +buckets[b]!.current.includes(key) - +buckets[a]!.current.includes(key));
+    for (const b of order) {
+      const bucket = buckets[b]!;
+      if (!bucket.options.includes(key) || result[b]!.length >= bucket.capacity) continue;
+      result[b]!.push(key);
+      if (place(i + 1)) return true;
+      result[b]!.pop();
+    }
+    return false;
+  }
+  return place(0) ? result : null;
 }
 
 function Counter({ label, done, total }: { label: string; done: number; total: number }) {
