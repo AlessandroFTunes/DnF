@@ -563,7 +563,14 @@ function ProgressionView({ sheet, derived }: { sheet: Sheet; derived: SheetData 
         {!levelingUp && <Text style={styles.hint}>{multi ? `${hint} Arraste para os lados para ver as outras classes.` : hint}</Text>}
 
         {/* Uma árvore só: a classe original à direita e cada multiclasse ramificando para a esquerda. */}
-        <ScrollView ref={row} horizontal scrollEnabled={scrollable} showsHorizontalScrollIndicator={scrollable}>
+        {/* Na web, `scrollEnabled={false}` vira `touch-action: none` e o dedo na árvore não rola nem a página;
+            lá ela fica sempre ligada (sem conteúdo sobrando, não rola de lado mesmo). */}
+        <ScrollView
+          ref={row}
+          horizontal
+          scrollEnabled={scrollable || Platform.OS === 'web'}
+          showsHorizontalScrollIndicator={scrollable}
+        >
         <SkillTree
           sectionWidth={treeWidth}
           sections={sections}

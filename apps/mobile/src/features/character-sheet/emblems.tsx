@@ -6,7 +6,7 @@ import { fonts, useRpgTheme } from '@dnf/ui-react-native';
 /** Formas dos emblemas, desenhadas num quadro de 100×100. `cy` é a altura (no quadro) onde o número fica centrado. */
 export type EmblemShape = 'shield' | 'boot' | 'star' | 'd20' | 'stopwatch' | 'eye';
 
-const CENTER: Record<EmblemShape, number> = { shield: 46, boot: 56, star: 50, d20: 56, stopwatch: 58, eye: 52 };
+const CENTER: Record<EmblemShape, number> = { shield: 46, boot: 62, star: 50, d20: 56, stopwatch: 58, eye: 52 };
 
 function ShapeArt({ shape, fill, stroke }: { shape: EmblemShape; fill: string; stroke: string }): ReactNode {
   const line = { stroke, strokeWidth: 4, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
@@ -19,12 +19,18 @@ function ShapeArt({ shape, fill, stroke }: { shape: EmblemShape; fill: string; s
         </G>
       );
     case 'boot':
-      // Bota de lado, bico para a direita: cano com a dobra em cima e sola com salto.
+      // Bota de lado, bico para a direita: dobra do cano aberta em cima, tira no tornozelo, salto e sola separados.
       return (
         <G>
-          <Path d="M24 16 H58 V50 C66 55 80 59 88 63 C95 67 96 74 96 78 V84 H24 Z" fill={fill} {...line} />
-          <Path d="M18 5 H64 V17 H18 Z" fill={fill} {...line} />
-          <Path d="M24 84 H96 V91 H50 V95 H24 Z" fill={stroke} {...line} />
+          <Path
+            d="M27 18 H56 C55 30 55 40 58 46 C67 50 80 53 87 58 C93 63 95 70 93 76 C92 79 90 81 86 81 H23 C21 81 20 79 20 77 C20 62 24 46 25 30 Z"
+            fill={fill}
+            {...line}
+          />
+          <Path d="M19 6 H62 L58 19 H24 Z" fill={fill} {...line} />
+          <Path d="M24 42 C35 44 46 44 56 42" fill="none" {...line} strokeWidth={2.5} strokeOpacity={0.6} />
+          <Path d="M20 81 H38 V90 H22 C21 90 20 89 20 88 Z" fill={stroke} {...line} />
+          <Path d="M45 81 H90 C90 85 88 88 84 88 H45 Z" fill={stroke} {...line} />
         </G>
       );
     case 'star':
