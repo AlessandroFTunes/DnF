@@ -42,3 +42,5 @@ yarn-error.*
 dist-web/
 deploy/
 scripts/deploy-web.sh
+scripts/deploy.sh
+
