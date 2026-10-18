@@ -1,4 +1,4 @@
-import { featuresByLevel, type SrdClassDetail, type SrdClassFeature } from '@dnf/sdk/srd';
+import { featuresByLevel, isFightingStyleFeature, type SrdClassDetail, type SrdClassFeature } from '@dnf/sdk/srd';
 import { subclassOrigin } from '../../character-create/labels';
 import { tr } from '../../../lib/srd';
 import { NEBULAE, SKY } from './sky';
@@ -15,6 +15,8 @@ export interface StarData {
   desc: string;
   /** `hp`: estrela dos PV do próximo nível (só aparece subindo de nível). */
   kind: 'feature' | 'asi' | 'subclass' | 'hp';
+  /** Característica com escolha feita na própria estrela. */
+  choice?: 'fightingStyle';
 }
 
 /** Ramificação de uma subclasse que sai do tronco da classe. */
@@ -57,7 +59,8 @@ export function starsOf(cls: SrdClassDetail, asiLevels: number[], subclassAt: nu
         level: sorted[0]!,
         levels: sorted,
         desc: note ? `(${note}) ${tr.desc(feature)}` : tr.desc(feature),
-        kind: 'feature',
+        kind: 'feature' as const,
+        ...(isFightingStyleFeature(feature.name) ? { choice: 'fightingStyle' as const } : {}),
       };
     });
   for (const level of asiLevels) {

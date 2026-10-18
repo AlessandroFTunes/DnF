@@ -376,6 +376,19 @@ export interface SpellcastingRules {
 
 const CASTING_FEATURE = /^(conjura[çc][ãa]o|magia de pacto)$/i;
 
+/** "Estilo de Luta" / "Estilo de Luta Adicional" (Campeão): cada uma dá um talento de Estilo de Luta. */
+export const isFightingStyleFeature = (name: string) => /^estilo de luta( adicional)?$/i.test(name.trim());
+
+/** Talento da categoria Estilo de Luta (2024). */
+export const isFightingStyleFeat = (feat: { type: string | null }) => /estilo de luta/i.test(feat.type ?? '');
+
+/** Quantos estilos de luta a classe e a subclasse dão até o nível. */
+export function fightingStyleSlots(classes: (SrdClassDetail | null | undefined)[], level: number): number {
+  return classes
+    .flatMap((c) => c?.features ?? [])
+    .filter((f) => isFightingStyleFeature(f.name) && Math.min(...f.gained_at.map((g) => g.level)) <= level).length;
+}
+
 /** Característica que descreve a conjuração da classe ("Conjuração", "Magia de Pacto"). */
 export const isSpellcastingFeature = (name: string) => CASTING_FEATURE.test(name);
 

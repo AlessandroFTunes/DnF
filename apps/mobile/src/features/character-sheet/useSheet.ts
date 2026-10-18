@@ -11,6 +11,7 @@ import {
   classRules,
   hitDicePools,
   isBodyArmor,
+  isFightingStyleFeat,
   isShield,
   isWeaponProficient,
   multiclassProficiencies,
@@ -196,6 +197,7 @@ export function useSheet(id: string) {
     const passivePerception = 10 + (perception ? skillBonus(perception, scores, skillLevels.perception, pb) : 0);
 
     const feats = featsQ.status === 'ready' ? featsQ.data.filter((f) => character.featKeys.includes(f.key)) : [];
+    const fightingStyles = featsQ.status === 'ready' ? featsQ.data.filter(isFightingStyleFeat) : [];
     const casting = klass.spellcasting;
     // Espaços de magia de todas as classes (tabela de multiclasse se mais de uma conjura); Pacto à parte.
     const { slots, pact } = characterSpellSlots(
@@ -240,6 +242,8 @@ export function useSheet(id: string) {
       saves,
       passivePerception,
       feats,
+      /** Talentos de Estilo de Luta da edição (opções da estrela "Estilo de Luta"). */
+      fightingStyles,
       casting,
       castAbility,
       slots,

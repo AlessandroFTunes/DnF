@@ -1,6 +1,6 @@
 import { useContext, useMemo, useState } from 'react';
 import { abilityModifier, type Ability } from '@dnf/core/character';
-import { abilityIncreaseOf, featHitPointsPerLevel, featuresByLevel, type SrdClassFeature } from '@dnf/sdk/srd';
+import { abilityIncreaseOf, featHitPointsPerLevel, featuresByLevel, fightingStyleSlots, type SrdClassFeature } from '@dnf/sdk/srd';
 import { formatBonus } from '@dnf/ui-react-native';
 import { ABILITY_LABEL } from '../../character-create/labels';
 import type { LevelUpGain } from '../LevelUpCelebration';
@@ -19,6 +19,7 @@ export function useLevelUp(sheet: Sheet, derived: SheetData) {
   const [rolled, setRolled] = useState<number | null>(null);
   const [asiMode, setAsiModeState] = useState<'two' | 'oneOne'>('two');
   const [asiPicks, setAsiPicks] = useState<Ability[]>([]);
+  const [pendingStyle, setPendingStyle] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const next = character.level + 1;
@@ -31,9 +32,16 @@ export function useLevelUp(sheet: Sheet, derived: SheetData) {
   const choosing = active && !derived.subclass && next >= derived.subclassLevel && derived.subclasses.length > 0;
   const isAsi = active && derived.asiLevels.includes(next);
   const asiDone = !isAsi || asiPicks.length === (asiMode === 'two' ? 1 : 2);
+  // Estilo de Luta novo neste nível (Paladino/Guardião no 2, Campeão no 7): escolhido na estrela dele.
+  const subclassAfter = derived.subclass ?? derived.subclasses.find((s) => s.key === pendingSubclass) ?? null;
+  const choosingStyle =
+    active &&
+    derived.fightingStyles.length > 0 &&
+    fightingStyleSlots([derived.cls, subclassAfter], next) > fightingStyleSlots([derived.cls, derived.subclass], character.level);
   const missing = [
     ...(choosing && !pendingSubclass ? ['a subclasse'] : []),
     ...(isAsi && !asiDone ? ['o aumento de atributo'] : []),
+    ...(choosingStyle && !pendingStyle ? ['o estilo de luta'] : []),
     ...(gain === null ? ['os pontos de vida'] : []),
   ];
   const ready = active && missing.length === 0;
@@ -58,6 +66,7 @@ export function useLevelUp(sheet: Sheet, derived: SheetData) {
     setRolled(null);
     setAsiModeState('two');
     setAsiPicks([]);
+    setPendingStyle(null);
   };
 
   const setAsiMode = (mode: 'two' | 'oneOne') => {
@@ -88,6 +97,7 @@ export function useLevelUp(sheet: Sheet, derived: SheetData) {
     const saved = await sheet.save({
       classes: [{ ...current, level: next, subclassKey: pendingSubclass ?? current.subclassKey }],
       abilities,
+      ...(choosingStyle && pendingStyle ? { featKeys: [...character.featKeys, pendingStyle] } : {}),
       combat: { hpMax: character.combat.hpMax + gain, hpCurrent: character.combat.hpCurrent + gain },
     });
     setSaving(false);
@@ -103,8 +113,10 @@ export function useLevelUp(sheet: Sheet, derived: SheetData) {
       ...((subclass ? featuresByLevel(subclass).get(next) : undefined) ?? []),
       // Com a subclasse escolhida agora, ela aparece pelo nome no lugar de "Subclasse de X".
     ].filter((f: SrdClassFeature) => !(chosenSub && /^subclasse/i.test(f.name)));
+    const style = choosingStyle ? derived.fightingStyles.find((f) => f.key === pendingStyle) : undefined;
     const gains: LevelUpGain[] = [
       ...(chosenSub ? [{ label: tr.name(chosenSub), kind: 'subclass' as const }] : []),
+      ...(style ? [{ label: tr.name(style), kind: 'feature' as const }] : []),
       ...newFeatures.map((f) => ({ label: tr.name(f), kind: 'feature' as const })),
       // Característica que aumenta atributos (Campeão Primitivo: +4 FOR e CON) aparece também como aumento.
       ...newFeatures.flatMap((f) => {
@@ -143,6 +155,9 @@ export function useLevelUp(sheet: Sheet, derived: SheetData) {
     toggleAsi,
     pendingSubclass,
     setPendingSubclass,
+    choosingStyle,
+    pendingStyle,
+    setPendingStyle,
   };
 }
 

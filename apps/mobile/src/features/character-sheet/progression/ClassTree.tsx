@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ABILITIES } from '@dnf/core/character';
-import { plainText } from '@dnf/sdk/srd';
+import { fightingStyleSlots, plainText } from '@dnf/sdk/srd';
 import { Button, Chip, fonts, radius, spacing } from '@dnf/ui-react-native';
 import { ABILITY_LABEL } from '../../character-create/labels';
 import type { LevelUpGain } from '../LevelUpCelebration';
@@ -145,7 +145,13 @@ export function ClassTree({
               unlocked={selected.star.level <= level && (!selected.branch || selected.branch.sub.key === derived.subclass?.key)}
               onClose={() => setSelectedId(null)}
             >
-              <Choices entry={selected} up={up} derived={derived} />
+              <Choices
+                entry={selected}
+                up={up}
+                sheet={sheet}
+                derived={derived}
+                unlocked={selected.star.level <= level && (!selected.branch || selected.branch.sub.key === derived.subclass?.key)}
+              />
             </StarCard>
           )
         }
@@ -179,9 +185,26 @@ function ConfirmBar({ up, hint, onCancel, onConfirm }: { up: LevelUp; hint: stri
   );
 }
 
-/** Escolhas da subida de nível dentro do painel da estrela (PV, atributo ou subclasse). */
-function Choices({ entry, up, derived }: { entry: TreeEntry; up: LevelUp; derived: SheetData }) {
+/** Escolhas dentro do painel da estrela: PV, atributo e subclasse (subindo de nível) e Estilo de Luta. */
+function Choices({
+  entry,
+  up,
+  sheet,
+  derived,
+  unlocked,
+}: {
+  entry: TreeEntry;
+  up: LevelUp;
+  sheet: Sheet;
+  derived: SheetData;
+  unlocked: boolean;
+}) {
   const { star, branch } = entry;
+  if (star.choice === 'fightingStyle') {
+    if (up.choosingStyle && star.level === up.next) return <FightingStyleChoice up={up} sheet={sheet} derived={derived} />;
+    if (unlocked && sheet.isOwner && !up.active) return <FightingStyleChoice sheet={sheet} derived={derived} />;
+    return null;
+  }
   if (star.kind === 'hp') {
     return (
       <View style={styles.chips}>
@@ -224,6 +247,59 @@ function Choices({ entry, up, derived }: { entry: TreeEntry; up: LevelUp; derive
     );
   }
   return null;
+}
+
+/**
+ * Talentos de Estilo de Luta. Subindo de nível (`up`), a escolha fica pendente até confirmar; fora disso,
+ * tocar já salva (troca o estilo, ou completa um que ficou sem escolher).
+ */
+function FightingStyleChoice({ up, sheet, derived }: { up?: LevelUp; sheet: Sheet; derived: SheetData }) {
+  const character = sheet.character!;
+  const options = derived.fightingStyles;
+  const owned = character.featKeys.filter((k) => options.some((f) => f.key === k));
+  const slots = fightingStyleSlots([derived.cls, derived.subclass], character.level);
+  const picked = up ? up.pendingStyle : null;
+  const focusKey = picked ?? owned.at(-1) ?? null;
+  const focus = options.find((f) => f.key === focusKey);
+
+  if (options.length === 0) return <Text style={[styles.cardNote, { color: SKY.muted }]}>Os talentos de Estilo de Luta ainda não estão no compêndio.</Text>;
+
+  const saveStyles = (keys: string[]) => {
+    const featKeys = [...character.featKeys.filter((k) => !owned.includes(k)), ...keys];
+    void sheet.save({ featKeys }, (c) => ({ ...c, featKeys }));
+  };
+
+  function toggle(key: string) {
+    if (up) return up.setPendingStyle(up.pendingStyle === key ? null : key);
+    if (owned.includes(key)) return saveStyles(owned.filter((k) => k !== key));
+    // Com as vagas cheias, a escolha troca o último estilo (com uma vaga só, é a troca do estilo).
+    saveStyles(owned.length < slots ? [...owned, key] : [...owned.slice(0, slots - 1), key]);
+  }
+
+  return (
+    <>
+      <Text style={[styles.cardNote, { color: SKY.star }]}>
+        {up
+          ? 'Escolha o estilo de luta deste nível.'
+          : owned.length < slots
+            ? `Escolha ${slots - owned.length === 1 ? 'um estilo' : `${slots - owned.length} estilos`} de luta.`
+            : 'Toque em outro estilo para trocar.'}
+      </Text>
+      <View style={styles.chips}>
+        {options
+          // Subindo de nível, um estilo que o personagem já tem não pode ser escolhido de novo.
+          .filter((f) => !up || !owned.includes(f.key))
+          .map((f) => (
+            <Chip key={f.key} label={tr.name(f)} selected={up ? picked === f.key : owned.includes(f.key)} onPress={() => toggle(f.key)} />
+          ))}
+      </View>
+      {focus && (
+        <Text style={styles.cardText}>
+          {[tr.desc(focus), ...focus.benefits.map((b, i) => tr.field(focus.key, `benefit:${i}`, b.desc))].filter(Boolean).map(plainText).join('\n')}
+        </Text>
+      )}
+    </>
+  );
 }
 
 /** Painel da estrela tocada: aparece ao lado dela, com a descrição e (subindo de nível) a escolha. */
