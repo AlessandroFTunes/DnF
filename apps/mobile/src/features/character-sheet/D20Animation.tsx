@@ -196,6 +196,23 @@ function canvasFor(gl: ExpoWebGLRenderingContext) {
 }
 
 /**
+ * No nativo o `WebGL2RenderingContext` do expo-gl herda do `WebGLRenderingContext`, e o construtor do
+ * three (r163+) recusa qualquer `instanceof WebGLRenderingContext` como WebGL 1 e derruba o app. A classe
+ * some só durante o construtor, que é o único lugar do three que faz essa checagem.
+ */
+function withoutWebGL1Check<T>(create: () => T): T {
+  if (Platform.OS === 'web') return create();
+  const global = globalThis as { WebGLRenderingContext?: unknown };
+  const webgl1 = global.WebGLRenderingContext;
+  global.WebGLRenderingContext = undefined;
+  try {
+    return create();
+  } finally {
+    global.WebGLRenderingContext = webgl1;
+  }
+}
+
+/**
  * Monta a cena e anima quadro a quadro no GL, sem passar pelo React. Devolve a função que para e libera tudo.
  */
 function start(gl: ExpoWebGLRenderingContext, variant: D20Variant, stageWidth: number, size: number, reduceMotion: boolean) {
@@ -204,7 +221,9 @@ function start(gl: ExpoWebGLRenderingContext, variant: D20Variant, stageWidth: n
   // Pixels do buffer por ponto da tela (espessura das linhas e dos pontos).
   const dpr = height / size;
 
-  const renderer = new THREE.WebGLRenderer({ canvas: canvasFor(gl), context: gl as unknown as WebGL2RenderingContext, antialias: true, alpha: true });
+  const renderer = withoutWebGL1Check(
+    () => new THREE.WebGLRenderer({ canvas: canvasFor(gl), context: gl as unknown as WebGL2RenderingContext, antialias: true, alpha: true }),
+  );
   renderer.setPixelRatio(1);
   renderer.setSize(width, height, false);
   renderer.setClearColor(0x000000, 0);
@@ -475,7 +494,13 @@ export function D20Animation({
         style={StyleSheet.absoluteFill}
         onContextCreate={(gl) => {
           stop.current?.();
-          stop.current = start(gl, variant, width, size, reduceMotion);
+          // Erro no GL não derruba o app: a celebração segue só com a aura e os textos.
+          try {
+            stop.current = start(gl, variant, width, size, reduceMotion);
+          } catch (error) {
+            stop.current = null;
+            console.warn('[D20Animation]', error);
+          }
         }}
       />
     </View>
