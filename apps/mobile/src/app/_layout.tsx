@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Cinzel_600SemiBold, Cinzel_700Bold, Cinzel_800ExtraBold } from '@expo-google-fonts/cinzel';
-import { DnfSpinner, fonts, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { fonts, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { useSession } from '../hooks/hook.session';
 import { prefetchSrd } from '../lib/srd';
 
@@ -13,8 +13,9 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ duration: 250, fade: true });
 const compendiumReady = prefetchSrd();
 
-/** Mesmo `imageWidth` da splash (app.json): a troca da splash para a animação não pula. */
+/** Mesmo `imageWidth` e imagem da splash (app.json): a troca da splash para a animação não pula. */
 const SPLASH_IMAGE_WIDTH = 200;
+const SPLASH_IMAGE = require('../../assets/splash-icon-dark.png');
 
 export default function RootLayout() {
   const { status } = useSession();
@@ -37,7 +38,7 @@ export default function RootLayout() {
   if (status === 'loading' || (!fontsLoaded && !fontError) || !compendium) {
     return (
       <View style={[styles.opening, { backgroundColor: theme.surface }]}>
-        <DnfSpinner size={SPLASH_IMAGE_WIDTH} withSwords />
+        <OpeningDie />
         <Text style={[typography.caption, styles.openingLabel, { color: theme.textMuted }]}>Abrindo o compêndio…</Text>
       </View>
     );
@@ -64,6 +65,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="character/new" options={{ headerShown: false }} />
           <Stack.Screen name="character/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="mesa/index" options={{ headerShown: false }} />
           <Stack.Screen name="mesa/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="mesa/new" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="mesa/join" options={{ headerShown: false, presentation: 'modal' }} />
@@ -71,6 +73,42 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="light" />
     </>
+  );
+}
+
+/** O dado da splash, no mesmo lugar e tamanho, respirando e balançando de leve enquanto o app abre. */
+function OpeningDie() {
+  const [t] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    let running: Animated.CompositeAnimation | undefined;
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+      if (cancelled || reduce) return;
+      const half = { duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== 'web' };
+      running = Animated.loop(Animated.sequence([Animated.timing(t, { toValue: 1, ...half }), Animated.timing(t, { toValue: 0, ...half })]));
+      running.start();
+    });
+    return () => {
+      cancelled = true;
+      running?.stop();
+    };
+  }, [t]);
+
+  return (
+    <Animated.Image
+      source={SPLASH_IMAGE}
+      accessibilityRole="progressbar"
+      accessibilityLabel="Carregando"
+      style={{
+        width: SPLASH_IMAGE_WIDTH,
+        height: SPLASH_IMAGE_WIDTH,
+        transform: [
+          { scale: t.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) },
+          { rotate: t.interpolate({ inputRange: [0, 1], outputRange: ['-4deg', '4deg'] }) },
+        ],
+      }}
+    />
   );
 }
 

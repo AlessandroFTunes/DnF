@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "expo": "cd apps/mobile && bun expo",
+    "dev": "cd apps/mobile && bun run dev",
     "typecheck": "bun run --filter '*' typecheck"
   },
   "devDependencies": {

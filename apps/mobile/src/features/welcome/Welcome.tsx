@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StartSheet } from './StartSheet';
-import { Button, D20, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { Button, D20, DnfLogo, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 
 type Icon = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -190,10 +190,7 @@ export function Welcome({ onEmail }: WelcomeProps) {
           ]}
           onLayout={(e) => setTextWidth(e.nativeEvent.layout.width)}
         >
-          <View style={styles.brand}>
-            <D20 size={22} value={null} />
-            <Text style={[styles.brandName, { color: theme.textMuted }]}>DnF</Text>
-          </View>
+          <DnfLogo size={170} style={styles.logo} />
           <Text style={[typography.hero, styles.centered, { color: theme.text }]}>Grandes aventuras</Text>
           {textWidth > 0 && (
             <GradientText width={textWidth} from={theme.accent} to="#E8B417">
@@ -284,8 +281,7 @@ const styles = StyleSheet.create({
     maxWidth: 480,
     alignSelf: 'center',
   },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
-  brandName: { fontFamily: fonts.displayHeavy, fontSize: 22, letterSpacing: 2 },
+  logo: { marginBottom: spacing.sm },
   centered: { textAlign: 'center' },
   start: { alignSelf: 'stretch', borderRadius: radius.pill, marginTop: spacing.xl, minHeight: 56 },
 });

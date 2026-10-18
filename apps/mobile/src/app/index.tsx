@@ -1,293 +1,329 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Character } from '@dnf/core/character';
-import { Mesa } from '@dnf/core/mesa';
-import { Button, DnfLogo, DnfSpinner, radius, type RpgTheme, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { Button, D20, DnfLogo, DnfSpinner, fonts, mixColor, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { classIcon } from '../features/character-create/labels';
+import { HeroArt } from '../features/home/HeroArt';
 import { useSession } from '../hooks/hook.session';
 import { srd, tr, useSrd } from '../lib/srd';
 
-type Tab = 'characters' | 'tables';
-type Load<T> = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: T[] };
+type Load = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Character.Info[] };
 
+/** Lado dos blocos de personagem; a curva do painel passa na metade da primeira fileira. */
+const TILE = 104;
+/** Altura da curva no topo do painel. */
+const ARC = 32;
+
+/** Cor de cada personagem (estável pelo id), como os perfis coloridos de um app de streaming. */
+const TILE_COLORS = ['#C8191E', '#8F4BC9', '#3FA3B8', '#E8822E', '#4B7BE5', '#2F8F5B', '#C2477E', '#B8860B'];
+
+function tileColor(id: string): string {
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return TILE_COLORS[h % TILE_COLORS.length] ?? TILE_COLORS[0]!;
+}
+
+/** Início: nav para as mesas em cima, a arte do grupo no meio e os personagens embaixo. */
 export default function Home() {
   const theme = useRpgTheme();
   const router = useRouter();
   const session = useSession();
-  const [tab, setTab] = useState<Tab>('characters');
-  const [characters, setCharacters] = useState<Load<Character.Info>>({ status: 'loading' });
-  const [tables, setTables] = useState<Load<Mesa.Info>>({ status: 'loading' });
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const [characters, setCharacters] = useState<Load>({ status: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchAll = useCallback(async () => {
-    const keep = <T,>(current: Load<T>): Load<T> => (current.status === 'ready' ? current : { status: 'error' });
-    await Promise.all([
-      Character.list({ pageSize: 100 }).then(
-        (page) => setCharacters({ status: 'ready', data: page.data }),
-        () => setCharacters(keep),
-      ),
-      Mesa.list({ pageSize: 100 }).then(
-        (page) => setTables({ status: 'ready', data: page.data }),
-        () => setTables(keep),
-      ),
-    ]);
+  const fetchCharacters = useCallback(async () => {
+    await Character.list({ pageSize: 100 }).then(
+      (page) => setCharacters({ status: 'ready', data: page.data }),
+      () => setCharacters((current) => (current.status === 'ready' ? current : { status: 'error' })),
+    );
   }, []);
 
-  // Recarrega ao voltar para a tela (ex.: depois de criar um personagem ou entrar numa mesa).
+  // Recarrega ao voltar para a tela (ex.: depois de criar um personagem).
   useFocusEffect(
     useCallback(() => {
-      void fetchAll();
-    }, [fetchAll]),
+      void fetchCharacters();
+    }, [fetchCharacters]),
   );
 
   async function refresh() {
     setRefreshing(true);
-    await fetchAll();
+    await fetchCharacters();
     setRefreshing(false);
   }
 
-  const userID = session.status === 'signedIn' ? session.session.userID : null;
   const firstName = session.status === 'signedIn' ? session.session.user?.name?.split(' ')[0] : undefined;
-  const load = tab === 'characters' ? characters : tables;
+  // A arte ocupa mais da metade da tela, como o pôster de um app de streaming; na web não passa de 600 px.
+  const heroHeight = Math.min(Math.max(height * 0.56, 320), 600);
+  const panelColor = mixColor(theme.surfaceRaised, theme.borderStrong, 0.18);
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.surface }]}>
-      <View style={styles.header}>
-        <DnfLogo size={40} showName={false} animated={false} />
-        <View style={styles.greeting}>
-          <Text style={[typography.caption, { color: theme.textMuted }]}>Bem-vindo de volta</Text>
-          <Text style={[typography.heading, { color: theme.text }]} numberOfLines={1}>
-            {firstName ?? 'Aventureiro'}
-          </Text>
+    <View style={[styles.screen, { backgroundColor: theme.surface }]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.accent} />}
+      >
+        <HeroArt height={heroHeight} />
+
+        <View style={styles.heading}>
+          <Text style={[typography.caption, { color: theme.textMuted }]}>Bem-vindo de volta, {firstName ?? 'aventureiro'}</Text>
+          <Text style={[typography.heading, { color: theme.text }]}>Escolha seu personagem</Text>
         </View>
-        <Pressable onPress={session.logout} accessibilityRole="button" hitSlop={8} style={styles.logout}>
-          <Text style={{ color: theme.textMuted, fontWeight: '600' }}>Sair</Text>
-        </Pressable>
+
+        <View style={[styles.panel, { paddingBottom: insets.bottom + spacing.xl }]}>
+          {/* Fundo do painel com a curva em cima, passando atrás da primeira fileira; some no fundo lá embaixo. */}
+          <Svg style={[styles.panelFill, { top: TILE / 2 }]} width="100%" height="100%" preserveAspectRatio="none" pointerEvents="none">
+            <Defs>
+              <LinearGradient id="home-panel" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={panelColor} />
+                <Stop offset="0.7" stopColor={theme.surface} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#home-panel)" />
+          </Svg>
+          <Svg
+            style={[styles.arc, { top: TILE / 2 - ARC }]}
+            width="100%"
+            height={ARC + 1}
+            viewBox={`0 0 100 ${ARC + 1}`}
+            preserveAspectRatio="none"
+            pointerEvents="none"
+          >
+            <Path d={`M0 ${ARC + 1} L0 ${ARC} Q50 ${-ARC} 100 ${ARC} L100 ${ARC + 1} Z`} fill={panelColor} />
+            <Path
+              d={`M0 ${ARC} Q50 ${-ARC} 100 ${ARC}`}
+              fill="none"
+              stroke={theme.borderStrong}
+              strokeOpacity={0.7}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          </Svg>
+
+          {characters.status === 'loading' && (
+            <View style={styles.state}>
+              <DnfSpinner size={56} />
+            </View>
+          )}
+
+          {characters.status === 'error' && (
+            <View style={[styles.state, styles.stateBelowArc]}>
+              <Text style={[typography.heading, styles.centered, { color: theme.text }]}>Não deu para carregar</Text>
+              <Text style={[typography.body, styles.centered, { color: theme.textMuted }]}>Confira sua conexão e tente de novo.</Text>
+              <Button label="Tentar de novo" variant="secondary" onPress={fetchCharacters} />
+            </View>
+          )}
+
+          {characters.status === 'ready' && (
+            <>
+              <View style={styles.grid}>
+                {characters.data.map((c) => (
+                  <CharacterTile key={c.id} character={c} onPress={() => router.push(`/character/${c.id}`)} />
+                ))}
+                <NewTile onPress={() => router.push('/character/new')} />
+              </View>
+              {characters.data.length === 0 && (
+                <Text style={[typography.body, styles.centered, styles.hint, { color: theme.textMuted }]}>
+                  Crie seu primeiro herói e comece a aventura.
+                </Text>
+              )}
+            </>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Nav por cima da arte. */}
+      <View style={[styles.nav, { paddingTop: insets.top + spacing.sm }]} pointerEvents="box-none">
+        <DnfLogo size={84} animated={false} />
+        <View style={styles.navActions}>
+          <Pressable
+            onPress={() => router.push('/mesa')}
+            accessibilityRole="button"
+            accessibilityLabel="Mesas"
+            style={({ pressed }) => [styles.navPill, { borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}
+          >
+            <MaterialCommunityIcons name="castle" size={18} color={theme.gold} />
+            <Text style={[typography.bodyStrong, { color: theme.text }]}>Mesas</Text>
+          </Pressable>
+          <Pressable
+            onPress={session.logout}
+            accessibilityRole="button"
+            accessibilityLabel="Sair"
+            hitSlop={8}
+            style={({ pressed }) => [styles.navIcon, { borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}
+          >
+            <MaterialCommunityIcons name="logout" size={18} color={theme.textMuted} />
+          </Pressable>
+        </View>
       </View>
-
-      <View style={[styles.tabs, { backgroundColor: theme.surfaceSunken, borderColor: theme.border }]} accessibilityRole="tablist">
-        {(
-          [
-            { id: 'characters', label: 'Personagens', icon: 'account-group-outline' },
-            { id: 'tables', label: 'Mesas', icon: 'castle' },
-          ] as const
-        ).map((t) => {
-          const selected = tab === t.id;
-          return (
-            <Pressable
-              key={t.id}
-              onPress={() => setTab(t.id)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected }}
-              style={[styles.tab, selected && [{ backgroundColor: theme.surfaceRaised }, shadow(theme, 1)]]}
-            >
-              <MaterialCommunityIcons name={t.icon} size={18} color={selected ? theme.accent : theme.textMuted} />
-              <Text style={[typography.bodyStrong, { color: selected ? theme.accent : theme.textMuted }]}>{t.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {load.status === 'loading' && (
-        <View style={styles.center}>
-          <DnfSpinner size={56} />
-        </View>
-      )}
-
-      {load.status === 'error' && (
-        <View style={styles.center}>
-          <Text style={[typography.heading, styles.centered, { color: theme.text }]}>Não deu para carregar</Text>
-          <Text style={[typography.body, styles.centered, { color: theme.textMuted }]}>Confira sua conexão e tente de novo.</Text>
-          <Button label="Tentar de novo" variant="secondary" onPress={fetchAll} />
-        </View>
-      )}
-
-      {tab === 'characters' && characters.status === 'ready' && (
-        <>
-          <FlatList
-            data={characters.data}
-            keyExtractor={(c) => c.id}
-            contentContainerStyle={[styles.list, characters.data.length === 0 && styles.flexGrow]}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.accent} />}
-            ListHeaderComponent={
-              characters.data.length ? (
-                <Text style={[typography.overline, { color: theme.textMuted }]}>Seus personagens · {characters.data.length}</Text>
-              ) : null
-            }
-            ListEmptyComponent={
-              <Empty
-                logo
-                title="Nenhum personagem ainda"
-                text="Crie seu primeiro herói e comece a aventura."
-              />
-            }
-            renderItem={({ item }) => (
-              <CharacterCard theme={theme} character={item} onPress={() => router.push(`/character/${item.id}`)} />
-            )}
-          />
-          <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.surface }]}>
-            <Button
-              label="Criar personagem"
-              onPress={() => router.push('/character/new')}
-              icon={(color) => <MaterialCommunityIcons name="plus" size={20} color={color} />}
-            />
-          </View>
-        </>
-      )}
-
-      {tab === 'tables' && tables.status === 'ready' && (
-        <>
-          <FlatList
-            data={tables.data}
-            keyExtractor={(m) => m.id}
-            contentContainerStyle={[styles.list, tables.data.length === 0 && styles.flexGrow]}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.accent} />}
-            ListHeaderComponent={
-              tables.data.length ? (
-                <Text style={[typography.overline, { color: theme.textMuted }]}>Suas mesas · {tables.data.length}</Text>
-              ) : null
-            }
-            ListEmptyComponent={
-              <Empty
-                icon="castle"
-                title="Nenhuma mesa ainda"
-                text="Peça o código ao mestre para entrar, ou crie uma mesa e chame seus amigos."
-              />
-            }
-            renderItem={({ item }) => (
-              <MesaCard theme={theme} mesa={item} isGM={item.gmID === userID} onPress={() => router.push(`/mesa/${item.id}`)} />
-            )}
-          />
-          <View style={[styles.footer, styles.footerRow, { borderTopColor: theme.border, backgroundColor: theme.surface }]}>
-            <Button
-              label="Entrar com código"
-              onPress={() => router.push('/mesa/join')}
-              style={styles.flex}
-              icon={(color) => <MaterialCommunityIcons name="door-open" size={20} color={color} />}
-            />
-            <Button
-              label="Criar mesa"
-              variant="secondary"
-              onPress={() => router.push('/mesa/new')}
-              icon={(color) => <MaterialCommunityIcons name="crown-outline" size={20} color={color} />}
-            />
-          </View>
-        </>
-      )}
-    </SafeAreaView>
-  );
-}
-
-function Empty({ title, text, logo, icon }: { title: string; text: string; logo?: boolean; icon?: 'castle' }) {
-  const theme = useRpgTheme();
-  return (
-    <View style={styles.center}>
-      {logo ? <DnfLogo size={110} showName={false} /> : <MaterialCommunityIcons name={icon ?? 'castle'} size={64} color={theme.gold} />}
-      <Text style={[typography.heading, styles.centered, { color: theme.text }]}>{title}</Text>
-      <Text style={[typography.body, styles.centered, { color: theme.textMuted }]}>{text}</Text>
     </View>
   );
 }
 
-function CharacterCard({ theme, character, onPress }: { theme: RpgTheme; character: Character.Info; onPress: () => void }) {
+function CharacterTile({ character, onPress }: { character: Character.Info; onPress: () => void }) {
+  const theme = useRpgTheme();
   const { edition } = character;
   const classKey = character.classes[0]?.classKey;
-  // Nome da classe vem da 5e-FastAPI (em cache; enquanto carrega, mostra só nível e edição).
+  // Nome da classe vem da 5e-FastAPI (em cache; enquanto carrega, mostra só o nível).
   const classes = useSrd(`classes:${edition}`, () => srd.classes(edition));
   const found = classes.status === 'ready' ? classes.data.find((c) => c.key === classKey) : undefined;
   const className = found ? tr.name(found) : undefined;
-  const { hpCurrent, hpMax } = character.combat;
+  const color = tileColor(character.id);
+  const gradientId = `tile-${character.id}`;
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Abrir ficha de ${character.name}`}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: theme.surfaceRaised, borderColor: theme.border, opacity: pressed ? 0.85 : 1 },
-        shadow(theme, 1),
-      ]}
+      accessibilityLabel={`Abrir ficha de ${character.name}${className ? `, ${className}` : ''}, nível ${character.level}`}
+      style={({ pressed }) => [styles.tileSlot, { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
     >
-      <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-        <MaterialCommunityIcons name={className ? classIcon(className) : 'dice-d20'} size={24} color={theme.accentText} />
+      <View style={[styles.tile, { boxShadow: `0px 8px 22px ${color}40` }]}>
+        <View style={[styles.tileFace, { borderColor: mixColor(color, '#FFFFFF', 0.35) }]}>
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Defs>
+              <LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor={mixColor(color, '#FFFFFF', 0.18)} />
+                <Stop offset="1" stopColor={mixColor(color, '#000000', 0.45)} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill={`url(#${gradientId})`} />
+          </Svg>
+          {/* Enquanto a classe carrega (ou se não achar), mostra o d20 com o nível. */}
+          {className ? (
+            <MaterialCommunityIcons name={classIcon(className)} size={50} color="#FFFFFF" />
+          ) : (
+            <D20 size={60} value={character.level} color={mixColor(color, '#FFFFFF', 0.1)} numberColor="#FFFFFF" />
+          )}
+          <Text style={styles.edition}>{edition}</Text>
+        </View>
+        <View style={[styles.level, { backgroundColor: theme.surface, borderColor: theme.gold }]}>
+          <Text style={[styles.levelLabel, { color: theme.textMuted }]}>NV</Text>
+          <Text style={[styles.levelText, { color: theme.text }]}>{character.level}</Text>
+        </View>
       </View>
-      <View style={styles.cardBody}>
-        <Text style={[typography.subheading, { color: theme.text }]} numberOfLines={1}>
-          {character.name}
+      <Text style={[typography.bodyStrong, styles.centered, { color: theme.text }]} numberOfLines={1}>
+        {character.name}
+      </Text>
+      {className ? (
+        <Text style={[typography.caption, styles.centered, styles.tileCaption, { color: theme.textMuted }]} numberOfLines={1}>
+          {className}
         </Text>
-        <Text style={[typography.caption, { color: theme.textMuted }]} numberOfLines={1}>
-          {[className, `Nível ${character.level}`, hpMax ? `PV ${hpCurrent}/${hpMax}` : null].filter(Boolean).join(' · ')}
-        </Text>
-      </View>
-      <View style={[styles.editionBadge, { borderColor: theme.gold, backgroundColor: theme.goldSoft }]}>
-        <Text style={[styles.editionText, { color: theme.gold }]}>{edition}</Text>
-      </View>
+      ) : null}
     </Pressable>
   );
 }
 
-function MesaCard({ theme, mesa, isGM, onPress }: { theme: RpgTheme; mesa: Mesa.Info; isGM: boolean; onPress: () => void }) {
+function NewTile({ onPress }: { onPress: () => void }) {
+  const theme = useRpgTheme();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Abrir mesa ${mesa.name}`}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: theme.surfaceRaised, borderColor: theme.border, opacity: pressed ? 0.85 : 1 },
-        shadow(theme, 1),
-      ]}
+      accessibilityLabel="Criar personagem"
+      style={({ pressed }) => [styles.tileSlot, { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
     >
-      <View style={[styles.avatar, { backgroundColor: isGM ? theme.gold : theme.surfaceSunken }]}>
-        <MaterialCommunityIcons name={isGM ? 'crown-outline' : 'castle'} size={24} color={isGM ? theme.surface : theme.gold} />
+      <View style={[styles.tile, styles.tileFace, styles.newTile, { backgroundColor: theme.surfaceSunken, borderColor: theme.border }]}>
+        <View style={[styles.plus, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
+          <MaterialCommunityIcons name="plus" size={28} color={theme.accent} />
+        </View>
       </View>
-      <View style={styles.cardBody}>
-        <Text style={[typography.subheading, { color: theme.text }]} numberOfLines={1}>
-          {mesa.name}
-        </Text>
-        <Text style={[typography.caption, { color: theme.textMuted }]} numberOfLines={1}>
-          {isGM ? 'Você é o mestre' : 'Você é jogador'} · D&D {mesa.edition}
-        </Text>
-      </View>
-      <MaterialCommunityIcons name="chevron-right" size={22} color={theme.textMuted} />
+      <Text style={[typography.bodyStrong, styles.centered, { color: theme.textMuted }]}>Novo herói</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  flex: { flex: 1 },
-  flexGrow: { flexGrow: 1 },
-  header: {
+  scroll: { flexGrow: 1 },
+  heading: { alignItems: 'center', gap: 2, marginTop: -spacing.xxl, marginBottom: spacing.lg, paddingHorizontal: spacing.lg },
+  panel: { flexGrow: 1, paddingHorizontal: spacing.lg },
+  panelFill: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  arc: { position: 'absolute', left: 0, right: 0 },
+  state: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingVertical: spacing.xl },
+  stateBelowArc: { marginTop: TILE / 2 },
+  grid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    columnGap: spacing.xl,
+    rowGap: spacing.lg,
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
   },
-  greeting: { flex: 1 },
-  logout: { padding: spacing.sm },
-  tabs: { flexDirection: 'row', marginHorizontal: spacing.lg, borderRadius: radius.pill, borderWidth: 1, padding: 3 },
-  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: 8, borderRadius: radius.pill },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.md },
-  list: { padding: spacing.lg, gap: spacing.sm, maxWidth: 760, width: '100%', alignSelf: 'center' },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    borderWidth: 1,
+  tileSlot: { width: TILE + spacing.md, alignItems: 'center', gap: spacing.xs },
+  tile: { width: TILE, height: TILE, borderRadius: radius.lg, marginBottom: spacing.sm },
+  tileFace: {
+    flex: 1,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatar: { width: 44, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  cardBody: { flex: 1, gap: 2 },
-  editionBadge: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  editionText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  newTile: { flex: 0 },
+  plus: { width: 52, height: 52, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  // Selo do nível: pílula dourada no pé do bloco, metade para fora.
+  level: {
+    position: 'absolute',
+    bottom: -12,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  levelLabel: { fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  levelText: { fontFamily: fonts.displayHeavy, fontSize: 14 },
+  edition: {
+    position: 'absolute',
+    top: 6,
+    left: 8,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  tileCaption: { marginTop: -spacing.xs },
+  hint: { marginTop: spacing.lg },
   centered: { textAlign: 'center' },
-  footer: { padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth },
-  footerRow: { flexDirection: 'row', gap: spacing.sm },
+  nav: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+  },
+  navActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  navPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    height: 40,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    backgroundColor: 'rgba(10, 7, 7, 0.6)',
+  },
+  navIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(10, 7, 7, 0.6)',
+  },
 });

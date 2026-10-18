@@ -36,6 +36,7 @@
   "scripts": {
     "expo": "sh scripts/expo.sh",
     "start": "bun expo start",
+    "dev": "sh scripts/dev.sh",
     "android": "bun expo start --android",
     "phone": "sh scripts/phone.sh",
     "ios": "bun expo start --ios",

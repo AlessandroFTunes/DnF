@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -7,114 +7,67 @@ import {
   StyleSheet,
   Text,
   View,
+  type ImageStyle,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
-import { fonts, useRpgTheme } from '../theme';
+import { useRpgTheme } from '../theme';
+
+/** Arte da logo "Dungeons & Fichas" para fundo escuro (texto claro, fundo transparente). */
+const LOGO = require('../../assets/logo.webp');
+/** largura / altura de assets/logo.webp. */
+export const DNF_LOGO_RATIO = 1024 / 701;
 
 export interface DnfLogoProps {
-  /** Largura do emblema em px; o nome embaixo acompanha a escala. */
+  /** Largura em px; a altura segue a proporção da arte. */
   size?: number;
-  /** Mostra "DnF" embaixo do emblema. */
-  showName?: boolean;
-  /** Entrada animada (d20 rola, espadas cruzam, nome sobe). Respeita "reduzir movimento" do sistema. */
+  /** Entrada animada (sobe e aparece, com um leve zoom). Respeita "reduzir movimento" do sistema. */
   animated?: boolean;
-  style?: StyleProp<ViewStyle>;
+  style?: StyleProp<ImageStyle>;
 }
 
-/** Emblema do DnF: d20 em traço sobre duas espadas cruzadas, nas cores do tema. */
-export function DnfLogo({ size = 120, showName = true, animated = true, style }: DnfLogoProps) {
-  const theme = useRpgTheme();
-  const a = useRef({
-    d20: new Animated.Value(0),
-    swords: new Animated.Value(0),
-    name: new Animated.Value(0),
-  }).current;
+/** Logo do app: o d20 vermelho sobre "Dungeons & Fichas". */
+export function DnfLogo({ size = 220, animated = true, style }: DnfLogoProps) {
+  const [enter] = useState(() => new Animated.Value(animated ? 0 : 1));
 
   useEffect(() => {
-    const all = [a.d20, a.swords, a.name];
-    if (!animated) {
-      all.forEach((v) => v.setValue(1));
-      return;
-    }
-
+    if (!animated) return;
     let running: Animated.CompositeAnimation | undefined;
     let cancelled = false;
     AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
       if (cancelled) return;
       if (reduce) {
-        all.forEach((v) => v.setValue(1));
+        enter.setValue(1);
         return;
       }
-      running = Animated.sequence([
-        Animated.timing(a.d20, { toValue: 1, duration: 700, easing: Easing.out(Easing.back(1.4)), useNativeDriver }),
-        Animated.parallel([
-          Animated.spring(a.swords, { toValue: 1, friction: 5, tension: 60, useNativeDriver }),
-          Animated.timing(a.name, {
-            toValue: 1,
-            duration: 450,
-            delay: 150,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver,
-          }),
-        ]),
-      ]);
+      running = Animated.timing(enter, { toValue: 1, duration: 650, easing: Easing.out(Easing.back(1.2)), useNativeDriver });
       running.start();
     });
     return () => {
       cancelled = true;
       running?.stop();
     };
-  }, [a, animated]);
-
-  const sword = (angle: number) => ({
-    opacity: a.swords.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 1] }),
-    transform: [{ rotate: a.swords.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${angle}deg`] }) }],
-  });
+  }, [enter, animated]);
 
   return (
-    <View style={[styles.root, style]} accessible accessibilityRole="image" accessibilityLabel="DnF">
-      <View style={{ width: size, height: size }}>
-        <Animated.View style={[StyleSheet.absoluteFill, sword(-45)]}>
-          <Sword color={theme.textMuted} />
-        </Animated.View>
-        <Animated.View style={[StyleSheet.absoluteFill, sword(45)]}>
-          <Sword color={theme.textMuted} />
-        </Animated.View>
-        <Animated.View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              opacity: a.d20.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 1, 1] }),
-              transform: [
-                { rotate: a.d20.interpolate({ inputRange: [0, 1], outputRange: ['-240deg', '0deg'] }) },
-                { scale: a.d20.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) },
-              ],
-            },
-          ]}
-        >
-          <D20 color={theme.accent} fill={theme.surface} />
-        </Animated.View>
-      </View>
-
-      {showName && (
-        <Animated.Text
-          style={[
-            styles.name,
-            {
-              color: theme.accent,
-              fontSize: size * 0.3,
-              letterSpacing: size * 0.06,
-              opacity: a.name,
-              transform: [{ translateY: a.name.interpolate({ inputRange: [0, 1], outputRange: [size * 0.08, 0] }) }],
-            },
-          ]}
-        >
-          DnF
-        </Animated.Text>
-      )}
-    </View>
+    <Animated.Image
+      source={LOGO}
+      accessibilityRole="image"
+      accessibilityLabel="Dungeons & Fichas"
+      resizeMode="contain"
+      style={[
+        { width: size, height: size / DNF_LOGO_RATIO },
+        {
+          opacity: enter,
+          transform: [
+            { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [size * 0.06, 0] }) },
+            { scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+          ],
+        },
+        style,
+      ]}
+    />
   );
 }
 
@@ -230,6 +183,4 @@ function D20({ color, fill }: { color: string; fill: string }) {
 const styles = StyleSheet.create({
   spinner: { alignItems: 'center', gap: 12 },
   spinnerLabel: { fontSize: 13, letterSpacing: 0.3 },
-  root: { alignItems: 'center' },
-  name: { fontFamily: fonts.displayHeavy },
 });
