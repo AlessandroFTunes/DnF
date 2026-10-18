@@ -18,6 +18,38 @@ const COINS = [
   { key: 'cp', label: 'PC' },
 ] as const;
 
+/** Armas empunhadas com bônus de ataque e dano. */
+export function Attacks({ sheet }: { sheet: Sheet }) {
+  const theme = useRpgTheme();
+  const { derived } = sheet;
+  if (!derived) return null;
+  return (
+    <Panel title="Ataques" icon="sword-cross">
+      {derived.attacks.length === 0 ? (
+        <Text style={[typography.body, { color: theme.textMuted }]}>Nenhuma arma empunhada.</Text>
+      ) : (
+        derived.attacks.map((a) => (
+          <View key={a.key} style={[styles.attack, { borderColor: theme.border }]}>
+            <MaterialCommunityIcons name="sword" size={18} color={theme.gold} />
+            <View style={styles.flex}>
+              <Text style={[typography.bodyStrong, { color: theme.text }]}>{tr.text(a.name, 'item')}</Text>
+              <Text style={[typography.caption, { color: theme.textMuted }]} numberOfLines={2}>
+                {a.properties.map((p) => tr.text(p)).join(', ')}
+              </Text>
+            </View>
+            <View style={styles.attackRight}>
+              <Text style={[typography.subheading, { color: theme.text }]}>{formatBonus(a.toHit)}</Text>
+              <Text style={[typography.caption, { color: theme.textMuted }]}>
+                {a.damage} {tr.text(a.damageType).toLowerCase()}
+              </Text>
+            </View>
+          </View>
+        ))
+      )}
+    </Panel>
+  );
+}
+
 export function Inventory({ sheet }: { sheet: Sheet }) {
   const theme = useRpgTheme();
   const { character, derived, isOwner, save } = sheet;
@@ -63,30 +95,6 @@ export function Inventory({ sheet }: { sheet: Sheet }) {
 
   return (
     <View style={styles.column}>
-      <Panel title="Ataques" icon="sword-cross">
-        {derived.attacks.length === 0 ? (
-          <Text style={[typography.body, { color: theme.textMuted }]}>Nenhuma arma empunhada.</Text>
-        ) : (
-          derived.attacks.map((a) => (
-            <View key={a.key} style={[styles.attack, { borderColor: theme.border }]}>
-              <MaterialCommunityIcons name="sword" size={18} color={theme.gold} />
-              <View style={styles.flex}>
-                <Text style={[typography.bodyStrong, { color: theme.text }]}>{tr.text(a.name, 'item')}</Text>
-                <Text style={[typography.caption, { color: theme.textMuted }]} numberOfLines={2}>
-                  {a.properties.map((p) => tr.text(p)).join(', ')}
-                </Text>
-              </View>
-              <View style={styles.attackRight}>
-                <Text style={[typography.subheading, { color: theme.text }]}>{formatBonus(a.toHit)}</Text>
-                <Text style={[typography.caption, { color: theme.textMuted }]}>
-                  {a.damage} {tr.text(a.damageType).toLowerCase()}
-                </Text>
-              </View>
-            </View>
-          ))
-        )}
-      </Panel>
-
       <Panel title="Moedas" icon="hand-coin-outline">
         <View style={styles.coins}>
           {COINS.map((coin) => (

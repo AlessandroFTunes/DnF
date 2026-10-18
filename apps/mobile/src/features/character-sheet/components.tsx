@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Character } from '@dnf/core/character';
 import { fonts, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import type { IconName } from '../character-create/labels';
+import { HeartGauge } from './emblems';
 
 /** Bloco com título usado em todas as seções da ficha. */
 export function Panel({
@@ -126,7 +127,7 @@ export function HpTracker({
   return (
     <View style={styles.hp}>
       <View style={styles.hpTop}>
-        <MaterialCommunityIcons name="heart" size={22} color={theme.negative} />
+        <HeartGauge current={combat.hpCurrent} max={combat.hpMax} />
         <Text style={[styles.hpValue, { color: theme.text }]}>
           {combat.hpCurrent}
           <Text style={[typography.body, { color: theme.textMuted }]}> / {combat.hpMax}</Text>
