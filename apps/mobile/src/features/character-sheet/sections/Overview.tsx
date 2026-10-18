@@ -3,28 +3,36 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ABILITIES, abilityModifier } from '@dnf/core/character';
 import { fonts, formatBonus, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { ABILITY_LABEL } from '../../character-create/labels';
-import { HpTracker, Panel, SmallButton, StatBox } from '../components';
-import type { Sheet, SheetData } from '../useSheet';
+import { HpTracker, Panel, SmallButton } from '../components';
+import { Emblem, type EmblemShape } from '../emblems';
+import type { Sheet } from '../useSheet';
 
-export function CombatStats({ data, speed }: { data: SheetData; speed: string }) {
+/** Emblema do painel de status: o número dentro da forma, com o nome e um detalhe embaixo. */
+function Tile({ label, value, detail, shape, accent }: { label: string; value: string; detail?: string; shape: EmblemShape; accent?: boolean }) {
+  const theme = useRpgTheme();
   return (
-    <View style={styles.stats}>
-      <StatBox label="CA" value={String(data.ac.value)} icon="shield-half-full" accent />
-      <StatBox label="Iniciativa" value={formatBonus(abilityModifier(data.scores.dex))} icon="lightning-bolt" />
-      <StatBox label="Deslocamento" value={speed.replace(/\s*metros?$/i, ' m')} icon="run" />
-      <StatBox label="Proficiência" value={formatBonus(data.pb)} icon="star-four-points-outline" />
-      <StatBox label="Percepção passiva" value={String(data.passivePerception)} icon="eye-outline" />
+    <View style={styles.tile} accessible accessibilityLabel={`${label}: ${value}${detail ? `, ${detail}` : ''}`}>
+      <Emblem shape={shape} value={value} accent={accent} />
+      <Text style={[styles.tileLabel, { color: accent ? theme.accent : theme.text }]} numberOfLines={1}>
+        {label}
+      </Text>
+      {detail ? (
+        <Text style={[styles.tileDetail, { color: theme.textMuted }]} numberOfLines={2}>
+          {detail}
+        </Text>
+      ) : null}
     </View>
   );
 }
 
-/** PV + descansos: usado no topo da visão geral e na barra lateral direita. */
-export function VitalsPanel({ sheet }: { sheet: Sheet }) {
+/** Painel de status do topo da ficha: PV, CA, dados de vida e o resto do que se olha a cada rodada. */
+export function StatusPanel({ sheet }: { sheet: Sheet }) {
   const theme = useRpgTheme();
   const { character, derived, isOwner, save } = sheet;
   if (!character || !derived) return null;
   const combat = character.combat;
   const pools = derived.hitDice;
+  const speed = derived.species?.speed || '—';
 
   /** Descanso longo: em 2024 todos os dados de vida voltam; em 2014, metade do nível (mínimo 1), dos maiores primeiro. */
   const recovered = () => {
@@ -75,22 +83,62 @@ export function VitalsPanel({ sheet }: { sheet: Sheet }) {
   };
 
   return (
-    <Panel title="Pontos de vida" icon="heart-pulse">
+    <Panel
+      title="Status"
+      icon="heart-pulse"
+      right={
+        <Pressable
+          disabled={!isOwner}
+          onPress={() => save({ inspiration: !character.inspiration }, (c) => ({ ...c, inspiration: !c.inspiration }))}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: character.inspiration }}
+          accessibilityLabel="Inspiração"
+          style={[
+            styles.inspiration,
+            {
+              borderColor: character.inspiration ? theme.gold : theme.border,
+              backgroundColor: character.inspiration ? theme.goldSoft : 'transparent',
+            },
+          ]}
+        >
+          <MaterialCommunityIcons name={character.inspiration ? 'star' : 'star-outline'} size={16} color={theme.gold} />
+          <Text style={[typography.caption, { color: theme.text, fontWeight: '700' }]}>Inspiração</Text>
+        </Pressable>
+      }
+    >
       <HpTracker
         combat={combat}
         editable={isOwner}
         onChange={(next) => save({ combat: next }, (c) => ({ ...c, combat: { ...c.combat, ...next } }))}
       />
-      <Text style={[typography.caption, { color: theme.textMuted }]}>
-        Dados de vida: {pools.map((p) => `${p.total - p.spent}/${p.total} d${p.die}`).join(' · ')}
-      </Text>
+
+      <View style={styles.tiles}>
+        <Tile
+          label="Classe de Armadura"
+          value={String(derived.ac.value)}
+          detail={derived.ac.parts.map((p, i) => `${p.label} ${i === 0 ? p.value : formatBonus(p.value)}`).join(' · ')}
+          shape="shield"
+          accent
+        />
+        <Tile label="Deslocamento" value={speed.replace(/\s*metros?$/i, '')} detail="metros" shape="boot" />
+        <Tile label="Proficiência" value={formatBonus(derived.pb)} shape="star" />
+        <Tile
+          label="Dados de vida"
+          value={String(pools.reduce((n, p) => n + p.total - p.spent, 0))}
+          detail={pools.map((p) => `${p.total - p.spent}/${p.total} d${p.die}`).join(' · ')}
+          shape="d20"
+        />
+        <Tile label="Iniciativa" value={formatBonus(abilityModifier(derived.scores.dex))} detail="Destreza" shape="stopwatch" />
+        <Tile label="Percepção passiva" value={String(derived.passivePerception)} shape="eye" />
+      </View>
+
       {isOwner && (
         <View style={styles.row}>
           {pools.map((p) => (
             <SmallButton
               key={p.die}
               icon="campfire"
-              label={pools.length > 1 ? `Descanso curto (d${p.die})` : 'Descanso curto (1 DV)'}
+              label={pools.length > 1 ? `Descanso curto (d${p.die})` : 'Descanso curto'}
               onPress={() => spendHitDie(p.die)}
               disabled={p.spent >= p.total || combat.hpCurrent >= combat.hpMax}
             />
@@ -102,79 +150,46 @@ export function VitalsPanel({ sheet }: { sheet: Sheet }) {
   );
 }
 
-export function Overview({ sheet, showVitals }: { sheet: Sheet; showVitals: boolean }) {
+/** Os seis atributos com modificador, valor e salvaguarda. */
+export function Abilities({ sheet }: { sheet: Sheet }) {
   const theme = useRpgTheme();
-  const { character, derived, isOwner, save } = sheet;
-  if (!character || !derived) return null;
+  const { derived } = sheet;
+  if (!derived) return null;
 
   return (
-    <View style={styles.column}>
-      {showVitals && <VitalsPanel sheet={sheet} />}
-      <Panel
-        title="Combate"
-        icon="sword-cross"
-        right={
-          <Pressable
-            disabled={!isOwner}
-            onPress={() => save({ inspiration: !character.inspiration }, (c) => ({ ...c, inspiration: !c.inspiration }))}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: character.inspiration }}
-            accessibilityLabel="Inspiração"
-            style={[
-              styles.inspiration,
-              {
-                borderColor: character.inspiration ? theme.gold : theme.border,
-                backgroundColor: character.inspiration ? theme.goldSoft : 'transparent',
-              },
-            ]}
-          >
-            <MaterialCommunityIcons name={character.inspiration ? 'star' : 'star-outline'} size={16} color={theme.gold} />
-            <Text style={[typography.caption, { color: theme.text, fontWeight: '700' }]}>Inspiração</Text>
-          </Pressable>
-        }
-      >
-        <CombatStats data={derived} speed={derived.species?.speed || '—'} />
-        <Text style={[typography.caption, { color: theme.textMuted }]}>
-          CA: {derived.ac.parts.map((p, i) => `${p.label} ${i === 0 ? p.value : formatBonus(p.value)}`).join(' · ')}
-        </Text>
-      </Panel>
-
-      <Panel title="Atributos e salvaguardas" icon="arm-flex">
-        <View style={styles.abilities}>
-          {ABILITIES.map((a) => {
-            const proficient = derived.klass.savingThrows.includes(a);
-            return (
-              <View
-                key={a}
-                style={[styles.ability, { borderColor: proficient ? theme.gold : theme.border, backgroundColor: theme.surface }]}
-                accessible
-                accessibilityLabel={`${ABILITY_LABEL[a].name} ${derived.scores[a]}, salvaguarda ${formatBonus(derived.saves[a])}`}
-              >
-                <Text style={[typography.overline, { color: theme.textMuted }]}>{ABILITY_LABEL[a].short}</Text>
-                <Text style={[styles.mod, { color: theme.text }]}>{formatBonus(abilityModifier(derived.scores[a]))}</Text>
-                <View style={[styles.score, { borderColor: theme.border, backgroundColor: theme.surfaceRaised }]}>
-                  <Text style={[typography.caption, { color: theme.text, fontWeight: '800' }]}>{derived.scores[a]}</Text>
-                </View>
-                <View style={styles.saveRow}>
-                  <MaterialCommunityIcons
-                    name={proficient ? 'shield-half-full' : 'shield-outline'}
-                    size={12}
-                    color={proficient ? theme.gold : theme.textMuted}
-                  />
-                  <Text style={[styles.save, { color: theme.textMuted }]}>{formatBonus(derived.saves[a])}</Text>
-                </View>
+    <Panel title="Atributos e salvaguardas" icon="arm-flex">
+      <View style={styles.abilities}>
+        {ABILITIES.map((a) => {
+          const proficient = derived.klass.savingThrows.includes(a);
+          return (
+            <View
+              key={a}
+              style={[styles.ability, { borderColor: proficient ? theme.gold : theme.border, backgroundColor: theme.surface }]}
+              accessible
+              accessibilityLabel={`${ABILITY_LABEL[a].name} ${derived.scores[a]}, salvaguarda ${formatBonus(derived.saves[a])}`}
+            >
+              <Text style={[typography.overline, { color: theme.textMuted }]}>{ABILITY_LABEL[a].short}</Text>
+              <Text style={[styles.mod, { color: theme.text }]}>{formatBonus(abilityModifier(derived.scores[a]))}</Text>
+              <View style={[styles.score, { borderColor: theme.border, backgroundColor: theme.surfaceRaised }]}>
+                <Text style={[typography.caption, { color: theme.text, fontWeight: '800' }]}>{derived.scores[a]}</Text>
               </View>
-            );
-          })}
-        </View>
-      </Panel>
-    </View>
+              <View style={styles.saveRow}>
+                <MaterialCommunityIcons
+                  name={proficient ? 'shield-half-full' : 'shield-outline'}
+                  size={12}
+                  color={proficient ? theme.gold : theme.textMuted}
+                />
+                <Text style={[styles.save, { color: theme.textMuted }]}>{formatBonus(derived.saves[a])}</Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </Panel>
   );
 }
 
 const styles = StyleSheet.create({
-  column: { gap: spacing.lg },
-  stats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   inspiration: {
     flexDirection: 'row',
@@ -185,6 +200,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
   },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md, columnGap: spacing.sm },
+  tile: { flexBasis: '30%', flexGrow: 1, alignItems: 'center', gap: 2, paddingVertical: spacing.xs },
+  tileLabel: { fontSize: 12, fontWeight: '800', textAlign: 'center', marginTop: spacing.xs },
+  tileDetail: { fontSize: 10, fontWeight: '600', textAlign: 'center' },
   abilities: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   ability: {
     flexBasis: '30%',
