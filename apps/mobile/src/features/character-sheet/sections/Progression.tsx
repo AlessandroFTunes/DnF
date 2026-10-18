@@ -1,5 +1,8 @@
-import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import {
+  Animated,
+  Easing,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -27,7 +30,7 @@ import {
   type SrdClassDetail,
   type SrdClassFeature,
 } from '@dnf/sdk/srd';
-import { Button, Chip, fonts, formatBonus, radius, spacing, textGlow } from '@dnf/ui-react-native';
+import { Button, Chip, fonts, formatBonus, radius, spacing } from '@dnf/ui-react-native';
 import { ABILITY_LABEL, subclassOrigin } from '../../character-create/labels';
 import { LevelUpCelebration, type LevelUpGain } from '../LevelUpCelebration';
 import { ThemeHold } from '../themeBlend';
@@ -538,7 +541,7 @@ function ProgressionView({ sheet, derived }: { sheet: Sheet; derived: SheetData 
   // A árvore rola de lado quando não cabe (multiclasse ou muitas subclasses) e começa no tronco da classe ativa.
   const widths = sectionWidths(sections, treeWidth);
   const activeIndex = ordered.findIndex((v) => v.cls.key === view.cls.key);
-  const scrollTo = Math.max(0, widths.slice(0, activeIndex).reduce((a, b) => a + b, 0) + treeWidth * 0.42 - width * 0.42);
+  const scrollTo = Math.max(0, widths.slice(0, activeIndex).reduce((a, b) => a + b, 0) + widths[activeIndex]! / 2 - width / 2);
   const scrollable = widths.reduce((a, b) => a + b, 0) > width + 1;
   useEffect(() => {
     const t = setTimeout(() => row.current?.scrollTo({ x: scrollTo, animated: true }), 50);
@@ -840,12 +843,23 @@ function StarCard({
   );
 }
 
-const LABEL_WIDTH = 120;
 const PADDING = 46;
-/** Espaço vertical de cada estrela (cabe um nome em duas linhas sem encostar no vizinho). */
-const SLOT = 42;
+/** Espaço vertical de cada estrela (o nome não aparece na árvore, só no painel ao tocar). */
+const SLOT = 34;
 /** Folga entre um nível e o próximo; nível sem nada ocupa só `EMPTY_LEVEL`. */
-const LEVEL_GAP = 16;
+const LEVEL_GAP = 12;
+/** Lado do quadrado de cada habilidade. */
+const NODE = 24;
+const HALO = NODE + 10;
+const HIT = 44;
+const PULSE_MS = 1400;
+const STAR_ICON: Record<StarData['kind'], ComponentProps<typeof MaterialCommunityIcons>['name']> = {
+  feature: 'star-four-points',
+  asi: 'arm-flex',
+  subclass: 'source-branch',
+  hp: 'heart-plus',
+  multiclass: 'call-split',
+};
 const EMPTY_LEVEL = 10;
 const CARD_WIDTH = 300;
 /** Altura máxima do painel da estrela (a descrição rola dentro dele). */
@@ -891,7 +905,8 @@ function sectionWidths(sections: TreeSection[], base: number): number[] {
   return sections.map((sec) => {
     const chosen = !sec.choosing && sec.branches.some((b) => b.sub.key === sec.chosenKey);
     const n = chosen ? 1 : sec.branches.length;
-    return n > 1 ? Math.max(base, base * 0.6 + (n - 1) * BRANCH_GAP + 80) : base;
+    // Tronco no meio e ramificações alternando dos dois lados dele.
+    return n > 1 ? Math.max(base, 2 * Math.ceil(n / 2) * BRANCH_GAP + 80) : base;
   });
 }
 
@@ -980,20 +995,17 @@ function SkillTree({
   const height = top + PADDING * 2 + offset;
   const yOf = (row: number, slot: number) => height - PADDING - (levelBase.get(row) ?? 0) - slot * SLOT;
 
-  // Pulsar do brilho (só anima enquanto há algo brilhando).
-  const [pulse, setPulse] = useState(0);
+  // Pulsar do brilho: só a opacidade do contorno, no driver nativo (a árvore não renderiza de novo a cada quadro).
+  const [pulse] = useState(() => new Animated.Value(0));
   const animating = sections.some((sec) => sec.glowing.size > 0 || sec.choosing);
   useEffect(() => {
     if (!animating) return;
-    let frame = 0;
-    const tick = () => {
-      setPulse(Date.now());
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [animating]);
-  const wave = (phase = 0) => 0.5 + 0.5 * Math.sin(pulse / 380 + phase);
+    const half = { duration: PULSE_MS, easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== 'web' };
+    const loop = Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1, ...half }), Animated.timing(pulse, { toValue: 0, ...half })]));
+    loop.start();
+    return () => loop.stop();
+  }, [animating, pulse]);
+  const haloOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.7] });
 
   // Estrelas do mesmo nível: uma em cada espaço, subindo (a bifurcação da subclasse fica por cima).
   const placed = shapes.map((shape, i) => {
@@ -1004,18 +1016,17 @@ function SkillTree({
       const ordered = [...stars].sort((a, b) => a.level - b.level || Number(a.kind === 'subclass') - Number(b.kind === 'subclass'));
       return ordered.map((star) => {
         const slot = ordered.filter((st) => st.level === star.level).indexOf(star) + (branch ? liftOf(shape, star.level) : 0);
-        const x = baseX + (seeded(`${sec.key}:${star.id}`, 1) - 0.5) * 12;
-        return { star, branch, section: sec.key, lit: lit(star), x, y: yOf(baseRows[i]! + star.level, slot) };
+        return { star, branch, section: sec.key, lit: lit(star), x: baseX, y: yOf(baseRows[i]! + star.level, slot) };
       });
     };
-    // Tronco à esquerda do centro do trecho (nomes à esquerda dele); as ramificações à direita.
-    const trunk = placeColumn(sec.trunk, x0 + sectionWidth * (sec.branches.length ? 0.42 : 0.5), null, (st) => st.level <= sec.level);
+    // Tronco no meio do trecho; as ramificações alternam à direita e à esquerda dele, cada par mais afastado.
+    const center = x0 + w / 2;
+    const trunk = placeColumn(sec.trunk, center, null, (st) => st.level <= sec.level);
     const fork = trunk.find((pl) => pl.star.kind === 'subclass');
     const branches = visible.map((b, k) => {
       const n = visible.length;
-      // Sem escolha, uma ramificação a cada BRANCH_GAP (ou mais, se o trecho for largo).
-      const gap = n > 1 ? Math.max(BRANCH_GAP, (w - sectionWidth * 0.6 - 80) / (n - 1)) : 0;
-      const x = chosen ? x0 + sectionWidth * 0.62 : n === 1 ? x0 + sectionWidth * 0.75 : x0 + sectionWidth * 0.6 + k * gap;
+      const gap = n > 1 ? (w / 2 - 40) / Math.ceil(n / 2) : Math.min(w * 0.25, 2 * BRANCH_GAP);
+      const x = center + (k % 2 ? -1 : 1) * (Math.floor(k / 2) + 1) * gap;
       return placeColumn(b.stars, x, b, (st) => !!chosen && st.level <= sec.level);
     });
     return { shape, x0, w, trunk, fork, branches };
@@ -1045,8 +1056,8 @@ function SkillTree({
           x2={pl.x}
           y2={pl.y}
           stroke={lit ? color : SKY.locked}
-          strokeOpacity={lit ? 0.85 : 0.35}
-          strokeWidth={lit ? 1.6 : 1}
+          strokeOpacity={lit ? 0.6 : 0.3}
+          strokeWidth={lit ? 1.2 : 1}
         />
       );
     });
@@ -1104,6 +1115,10 @@ function SkillTree({
             ? SKY.multi
             : base;
   const sectionOf = (pl: PlacedStar) => shapes.find((sh) => sh.sec.key === pl.section)!;
+  const glowsOf = (pl: PlacedStar) => {
+    const { sec } = sectionOf(pl);
+    return sec.glowing.has(pl.star.id) || (sec.choosing && !!pl.branch && pl.branch.stars[0]?.id === pl.star.id);
+  };
 
   return (
     <View style={{ width, height }}>
@@ -1144,93 +1159,48 @@ function SkillTree({
           p.branches.map((list, k) => chain(list, p.shape.visible[k]!.color, `branch-${p.shape.sec.key}-${k}`, p.fork)),
         )}
 
-        {everything.map((pl) => {
-          const { star, x, y, lit, branch } = pl;
-          const sec = sectionOf(pl).sec;
-          const tint = tintOf(pl, SKY.star);
-          const isSelected = pl === selected;
-          const glows = sec.glowing.has(star.id) || (sec.choosing && !!branch && branch.stars[0]?.id === star.id);
-          const halo = glows ? 14 + 10 * wave(seeded(uid(pl), 5) * 6) : 0;
-          const id = uid(pl);
-          return [
-            glows ? (
-              <Circle
-                key={`h-${id}`}
-                cx={x}
-                cy={y}
-                r={halo}
-                fill="none"
-                stroke={branch ? branch.color : SKY.glow}
-                strokeWidth={1.5}
-                strokeOpacity={0.35 + 0.5 * wave()}
-              />
-            ) : null,
-            lit || glows ? (
-              <Circle
-                key={`g-${id}`}
-                cx={x}
-                cy={y}
-                r={isSelected ? 22 : 16}
-                fill="url(#tree-glow)"
-                opacity={glows && !lit ? 0.4 + 0.5 * wave() : 1}
-              />
-            ) : null,
-            <Circle key={`c-${id}`} cx={x} cy={y} r={isSelected ? 5 : lit || glows ? 4 : 3.2} fill={lit || glows ? tint : SKY.locked} />,
-            !lit && !glows ? (
-              <Circle
-                key={`r-${id}`}
-                cx={x}
-                cy={y}
-                r={isSelected ? 11 : 7}
-                stroke={isSelected ? tint : SKY.locked}
-                strokeOpacity={0.6}
-                strokeWidth={1}
-                fill="none"
-              />
-            ) : null,
-            isSelected ? <Circle key={`s-${id}`} cx={x} cy={y} r={11} stroke={tint} strokeWidth={1.2} fill="none" /> : null,
-          ];
-        })}
+        {/* Brilho suave atrás das habilidades acesas (os quadrados ficam por cima, fora do Svg). */}
+        {everything.map((pl) =>
+          pl.lit || glowsOf(pl) ? (
+            <Circle key={`g-${uid(pl)}`} cx={pl.x} cy={pl.y} r={pl === selected ? 22 : 17} fill="url(#tree-glow)" opacity={pl.lit ? 0.45 : 0.3} />
+          ) : null,
+        )}
       </Svg>
 
-      {/* Nomes: tronco à esquerda das estrelas; a ramificação escolhida à direita. Sem escolha, as
-          ramificações ficam só com as estrelas (o nome aparece ao tocar). */}
+      {/* Habilidades: quadrado com ícone, sem nome (o nome e a descrição aparecem no painel ao tocar). */}
       {everything.map((pl) => {
         const { star, x, y, lit, branch } = pl;
-        const shape = sectionOf(pl);
-        if (branch && !shape.chosen) return null;
-        const { x0, w } = placed.find((p) => p.shape === shape)!;
-        const right = !!branch;
-        const glows = shape.sec.glowing.has(star.id);
+        const glows = glowsOf(pl);
+        const on = lit || glows;
+        const tint = tintOf(pl, SKY.star);
+        const isSelected = pl === selected;
+        const size = isSelected ? NODE + 4 : NODE;
         return (
-          <Text
-            key={`l-${uid(pl)}`}
-            numberOfLines={2}
-            style={[
-              styles.starName,
-              { pointerEvents: 'none' },
-              {
-                top: y - 9,
-                left: right ? x + 14 : Math.max(x0 + 4, x - 14 - LABEL_WIDTH),
-                width: right ? Math.min(LABEL_WIDTH, x0 + w - x - 18) : Math.min(LABEL_WIDTH, x - x0 - 18),
-                textAlign: right ? 'left' : 'right',
-                color: lit || glows ? tintOf(pl, SKY.text) : SKY.locked,
-              },
-            ]}
+          <Pressable
+            key={`p-${uid(pl)}`}
+            onPress={() => onSelect(pl.section, star.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`${branch ? `${tr.name(branch.sub)}: ` : ''}${star.name}, nível ${star.level}${lit ? ', desbloqueada' : ''}`}
+            style={[styles.hit, { left: x - HIT / 2, top: y - HIT / 2 }]}
           >
-            {star.name.toUpperCase()}
-          </Text>
+            {glows && <Animated.View style={[styles.halo, { borderColor: branch ? branch.color : SKY.glow, opacity: haloOpacity }]} />}
+            <View
+              style={[
+                styles.node,
+                {
+                  width: size,
+                  height: size,
+                  borderColor: on ? tint : SKY.locked,
+                  borderWidth: isSelected ? 2 : 1,
+                  opacity: on ? 1 : 0.55,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons name={STAR_ICON[star.kind]} size={13} color={on ? tint : SKY.locked} />
+            </View>
+          </Pressable>
         );
       })}
-      {everything.map((pl) => (
-        <Pressable
-          key={`p-${uid(pl)}`}
-          onPress={() => onSelect(pl.section, pl.star.id)}
-          accessibilityRole="button"
-          accessibilityLabel={`${pl.branch ? `${tr.name(pl.branch.sub)}: ` : ''}${pl.star.name}, nível ${pl.star.level}${pl.lit ? ', desbloqueada' : ''}`}
-          style={[styles.hit, { left: pl.x - 22, top: pl.y - 22 }]}
-        />
-      ))}
 
       {/* Títulos das classes, no alto de cada trecho. */}
       {placed.map(({ shape, x0, w }) =>
@@ -1335,15 +1305,18 @@ const styles = StyleSheet.create({
   },
   candidateName: { color: SKY.text, fontSize: 14, fontWeight: '700' },
   hint: { color: SKY.muted, fontSize: 13, textAlign: 'center', fontStyle: 'italic', paddingHorizontal: spacing.lg, marginTop: spacing.sm },
-  starName: {
+  hit: { position: 'absolute', width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' },
+  node: { borderRadius: 4, backgroundColor: '#12142A', alignItems: 'center', justifyContent: 'center' },
+  halo: {
     position: 'absolute',
-    width: LABEL_WIDTH,
-    fontFamily: fonts.displayMedium,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    ...textGlow('#000', 4),
+    left: (HIT - HALO) / 2,
+    top: (HIT - HALO) / 2,
+    width: HALO,
+    height: HALO,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    pointerEvents: 'none',
   },
-  hit: { position: 'absolute', width: 44, height: 44, borderRadius: 22 },
   cardAnchor: { position: 'absolute' },
   actionRow: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { position: 'absolute', top: 0 },
