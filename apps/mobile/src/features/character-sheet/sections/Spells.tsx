@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { plainText, type SrdSpell } from '@dnf/sdk/srd';
-import { formatBonus, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { Chip, formatBonus, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { srd, tr, useSrd } from '../../../lib/srd';
 import { abilityName, rangeLabel } from '../../character-create/labels';
 import { Panel, SmallButton, StatBox } from '../components';
@@ -14,15 +14,21 @@ export function Spells({ sheet }: { sheet: Sheet }) {
   const theme = useRpgTheme();
   const { character, derived, isOwner, save } = sheet;
   const [learning, setLearning] = useState(false);
-  const classKey = character?.classes[0]?.classKey ?? null;
-  const maxLevel = derived ? Math.max(0, ...Object.keys(derived.slots).map(Number)) : 0;
+  // Multiclasse: cada classe aprende da própria lista, até o círculo que o nível nela dá.
+  const [learnIndex, setLearnIndex] = useState(0);
+  const caster = derived?.casters[learnIndex] ?? derived?.casters[0] ?? null;
+  const classKey = caster?.cls.key ?? null;
+  const maxLevel = caster?.maxCircle ?? 0;
   const edition = character?.edition;
   const available = useSrd(learning && classKey ? `spells:${classKey}:${maxLevel}:${edition}` : null, () =>
     srd.spells(classKey!, maxLevel, edition),
   );
   if (!character || !derived) return null;
-  const { castAbility, magic, slots, spells } = derived;
+  const { castAbility, magic, slots, pact, casters, spells } = derived;
   const used = character.spellcasting.slotsUsed;
+  const pactUsed = Math.min(pact?.count ?? 0, character.spellcasting.pactSlotsUsed);
+  const setPactUsed = (pactSlotsUsed: number) =>
+    void save({ spellcasting: { pactSlotsUsed } }, (c) => ({ ...c, spellcasting: { ...c.spellcasting, pactSlotsUsed } }));
   const prepared = new Map(character.spellcasting.spells.map((s) => [s.key, s.prepared]));
 
   const setUsed = (level: string, count: number) => {
@@ -56,44 +62,40 @@ export function Spells({ sheet }: { sheet: Sheet }) {
     <View style={styles.column}>
       {castAbility && magic && (
         <Panel title="Conjuração" icon="auto-fix">
-          <View style={styles.stats}>
-            <StatBox label="Atributo" value={abilityName(castAbility).slice(0, 3).toUpperCase()} />
-            <StatBox label="CD" value={String(magic.saveDC)} accent />
-            <StatBox label="Ataque" value={formatBonus(magic.attack)} />
-          </View>
-          {slotLevels.map((level) => {
-            const total = slots[level] ?? 0;
-            const spent = Math.min(total, used[level as keyof typeof used] ?? 0);
-            return (
-              <View key={level} style={styles.slotRow}>
-                <Text style={[typography.bodyStrong, styles.slotLabel, { color: theme.text }]}>{level}º</Text>
-                <View style={styles.pips}>
-                  {Array.from({ length: total }, (_, i) => {
-                    const isUsed = i < spent;
-                    return (
-                      <Pressable
-                        key={i}
-                        disabled={!isOwner}
-                        onPress={() => setUsed(level, isUsed ? i : i + 1)}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: isUsed }}
-                        accessibilityLabel={`Espaço de ${level}º círculo ${i + 1}${isUsed ? ', gasto' : ''}`}
-                        hitSlop={4}
-                        style={[
-                          styles.pip,
-                          { borderColor: theme.accent, backgroundColor: isUsed ? 'transparent' : theme.accent },
-                        ]}
-                      />
-                    );
-                  })}
-                </View>
-                <Text style={[typography.caption, { color: theme.textMuted }]}>
-                  {total - spent}/{total}
-                </Text>
+          {casters.map((c) => (
+            <View key={c.cls.key} style={styles.casterBlock}>
+              {casters.length > 1 && <Text style={[typography.caption, { color: theme.textMuted }]}>{tr.name(c.cls)}</Text>}
+              <View style={styles.stats}>
+                <StatBox label="Atributo" value={abilityName(c.ability).slice(0, 3).toUpperCase()} />
+                <StatBox label="CD" value={String(c.magic.saveDC)} accent />
+                <StatBox label="Ataque" value={formatBonus(c.magic.attack)} />
               </View>
-            );
-          })}
-          <Text style={[typography.caption, { color: theme.textMuted }]}>Toque num espaço para gastar; o descanso longo recupera todos.</Text>
+            </View>
+          ))}
+          {slotLevels.map((level) => (
+            <SlotRow
+              key={level}
+              label={`${level}º`}
+              name={`Espaço de ${level}º círculo`}
+              total={slots[level] ?? 0}
+              spent={Math.min(slots[level] ?? 0, used[level as keyof typeof used] ?? 0)}
+              editable={isOwner}
+              onChange={(n) => setUsed(level, n)}
+            />
+          ))}
+          {pact && (
+            <SlotRow
+              label={`P${pact.circle}º`}
+              name={`Espaço de Magia de Pacto (${pact.circle}º círculo)`}
+              total={pact.count}
+              spent={pactUsed}
+              editable={isOwner}
+              onChange={setPactUsed}
+            />
+          )}
+          <Text style={[typography.caption, { color: theme.textMuted }]}>
+            Toque num espaço para gastar; o descanso longo recupera todos{pact ? ' (os de Pacto, marcados com P, também voltam no descanso curto)' : ''}.
+          </Text>
           {isOwner && (
             <SmallButton
               icon={learning ? 'close' : 'book-plus-outline'}
@@ -105,7 +107,14 @@ export function Spells({ sheet }: { sheet: Sheet }) {
       )}
 
       {learning && (
-        <Panel title={`Lista de ${tr.name(derived.cls)} (até ${maxLevel}º círculo)`} icon="book-plus-outline">
+        <Panel title={`Lista de ${tr.name(caster?.cls ?? derived.cls)} (${maxLevel ? `até ${maxLevel}º círculo` : 'truques'})`} icon="book-plus-outline">
+          {casters.length > 1 && (
+            <View style={styles.chips}>
+              {casters.map((c, i) => (
+                <Chip key={c.cls.key} label={tr.name(c.cls)} selected={c === caster} onPress={() => setLearnIndex(i)} />
+              ))}
+            </View>
+          )}
           {available.status !== 'ready' ? (
             <Text style={[typography.caption, { color: theme.textMuted }]}>
               {available.status === 'error' ? 'Não deu para carregar a lista.' : 'Carregando…'}
@@ -143,6 +152,50 @@ export function Spells({ sheet }: { sheet: Sheet }) {
             ))}
           </Panel>
         ))}
+    </View>
+  );
+}
+
+/** Uma linha de espaços de magia: toque num para gastar ou devolver. */
+function SlotRow({
+  label,
+  name,
+  total,
+  spent,
+  editable,
+  onChange,
+}: {
+  label: string;
+  name: string;
+  total: number;
+  spent: number;
+  editable: boolean;
+  onChange: (spent: number) => void;
+}) {
+  const theme = useRpgTheme();
+  return (
+    <View style={styles.slotRow}>
+      <Text style={[typography.bodyStrong, styles.slotLabel, { color: theme.text }]}>{label}</Text>
+      <View style={styles.pips}>
+        {Array.from({ length: total }, (_, i) => {
+          const isUsed = i < spent;
+          return (
+            <Pressable
+              key={i}
+              disabled={!editable}
+              onPress={() => onChange(isUsed ? i : i + 1)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: isUsed }}
+              accessibilityLabel={`${name} ${i + 1}${isUsed ? ', gasto' : ''}`}
+              hitSlop={4}
+              style={[styles.pip, { borderColor: theme.accent, backgroundColor: isUsed ? 'transparent' : theme.accent }]}
+            />
+          );
+        })}
+      </View>
+      <Text style={[typography.caption, { color: theme.textMuted }]}>
+        {total - spent}/{total}
+      </Text>
     </View>
   );
 }
@@ -199,7 +252,9 @@ const styles = StyleSheet.create({
   column: { gap: spacing.lg },
   stats: { flexDirection: 'row', gap: spacing.sm },
   slotRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  slotLabel: { width: 28 },
+  slotLabel: { width: 36 },
+  casterBlock: { gap: spacing.xs },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   pips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   pip: { width: 22, height: 22, borderRadius: radius.pill, borderWidth: 2 },
   spell: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.sm, gap: spacing.sm },

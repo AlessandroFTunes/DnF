@@ -40,28 +40,32 @@ export function Features({ data }: { data: SheetData }) {
   const backgroundFeature = data.background?.benefits.find((b) => b.type === 'feature');
   return (
     <View style={styles.column}>
-      <Panel title={`Habilidades de ${tr.name(data.cls)}`} icon="sword-cross">
-        {data.features.map((f) => (
-          <Feature
-            key={f.key}
-            name={tr.name(f)}
-            badge={`Nv ${Math.min(...(f.gained_at ?? []).map((g) => g.level))}`}
-            desc={f.desc}
-          />
-        ))}
-      </Panel>
-      {data.subclass && data.subclassFeatures.length > 0 && (
-        <Panel title={tr.name(data.subclass)} icon="star-shooting-outline">
-          {data.subclassFeatures.map((f) => (
-            <Feature
-              key={f.key}
-              name={tr.name(f)}
-              badge={`Nv ${Math.min(...(f.gained_at ?? []).map((g) => g.level))}`}
-              desc={f.desc}
-            />
-          ))}
-        </Panel>
-      )}
+      {data.classes.map((c) => (
+        <View key={c.cls.key} style={styles.column}>
+          <Panel title={`Habilidades de ${tr.name(c.cls)}${data.classes.length > 1 ? ` (nível ${c.level})` : ''}`} icon="sword-cross">
+            {c.features.map((f) => (
+              <Feature
+                key={f.key}
+                name={tr.name(f)}
+                badge={`Nv ${Math.min(...(f.gained_at ?? []).map((g) => g.level))}`}
+                desc={f.desc}
+              />
+            ))}
+          </Panel>
+          {c.subclass && c.subclassFeatures.length > 0 && (
+            <Panel title={tr.name(c.subclass)} icon="star-shooting-outline">
+              {c.subclassFeatures.map((f) => (
+                <Feature
+                  key={f.key}
+                  name={tr.name(f)}
+                  badge={`Nv ${Math.min(...(f.gained_at ?? []).map((g) => g.level))}`}
+                  desc={f.desc}
+                />
+              ))}
+            </Panel>
+          )}
+        </View>
+      ))}
       {data.species && data.species.traits.length > 0 && (
         <Panel title={`Traços de ${data.chain.length ? tr.name(data.chain.at(-1)!) : 'espécie'}`} icon="account-outline">
           {data.species.traits.map((t) => (

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ABILITIES, abilityModifier, type Ability } from '@dnf/core/character';
 import { POINT_BUY_BUDGET, POINT_BUY_COST } from '@dnf/sdk/srd';
@@ -37,9 +37,10 @@ export default function AbilitiesPage() {
   const { klass, cls, species, bg, base, scores, speciesBonus, originAmounts, customOrigin, originComplete } = useCreation();
   const { abilityPool: pool, abilityAssignment: assignment, abilityMethod: method } = draft;
 
+  const assigning = method === 'standard' || method === 'roll';
   const saves = new Set(klass?.savingThrows ?? []);
   const firstFree = (from: Partial<Record<Ability, number>>) => ABILITIES.find((a) => from[a] === undefined) ?? null;
-  const [active, setActive] = useState<Ability | null>(() => (method === 'pointBuy' ? null : firstFree(assignment)));
+  const [active, setActive] = useState<Ability | null>(() => (assigning ? firstFree(assignment) : null));
 
   const usedBy = (index: number) => ABILITIES.find((a) => assignment[a] === index);
   const pointsSpent = ABILITIES.reduce((sum, a) => sum + cost(draft.pointBuy[a]), 0);
@@ -53,7 +54,16 @@ export default function AbilitiesPage() {
   function setMethod(next: AbilityMethod) {
     if (next === method) return;
     update({ abilityMethod: next, abilityPool: next === 'roll' ? rollPool() : STANDARD_ARRAY, abilityAssignment: {} });
-    setActive(next === 'pointBuy' ? null : ABILITIES[0]);
+    setActive(next === 'standard' || next === 'roll' ? ABILITIES[0] : null);
+  }
+
+  /** Manual: aceita só 1 a 30; vazio tira o valor. */
+  function setManual(a: Ability, text: string) {
+    const next = { ...draft.manualScores };
+    const n = parseInt(text.replace(/\D/g, ''), 10);
+    if (Number.isNaN(n)) delete next[a];
+    else next[a] = Math.min(30, Math.max(1, n));
+    update({ manualScores: next });
   }
 
   /** Coloca o valor no atributo ativo; se o valor já estava em outro, os dois trocam. */
@@ -94,7 +104,9 @@ export default function AbilitiesPage() {
       subtitle={
         method === 'pointBuy'
           ? 'Gaste até 27 pontos: cada atributo vai de 8 a 15.'
-          : 'Toque em um atributo e depois no valor que quer dar a ele.'
+          : method === 'manual'
+            ? 'Digite os valores base (antes dos bônus), por exemplo de outra ficha.'
+            : 'Toque em um atributo e depois no valor que quer dar a ele.'
       }
       canContinue={base !== null && bonusOk && originComplete}
     >
@@ -117,6 +129,12 @@ export default function AbilitiesPage() {
           onPress={() => setMethod('roll')}
           icon={(c) => <MaterialCommunityIcons name="dice-multiple-outline" size={16} color={c} />}
         />
+        <Chip
+          label="Manual"
+          selected={method === 'manual'}
+          onPress={() => setMethod('manual')}
+          icon={(c) => <MaterialCommunityIcons name="pencil-outline" size={16} color={c} />}
+        />
       </View>
 
       {method === 'pointBuy' ? (
@@ -132,6 +150,14 @@ export default function AbilitiesPage() {
               style={[styles.trackFill, { backgroundColor: theme.gold, width: `${(pointsSpent / POINT_BUY_BUDGET) * 100}%` }]}
             />
           </View>
+        </View>
+      ) : method === 'manual' ? (
+        <View style={[styles.bonusCard, styles.bonusRow, { borderColor: theme.gold, backgroundColor: theme.goldSoft }]}>
+          <MaterialCommunityIcons name="alert-outline" size={20} color={theme.gold} />
+          <Text style={[typography.caption, { color: theme.text, flex: 1 }]}>
+            Use os valores base, sem os bônus de raça e antecedente: eles são somados depois. Se copiar os valores
+            finais de outra ficha, o bônus entra duas vezes.
+          </Text>
         </View>
       ) : (
         <View style={[styles.poolCard, { backgroundColor: theme.surfaceSunken, borderColor: theme.border }]}>
@@ -187,7 +213,9 @@ export default function AbilitiesPage() {
           const baseValue =
             method === 'pointBuy'
               ? draft.pointBuy[ability]
-              : assignment[ability] === undefined
+              : method === 'manual'
+                ? draft.manualScores[ability]
+                : assignment[ability] === undefined
                 ? undefined
                 : pool[assignment[ability]!];
           const bonus = (speciesBonus[ability] ?? 0) + (draft.bonusPicks[ability] ?? 0);
@@ -197,8 +225,8 @@ export default function AbilitiesPage() {
           return (
             <Pressable
               key={ability}
-              onPress={() => method !== 'pointBuy' && setActive(ability)}
-              accessibilityRole={method === 'pointBuy' ? 'text' : 'button'}
+              onPress={() => assigning && setActive(ability)}
+              accessibilityRole={assigning ? 'button' : 'text'}
               accessibilityState={{ selected: isActive }}
               accessibilityLabel={`${label.name}: ${finalValue ?? 'sem valor'}`}
               style={[
@@ -250,6 +278,17 @@ export default function AbilitiesPage() {
                     label={`Aumentar ${label.name}`}
                   />
                 </View>
+              ) : method === 'manual' ? (
+                <TextInput
+                  value={draft.manualScores[ability]?.toString() ?? ''}
+                  onChangeText={(text) => setManual(ability, text)}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  placeholder="Base"
+                  placeholderTextColor={theme.textMuted}
+                  accessibilityLabel={`Valor base de ${label.name}`}
+                  style={[styles.manualInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+                />
               ) : (
                 <Text style={[typography.caption, { color: theme.text }]} numberOfLines={1}>
                   {label.name}
@@ -269,7 +308,7 @@ export default function AbilitiesPage() {
         </View>
       )}
 
-      {method !== 'pointBuy' && (
+      {assigning && (
         <View style={styles.actions}>
           <Button
             label="Distribuir para mim"
@@ -527,6 +566,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  manualInput: {
+    width: 64,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingVertical: spacing.xs,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '700',
   },
   legend: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   actions: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },

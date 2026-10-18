@@ -239,7 +239,10 @@ function Sidebar({
     }
   };
   const species = derived?.chain.at(-1);
-  const subtitle = [species && tr.name(species), derived && tr.name(derived.cls), `nível ${character.level}`]
+  // Multiclasse: "Guerreiro 3 / Mago 2".
+  const classNames =
+    derived && (derived.classes.length > 1 ? derived.classes.map((c) => `${tr.name(c.cls)} ${c.level}`).join(' / ') : tr.name(derived.cls));
+  const subtitle = [species && tr.name(species), classNames, `nível ${character.level}`]
     .filter(Boolean)
     .join(' · ');
 

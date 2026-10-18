@@ -31,7 +31,8 @@ export namespace Sheet {
     hpMax: count.default(0),
     hpCurrent: count.default(0),
     hpTemp: count.default(0),
-    hitDiceSpent: count.default(0),
+    /** Dados de vida gastos por tipo de dado ("10" = d10), para a multiclasse. Fichas antigas (número) começam do zero. */
+    hitDiceSpent: z.record(z.string().regex(/^\d+$/), count).catch({}).default({}),
     deathSaves: z
       .object({ successes: z.number().int().min(0).max(3), failures: z.number().int().min(0).max(3) })
       .default({ successes: 0, failures: 0 }),

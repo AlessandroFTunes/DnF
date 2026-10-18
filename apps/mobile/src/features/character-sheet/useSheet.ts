@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { abilityModifier, Character, proficiencyBonus, type Ability } from '@dnf/core/character';
 import {
+  abilityFromName,
   applyFeatureIncreases,
   armorClass,
   asiLevels,
   backgroundRules,
+  characterSpellSlots,
   classFeaturesUpTo,
   classRules,
+  hitDicePools,
   isBodyArmor,
   isShield,
   isWeaponProficient,
+  multiclassProficiencies,
   skillBonus,
   SKILLS,
   speciesRules,
@@ -17,7 +21,9 @@ import {
   spellSlots,
   spellStats,
   subclassLevel,
+  toolName,
   weaponAttack,
+  type SrdClassDetail,
   type SrdSpecies,
 } from '@dnf/sdk/srd';
 import { useSession } from '../../hooks/hook.session';
@@ -71,11 +77,19 @@ export function useSheet(id: string) {
   );
 
   const edition = character?.edition ?? null;
-  const classKey = character?.classes[0]?.classKey ?? null;
+  const classKeys = character?.classes.map((c) => c.classKey) ?? [];
+  const classesID = classKeys.join(',');
   const level = character?.level ?? 1;
 
-  const classQ = useSrd(classKey && `class:${classKey}`, () => srd.classDetail(classKey!));
-  const subclassesQ = useSrd(classKey && `subclasses:${classKey}`, () => srd.subclasses(classKey!));
+  // Multiclasse: uma consulta para todas as classes do personagem (na ordem de `character.classes`).
+  const classQ = useSrd(classesID ? `classDetails:${classesID}` : null, () => Promise.all(classKeys.map((k) => srd.classDetail(k))));
+  const subclassesQ = useSrd(classesID ? `subclassesOf:${classesID}` : null, () => Promise.all(classKeys.map((k) => srd.subclasses(k))));
+  // Ao entrar numa classe nova, a consulta muda de chave e volta a carregar: até chegar, a ficha segue com as
+  // classes já carregadas (a árvore não desmonta no meio da comemoração do nível).
+  const [loadedClasses, setLoadedClasses] = useState<{ id: string; data: SrdClassDetail[] } | null>(null);
+  if (classQ.status === 'ready' && loadedClasses?.id !== classesID) setLoadedClasses({ id: classesID, data: classQ.data });
+  const classDetails = classQ.status === 'ready' ? classQ.data : (loadedClasses?.data ?? null);
+  const multiclassQ = useSrd(edition && classKeys.length > 1 ? `multiclassSlots:${edition}` : null, () => srd.multiclassSlots(edition!));
   const speciesQ = useSrd(edition && `species:${edition}`, () => srd.species(edition!));
   const backgroundsQ = useSrd(edition && `backgrounds:${edition}`, () => srd.backgrounds(edition!));
   const languagesQ = useSrd('languages', () => srd.languages());
@@ -84,24 +98,50 @@ export function useSheet(id: string) {
   const itemsQ = useSrd(itemKeys.length ? `itemsByKey:${[...itemKeys].sort().join(',')}` : null, () =>
     srd.itemsByKey(itemKeys),
   );
+  // Nomes das ferramentas guardadas (ex.: as da multiclasse) vêm da lista da edição.
+  const toolsQ = useSrd(edition && character?.proficiencies.tools.length ? `items:${edition}` : null, () => srd.items(edition!));
   const spellKeys = character?.spellcasting.spells.map((s) => s.key) ?? [];
   const spellsQ = useSrd(spellKeys.length ? `spellsByKey:${[...spellKeys].sort().join(',')}` : null, () =>
     srd.spellsByKey(spellKeys),
   );
 
   const derived = useMemo(() => {
-    if (!character || classQ.status !== 'ready') return null;
+    if (!character || !classDetails) return null;
     const pb = proficiencyBonus(level);
     const skills = SKILLS;
-    const cls = classQ.data;
-    const klass = classRules(cls, skills);
-    const subclasses = subclassesQ.status === 'ready' ? subclassesQ.data : [];
-    const subclassKey = character.classes[0]?.subclassKey ?? null;
-    const subclass = subclasses.find((s) => s.key === subclassKey) ?? null;
-    const features = classFeaturesUpTo(cls, level);
-    const subclassFeatures = subclass ? classFeaturesUpTo(subclass, level) : [];
+    const subclassLists = subclassesQ.status === 'ready' ? subclassesQ.data : [];
+    // Cada classe no nível que o personagem tem nela; a primeira é a classe inicial.
+    const classes = character.classes.flatMap((entry, i) => {
+      const cls = classDetails.find((c) => c.key === entry.classKey);
+      if (!cls) return [];
+      const klass = classRules(cls, skills);
+      // A lista só vale se for desta mesma combinação de classes (pode estar recarregando).
+      const subclasses = subclassLists.length === character.classes.length ? (subclassLists[i] ?? []) : [];
+      const subclass = subclasses.find((s) => s.key === entry.subclassKey) ?? null;
+      return [{
+        entry,
+        level: entry.level,
+        cls,
+        klass,
+        subclasses,
+        subclass,
+        subclassLevel: subclassLevel(subclasses, cls),
+        asiLevels: asiLevels(cls),
+        features: classFeaturesUpTo(cls, entry.level),
+        subclassFeatures: subclass ? classFeaturesUpTo(subclass, entry.level) : [],
+        hitDie: klass.hitDie,
+      }];
+    });
+    const primary = classes[0];
+    if (!primary) return null;
+    const { cls, klass, subclasses, subclass } = primary;
+    const features = classes.flatMap((c) => c.features);
+    const subclassFeatures = classes.flatMap((c) => c.subclassFeatures);
     // A ficha guarda os valores base + escolhas; aumentos de características (Campeão Primitivo…) vêm da API.
     const scores = applyFeatureIncreases(character.abilities, [...features, ...subclassFeatures]);
+    // Multiclasse: as classes seguintes dão só parte das proficiências (armas, armaduras).
+    const multiclass = classes.slice(1).map((c) => multiclassProficiencies(c.cls, skills));
+    const weaponTrainings = [klass.weaponTraining, ...multiclass.map((p) => p.weapons.join(', '))].filter(Boolean);
 
     let chain: SrdSpecies[] = [];
     if (speciesQ.status === 'ready') {
@@ -134,7 +174,7 @@ export function useSheet(id: string) {
       armor: armor?.item?.armor ?? null,
       armorName: armor?.item?.name,
       shield,
-      unarmoredDefense: klass.unarmoredDefense,
+      unarmoredDefense: classes.map((c) => c.klass.unarmoredDefense).find((a) => a !== null) ?? null,
     });
 
     const attacks = inventory
@@ -142,7 +182,7 @@ export function useSheet(id: string) {
       .map((i) => ({
         key: i.key,
         name: i.item!.name,
-        ...weaponAttack(i.item!.weapon, scores, pb, isWeaponProficient(i.item!.weapon!, klass.weaponTraining))!,
+        ...weaponAttack(i.item!.weapon, scores, pb, weaponTrainings.some((t) => isWeaponProficient(i.item!.weapon!, t)))!,
       }));
 
     const saves = Object.fromEntries(
@@ -157,10 +197,22 @@ export function useSheet(id: string) {
 
     const feats = featsQ.status === 'ready' ? featsQ.data.filter((f) => character.featKeys.includes(f.key)) : [];
     const casting = klass.spellcasting;
-    const slots = spellSlots(cls, level);
-    // Paladino/patrulheiro de 2014 só conjuram do 2º nível em diante: o atributo vem da feature.
-    const castAbility = casting?.ability ?? (Object.keys(slots).length ? spellcastingAbility(cls) : null);
-    const magic = castAbility ? spellStats(castAbility, scores, pb) : null;
+    // Espaços de magia de todas as classes (tabela de multiclasse se mais de uma conjura); Pacto à parte.
+    const { slots, pact } = characterSpellSlots(
+      classes.map((c) => ({ cls: c.cls, subclass: c.subclass, level: c.level })),
+      multiclassQ.status === 'ready' ? multiclassQ.data : [],
+    );
+    // Cada classe conjura com o próprio atributo e escolhe magias da própria lista, até o círculo do nível dela.
+    const casters = classes.flatMap((c) => {
+      const own = spellSlots(c.cls, c.level);
+      const fromSubclass = c.subclass?.casting && c.level >= c.subclassLevel ? (abilityFromName(c.subclass.casting.atributo) ?? null) : null;
+      // Paladino/patrulheiro de 2014 só conjuram do 2º nível em diante: o atributo vem da feature.
+      const ability = c.klass.spellcasting?.ability ?? (Object.keys(own).length ? spellcastingAbility(c.cls) : null) ?? fromSubclass;
+      if (!ability) return [];
+      return [{ cls: c.cls, ability, magic: spellStats(ability, scores, pb), maxCircle: Math.max(0, ...Object.keys(own).map(Number)) }];
+    });
+    const castAbility = casters[0]?.ability ?? null;
+    const magic = casters[0]?.magic ?? null;
     const knownLanguages = [
       ...(edition === '2024' ? languages.filter((l) => l.key === 'common') : languages.filter((l) => species?.languages.includes(l.name))),
       ...languages.filter((l) => character.proficiencies.languages.includes(l.key)),
@@ -169,10 +221,11 @@ export function useSheet(id: string) {
     return {
       scores,
       pb,
+      classes,
       subclasses,
       subclass,
-      subclassLevel: subclassLevel(subclasses, cls),
-      asiLevels: asiLevels(cls),
+      subclassLevel: primary.subclassLevel,
+      asiLevels: primary.asiLevels,
       skills,
       cls,
       klass,
@@ -190,6 +243,8 @@ export function useSheet(id: string) {
       casting,
       castAbility,
       slots,
+      pact,
+      casters,
       magic,
       knownLanguages,
       features,
@@ -199,8 +254,15 @@ export function useSheet(id: string) {
       spellsLoading: character.spellcasting.spells.length > 0 && spellsQ.status === 'loading',
       subclassesLoading: subclassesQ.status === 'loading',
       hitDie: klass.hitDie,
+      /** Dados de vida por tipo (multiclasse), do maior para o menor, com os gastos. */
+      hitDice: hitDicePools(classes, character.combat.hitDiceSpent),
+      /** Ferramentas escolhidas pelo jogador (multiclasse), pelo nome. */
+      tools:
+        toolsQ.status === 'ready'
+          ? character.proficiencies.tools.map((k) => toolName(k, toolsQ.data)).filter((n): n is string => !!n)
+          : [],
     };
-  }, [character, level, edition, classQ, subclassesQ, speciesQ, backgroundsQ, languagesQ, featsQ, itemsQ, spellsQ]);
+  }, [character, level, edition, classDetails, subclassesQ, multiclassQ, toolsQ, speciesQ, backgroundsQ, languagesQ, featsQ, itemsQ, spellsQ]);
 
   const viewerID = session.status === 'signedIn' ? session.session.userID : null;
   const isOwner = !!character && character.ownerID === viewerID;
@@ -215,7 +277,7 @@ export function useSheet(id: string) {
     save,
     reload: load,
     srdFailed,
-    retrySrd: () => [classQ, subclassesQ, speciesQ, backgroundsQ, itemsQ, spellsQ].forEach((q) => q.retry()),
+    retrySrd: () => [classQ, subclassesQ, multiclassQ, speciesQ, backgroundsQ, itemsQ, spellsQ].forEach((q) => q.retry()),
   };
 }
 

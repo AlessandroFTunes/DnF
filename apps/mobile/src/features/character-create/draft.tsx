@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 import type { Ability, AbilityScores } from '@dnf/core/character';
 import type { DiferenteKey } from '@dnf/core/util';
 
-export type AbilityMethod = 'standard' | 'roll' | 'pointBuy';
+export type AbilityMethod = 'standard' | 'roll' | 'pointBuy' | 'manual';
 /** 2024: o antecedente dá +2/+1 em dois atributos ou +1 em três. */
 export type BonusMode = 'twoOne' | 'threeOnes';
 
@@ -23,6 +23,8 @@ export interface CharacterDraft {
   abilityAssignment: Partial<Record<Ability, number>>;
   /** Compra por pontos: valor de cada atributo (8 a 15). */
   pointBuy: AbilityScores;
+  /** Manual: valores digitados (ex.: copiados de outra ficha), antes dos bônus. */
+  manualScores: Partial<Record<Ability, number>>;
   bonusMode: BonusMode;
   /** Regra opcional do Caldeirão de Tasha (2014): mover os bônus de atributo da raça. */
   customOrigin: boolean;
@@ -86,6 +88,7 @@ const EMPTY: CharacterDraft = {
   abilityPool: STANDARD_ARRAY,
   abilityAssignment: {},
   pointBuy: ALL_EIGHT,
+  manualScores: {},
   bonusMode: 'twoOne',
   customOrigin: false,
   originSlots: [],
@@ -153,6 +156,7 @@ export function CharacterDraftProvider({ children }: { children: ReactNode }) {
                 abilityPool: d.abilityPool,
                 abilityAssignment: d.abilityAssignment,
                 pointBuy: d.pointBuy,
+                manualScores: d.manualScores,
                 name: d.name,
                 personality: d.personality,
                 details: d.details,

@@ -7,9 +7,10 @@ import type {
   SrdClassFeature,
   SrdItem,
   SrdItemKind,
+  SrdMulticlassSlots,
   SrdSpecies,
 } from './catalog';
-import { ABILITY_NAMES, SKILLS, type SrdSkill } from './reference';
+import { ABILITY_NAMES, MULTICLASS_REQUIREMENTS, SKILLS, type SrdSkill } from './reference';
 
 type Schemas = components['schemas'];
 
@@ -134,18 +135,32 @@ const tableNumber = (cls: SrdClassDetail, column: RegExp, level: number) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-const PACT_SLOTS = /^espa[çc]os de magia$/i;
-const PACT_LEVEL = /(c[íi]rculo|n[íi]vel) (do|dos) espa[çc]o/i;
+// Bruxo 2024: "Espaço de Magia" e "Círculo de Magia"; outros livros: "Espaços de Magia", "Nível do Espaço".
+const PACT_SLOTS = /^espa[çc]os? de magia$/i;
+const PACT_LEVEL = /^(c[íi]rculo|n[íi]vel) d[eo]s? (espa[çc]os?|magia)/i;
 
-/** Espaços de magia por círculo ("1"…"9") no nível de personagem dado. */
-export function spellSlots(cls: SrdClassDetail, level: number): Partial<Record<string, number>> {
-  const slots: Partial<Record<string, number>> = {};
-  (levelRow(cls, level)?.espacos_magia ?? []).forEach((n, i) => {
+type SlotsByCircle = Partial<Record<string, number>>;
+
+/** [4, 3, 0…] (do 1º círculo em diante) → { "1": 4, "2": 3 }. */
+function byCircle(list: number[]): SlotsByCircle {
+  const slots: SlotsByCircle = {};
+  list.forEach((n, i) => {
     if (n > 0) slots[String(i + 1)] = n;
   });
-  // Bruxo (Magia de Pacto): todos os espaços no mesmo círculo, em colunas próprias.
-  const pact = tableNumber(cls, PACT_SLOTS, level);
-  if (pact > 0) slots[String(tableNumber(cls, PACT_LEVEL, level) || 1)] = pact;
+  return slots;
+}
+
+/** Bruxo (Magia de Pacto): todos os espaços no mesmo círculo, em colunas próprias da tabela. */
+export function pactSlots(cls: SrdClassDetail, level: number): { circle: number; count: number } | null {
+  const count = tableNumber(cls, PACT_SLOTS, level);
+  return count > 0 ? { circle: tableNumber(cls, PACT_LEVEL, level) || 1, count } : null;
+}
+
+/** Espaços de magia por círculo ("1"…"9") no nível de personagem dado. */
+export function spellSlots(cls: SrdClassDetail, level: number): SlotsByCircle {
+  const slots = byCircle(levelRow(cls, level)?.espacos_magia ?? []);
+  const pact = pactSlots(cls, level);
+  if (pact) slots[String(pact.circle)] = pact.count;
   return slots;
 }
 
@@ -236,6 +251,110 @@ function parseArmorTraining(text: string): ClassRules['armorProficiencies'] {
   if (/\bpesadas?\b/.test(lower)) set.add('heavy');
   if (/escudo/.test(lower)) set.add('shield');
   return set;
+}
+
+// ---------------------------------------------------------------------------
+// Multiclasse
+
+/** Uma classe do personagem, com a subclasse escolhida e o nível nela. A primeira é a classe inicial. */
+export interface ClassEntry {
+  cls: SrdClassDetail;
+  subclass: SrdClassDetail | null;
+  level: number;
+}
+
+/** Requisitos da multiclasse: os da API ou, sem eles, os do Livro do Jogador; null numa classe desconhecida (homebrew). */
+export function multiclassRequirements(cls: SrdClassDetail): { requisitos: string[][]; minimo: number } | null {
+  const api = cls.api?.multiclasse_regras;
+  if (api && api.requisitos.length > 0) return api;
+  const known = MULTICLASS_REQUIREMENTS[normalize(cls.name)];
+  return known ? { requisitos: known, minimo: 13 } : null;
+}
+
+/**
+ * Atributo mínimo da classe para a multiclasse: basta uma das alternativas, e dentro dela valem todos os
+ * atributos. Para entrar numa classe nova é preciso cumprir o desta e o de todas as que o personagem já tem.
+ * Classe sem requisito conhecido (homebrew) ou atributo não reconhecido não bloqueia.
+ */
+export function meetsMulticlassRequirements(cls: SrdClassDetail, scores: AbilityScores): boolean {
+  const rules = multiclassRequirements(cls);
+  if (!rules) return true;
+  return rules.requisitos.some((all) =>
+    all.every((name) => {
+      const ability = abilityFromName(name);
+      return !ability || scores[ability] >= rules.minimo;
+    }),
+  );
+}
+
+export interface MulticlassProficiencies {
+  armor: ClassRules['armorProficiencies'];
+  /** Categorias de arma ("Marcial"). */
+  weapons: string[];
+  tools: string[];
+  skillChoice: SkillChoice | null;
+}
+
+/** O que se ganha ao entrar na classe como multiclasse (só parte das proficiências da classe inicial). */
+export function multiclassProficiencies(cls: SrdClassDetail, skills: SkillInfo[] = SKILLS): MulticlassProficiencies {
+  const rules = cls.api?.multiclasse_regras;
+  const choice = rules?.pericias;
+  const options = (choice?.opcoes ?? []).map((name) => skillKey(name, skills)).filter((k): k is string => !!k);
+  return {
+    armor: parseArmorTraining((rules?.armaduras ?? []).join(' ')),
+    weapons: rules?.armas ?? [],
+    tools: rules?.ferramentas ?? [],
+    skillChoice: choice ? { count: choice.quantidade, options: options.length ? options : null } : null,
+  };
+}
+
+const castingOf = (e: ClassEntry) => e.cls.casting ?? e.subclass?.casting ?? null;
+/** Conjuração que usa os espaços comuns; sem `conjuracao` cadastrada (homebrew), vale ter espaços na tabela. */
+const sharesSlots = (e: ClassEntry) => {
+  const casting = castingOf(e);
+  if (casting) return casting.tipo !== 'pacto';
+  return (e.cls.api?.progressao ?? []).some((r) => (r.espacos_magia ?? []).some((n) => n > 0));
+};
+
+/**
+ * Nível de conjurador da multiclasse, como a API define: "completa" soma o nível, "meia" a metade (para
+ * cima), "terco" um terço (para baixo); a Magia de Pacto não entra.
+ */
+export function casterLevel(entries: ClassEntry[]): number {
+  return entries.reduce((sum, e) => {
+    switch (castingOf(e)?.tipo) {
+      case 'completa':
+        return sum + e.level;
+      case 'meia':
+        return sum + Math.ceil(e.level / 2);
+      case 'terco':
+        return sum + Math.floor(e.level / 3);
+      default:
+        return sum;
+    }
+  }, 0);
+}
+
+/**
+ * Espaços de magia do personagem. Com conjuração de mais de uma classe (fora a Magia de Pacto), vale a
+ * tabela do conjurador multiclasse (`srd.multiclassSlots`); com uma só, a tabela da própria classe.
+ * A Magia de Pacto fica à parte (`pact`), porque volta no descanso curto.
+ */
+export function characterSpellSlots(
+  entries: ClassEntry[],
+  multiclassTable: SrdMulticlassSlots[],
+): { slots: SlotsByCircle; pact: { circle: number; count: number } | null } {
+  const casters = entries.filter(sharesSlots);
+  let slots: SlotsByCircle = {};
+  if (casters.length > 1) {
+    const level = casterLevel(casters);
+    const rows = multiclassTable.filter((r) => r.casterLevel <= level);
+    slots = byCircle(rows[rows.length - 1]?.slots ?? []);
+  } else if (casters[0]) {
+    slots = byCircle(levelRow(casters[0].cls, casters[0].level)?.espacos_magia ?? []);
+  }
+  const pact = entries.map((e) => pactSlots(e.cls, e.level)).find((p) => p !== null) ?? null;
+  return { slots, pact };
 }
 
 // ---------------------------------------------------------------------------
@@ -357,6 +476,31 @@ export function findItem(name: string, items: SrdItem[], kind?: SrdItemKind): Sr
     pool.find((i) => normalize(i.name) === normalize(name)) ??
     singulars(wanted).map((v) => pool.find((i) => itemName(i.name) === v)).find(Boolean);
   return (kind && exact(items.filter((i) => i.kind === kind))) || exact(items);
+}
+
+/** Proficiência de ferramenta guardada na ficha: "ferramenta:18" ou, com variante, "ferramenta:20:Alaúde". */
+export function toolKey(item: SrdItem, variant?: string): string {
+  return variant ? `${item.key}:${variant}` : item.key;
+}
+
+/** Nome para a ficha: a variante ("Alaúde") ou o nome da ferramenta; null se a chave não existe mais. */
+export function toolName(key: string, items: SrdItem[]): string | null {
+  // Sem o item na API, a ficha guarda o nome como veio ("Ferramentas de Ladrão").
+  if (!key.includes(':')) return key;
+  const [kind, id, variant] = key.split(':');
+  return variant ?? items.find((i) => i.key === `${kind}:${id}`)?.name ?? null;
+}
+
+/** Dados de vida por tipo, do maior para o menor, com quantos estão gastos. */
+export function hitDicePools(
+  classes: { hitDie: number; level: number }[],
+  spent: Partial<Record<string, number>>,
+): { die: number; total: number; spent: number }[] {
+  const totals = new Map<number, number>();
+  for (const c of classes) totals.set(c.hitDie, (totals.get(c.hitDie) ?? 0) + c.level);
+  return [...totals]
+    .sort(([a], [b]) => b - a)
+    .map(([die, total]) => ({ die, total, spent: Math.min(total, spent[String(die)] ?? 0) }));
 }
 
 /** Quantidade em unidades do item: "20 Flechas" com o item "Flechas (20)" é 1 pacote. */
@@ -577,10 +721,16 @@ export function armorClass(input: {
 
 /** PV máximos: dado cheio no 1º nível, média arredondada para cima depois (+ CON por nível). */
 export function hitPointMax(hitDie: number, level: number, conScore: number, extraPerLevel = 0): number {
-  const con = abilityModifier(conScore);
-  const first = hitDie + con;
-  const later = (level - 1) * (Math.floor(hitDie / 2) + 1 + con);
-  return Math.max(1, first + later + extraPerLevel * level);
+  return multiclassHitPointMax([{ hitDie, level }], conScore, extraPerLevel);
+}
+
+/** Multiclasse: o dado cheio é só o do 1º nível da classe inicial (a primeira); os outros níveis usam a média do dado da sua classe. */
+export function multiclassHitPointMax(classes: { hitDie: number; level: number }[], conScore: number, extraPerLevel = 0): number {
+  const average = (die: number) => Math.floor(die / 2) + 1;
+  const level = classes.reduce((sum, c) => sum + c.level, 0);
+  const first = classes[0] ? classes[0].hitDie - average(classes[0].hitDie) : 0;
+  const levels = classes.reduce((sum, c) => sum + c.level * average(c.hitDie), 0);
+  return Math.max(1, first + levels + (abilityModifier(conScore) + extraPerLevel) * level);
 }
 
 export function skillBonus(

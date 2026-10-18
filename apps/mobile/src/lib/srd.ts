@@ -50,8 +50,10 @@ export const tr = {
  *  4: troca da Open5e pela 5e-FastAPI
  *  5: característica repetida em níveis maiores (Golpe Brutal Fortalecido 13 e 17) vira uma só
  *  6: talentos, equipamento e magias dos três livros carregados (o cache tinha as listas vazias); Artífice na criação 2024
+ *  7: classes e subclasses com `casting` (conjuração para a multiclasse)
+ *  8: ferramentas com `variants` (proficiência de ferramenta da multiclasse)
  */
-const SRD_CACHE_VERSION = 6;
+const SRD_CACHE_VERSION = 8;
 const cacheReady = persistentCache.get<number>('meta:version').then(async (stored) => {
   if (stored === SRD_CACHE_VERSION) return;
   await persistentCache.clear();

@@ -103,3 +103,25 @@ export const ALIGNMENTS: SrdAlignment[] = (['lawful', 'neutral', 'chaotic'] as c
     morality,
   })),
 );
+
+/**
+ * Requisitos de multiclasse do Livro do Jogador 2024 (mínimo 13), pelo nome da classe sem acentos. Só valem
+ * quando a API não manda `multiclasse_regras` (ex.: banco sem esse cadastro): basta uma das alternativas, e
+ * dentro dela valem todos os atributos.
+ */
+export const MULTICLASS_REQUIREMENTS: Record<string, string[][]> = {
+  barbaro: [['Força']],
+  bardo: [['Carisma']],
+  bruxo: [['Carisma']],
+  clerigo: [['Sabedoria']],
+  druida: [['Sabedoria']],
+  feiticeiro: [['Carisma']],
+  guerreiro: [['Força'], ['Destreza']],
+  ladino: [['Destreza']],
+  mago: [['Inteligência']],
+  monge: [['Destreza', 'Sabedoria']],
+  paladino: [['Força', 'Carisma']],
+  patrulheiro: [['Destreza', 'Sabedoria']],
+  guardiao: [['Destreza', 'Sabedoria']],
+  artifice: [['Inteligência']],
+};
