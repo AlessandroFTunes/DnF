@@ -4,7 +4,6 @@ import {
   Animated,
   Easing,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { StartSheet } from './StartSheet';
 import { Button, D20, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 
 type Icon = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -51,15 +51,16 @@ const TOKEN = 52;
 const useNativeDriver = Platform.OS !== 'web';
 
 export interface WelcomeProps {
-  onStart: () => void;
-  onLogin: () => void;
+  /** "Continuar com email" na folha de começar: abre /login, que descobre pelo email se é entrar ou criar conta. */
+  onEmail: () => void;
 }
 
 /** Abertura antes do login: o d20 no centro, anéis girando com peças de RPG e o convite para começar. */
-export function Welcome({ onStart, onLogin }: WelcomeProps) {
+export function Welcome({ onEmail }: WelcomeProps) {
   const theme = useRpgTheme();
   const [stage, setStage] = useState({ width: 0, height: 0 });
   const [textWidth, setTextWidth] = useState(0);
+  const [sheet, setSheet] = useState(false);
   const [spin] = useState(() => new Animated.Value(0));
   const [enter] = useState(() => new Animated.Value(0));
 
@@ -200,14 +201,18 @@ export function Welcome({ onStart, onLogin }: WelcomeProps) {
             </GradientText>
           )}
 
-          <Button label="Começar" onPress={onStart} style={styles.start} />
-          <Pressable onPress={onLogin} accessibilityRole="button" hitSlop={8} style={styles.login}>
-            <Text style={{ color: theme.textMuted }}>
-              Já tem conta? <Text style={{ color: theme.accent, fontWeight: '700' }}>Entrar</Text>
-            </Text>
-          </Pressable>
+          <Button label="Começar" onPress={() => setSheet(true)} style={styles.start} />
         </Animated.View>
       </SafeAreaView>
+
+      <StartSheet
+        visible={sheet}
+        onClose={() => setSheet(false)}
+        onEmail={() => {
+          setSheet(false);
+          onEmail();
+        }}
+      />
     </View>
   );
 }
@@ -254,7 +259,8 @@ function GradientText({ width, from, to, children }: { width: number; from: stri
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  // Os anéis de fora vazam do palco: corta na borda da tela (na web, senão a página ganha rolagem).
+  screen: { flex: 1, overflow: 'hidden' },
   safe: { flex: 1 },
   stage: { flex: 1, overflow: 'visible' },
   ring: { position: 'absolute', borderWidth: 1.5 },
@@ -282,5 +288,4 @@ const styles = StyleSheet.create({
   brandName: { fontFamily: fonts.displayHeavy, fontSize: 22, letterSpacing: 2 },
   centered: { textAlign: 'center' },
   start: { alignSelf: 'stretch', borderRadius: radius.pill, marginTop: spacing.xl, minHeight: 56 },
-  login: { padding: spacing.sm, marginTop: spacing.xs },
 });

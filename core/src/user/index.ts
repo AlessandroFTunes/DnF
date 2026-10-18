@@ -72,6 +72,27 @@ export namespace User {
     { title: 'Create user', description: 'Sign up a new account with email and password.' },
   );
 
+  /** Resposta de `lookupEmail`: a rota só devolve isto, nunca o registro do usuário. */
+  export const EmailLookup = z.object({
+    exists: z.boolean(),
+    firstName: z.string().nullable().optional(),
+  });
+  export type EmailLookup = z.infer<typeof EmailLookup>;
+
+  /**
+   * Se já existe conta com o email e, se sim, o primeiro nome dela (para o "Bem-vindo de volta").
+   * Rota `/api/dnf/email-exists`, em core/pb_hooks/auth.pb.js.
+   */
+  export const lookupEmail = fn(
+    z.object({ email: Email }),
+    async ({ email }) => {
+      const res = await PocketBase.use().send('/api/dnf/email-exists', { method: 'POST', body: { email } });
+      // Filtra de novo aqui: campo a mais que o servidor mande não passa para o app.
+      return EmailLookup.parse(res);
+    },
+    { title: 'Look up email', description: 'Whether an account uses this email, and its first name.' },
+  );
+
   export const list = fn(
     Common.Query({ sort: SortableColumns.schema.optional(), search: z.string().optional() }),
     async (input): Promise<Common.Page<Info>> => {

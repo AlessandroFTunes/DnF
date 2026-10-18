@@ -56,6 +56,8 @@ export default function RootLayout() {
         }}
       >
         <Stack.Protected guard={!signedIn}>
+          {/* A primeira tela liberada é para onde o app vai ao deslogar: a abertura vem antes do formulário. */}
+          <Stack.Screen name="welcome" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={signedIn}>
