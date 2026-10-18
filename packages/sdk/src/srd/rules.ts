@@ -376,6 +376,9 @@ export interface SpellcastingRules {
 
 const CASTING_FEATURE = /^(conjura[çc][ãa]o|magia de pacto)$/i;
 
+/** Característica que descreve a conjuração da classe ("Conjuração", "Magia de Pacto"). */
+export const isSpellcastingFeature = (name: string) => CASTING_FEATURE.test(name);
+
 /** Atributo de conjuração da classe (mesmo que ela só conjure em níveis mais altos). */
 export function spellcastingAbility(cls: SrdClassDetail): Ability | null {
   const desc = cls.features.find((f) => CASTING_FEATURE.test(f.name))?.desc ?? '';
@@ -403,6 +406,37 @@ export function spellcastingRules(cls: SrdClassDetail): SpellcastingRules | null
 /** Quantas magias de 1º círculo escolher, já resolvendo "atributo + nível". */
 export function spellsToChoose(rules: SpellcastingRules, scores: AbilityScores, level = 1): number {
   return rules.spells ?? Math.max(1, abilityModifier(scores[rules.ability]) + (rules.halfLevel ? Math.floor(level / 2) : level));
+}
+
+export interface SpellCounts {
+  cantrips: number;
+  spells: number;
+  /** Prepara (troca após um descanso longo) em vez de conhecer magias fixas. */
+  prepared: boolean;
+  /** Sem coluna na tabela: magias = modificador do atributo + nível (ou metade dele). */
+  formula?: { ability: Ability; modifier: number; level: number; half: boolean };
+}
+
+/** Truques e magias (preparadas ou conhecidas) da classe num nível, pela tabela ou por "atributo + nível". */
+export function spellCountsAt(cls: SrdClassDetail, level: number, scores: AbilityScores): SpellCounts | null {
+  const ability = spellcastingAbility(cls);
+  if (!ability) return null;
+  const cantrips = tableNumber(cls, /truques/i, level);
+  const known = !!tableValue(cls, /magias conhecidas/i, level);
+  const spells = tableNumber(cls, /magias (preparadas|conhecidas)/i, level);
+  if (spells > 0) return { cantrips, spells, prepared: !known };
+  // Sem coluna de magias (Clérigo, Mago, Paladino de 2014…): "modificador + (metade do) nível".
+  if (Object.keys(spellSlots(cls, level)).length === 0) return cantrips > 0 ? { cantrips, spells: 0, prepared: true } : null;
+  const desc = cls.features.find((f) => CASTING_FEATURE.test(f.name))?.desc ?? '';
+  const half = /metade do seu n[íi]vel/i.test(desc);
+  const modifier = abilityModifier(scores[ability]);
+  const levelPart = half ? Math.floor(level / 2) : level;
+  return {
+    cantrips,
+    spells: Math.max(1, modifier + levelPart),
+    prepared: true,
+    formula: { ability, modifier, level: levelPart, half },
+  };
 }
 
 // ---------------------------------------------------------------------------
