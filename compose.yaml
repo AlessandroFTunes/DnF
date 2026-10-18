@@ -11,6 +11,11 @@ services:
       DND_API_ACCESS_ID: ${DND_API_ACCESS_ID:-}
       DND_API_ACCESS_SECRET: ${DND_API_ACCESS_SECRET:-}
       DND_API_URL: ${DND_API_URL:-}
+      # Narração da subida de nível (core/pb_hooks/tts.pb.js). Sem a chave, a celebração fica muda.
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
+      ELEVENLABS_MODEL_ID: ${ELEVENLABS_MODEL_ID:-}
+      ELEVENLABS_ENVIRONMENT: ${ELEVENLABS_ENVIRONMENT:-}
     # Cria/atualiza o superuser de dev e sobe em modo --dev (logs SQL, migrations geradas pelo Dashboard).
     command: >
       sh -c './pocketbase superuser upsert "$$PB_ADMIN_EMAIL" "$$PB_ADMIN_PASSWORD"

@@ -43,6 +43,14 @@ A API fica atrás do Cloudflare Access. O token não vai no app: ele chama `/srd
 (`core/pb_hooks/srd.pb.js`), que exige login e repassa com `DND_API_ACCESS_ID`/`DND_API_ACCESS_SECRET` (variáveis
 do servidor). `EXPO_PUBLIC_DND_API_URL` aponta o app direto para outra instância, ex.: `http://localhost:8000`.
 
+Ao subir de nível, a celebração narra o que o personagem ganhou ("Novo nível alcançado: você adquiriu…") com a
+ElevenLabs. O app chama `/tts?text=…` no PocketBase (`core/pb_hooks/tts.pb.js`), que exige login e gera o mp3 com
+`ELEVENLABS_API_KEY` (variável do servidor; `ELEVENLABS_VOICE_ID` e `ELEVENLABS_MODEL_ID` trocam a voz e o modelo,
+padrão `eleven_multilingual_v2`). A voz fala no tom do "Grande Sábio" ("Aviso. …": calma, plana, com reverb leve `hall`;
+`ELEVENLABS_ENVIRONMENT` troca o espaço, ex. `tunnel` para caverna, ou desliga com `none`), e cada ganho aparece na tela quando é dito: a animação espera a fala ficar pronta. Os efeitos
+de fundo (ambientação da caverna e os golpes do dado) ficam em `apps/mobile/assets/sounds`, gerados uma vez pela
+ElevenLabs com `bun run sounds` (prompts em `apps/mobile/scripts/sounds.ts`). Sem a chave, só a voz falta.
+
 A edição de cada registro vem do livro (`fonte.edicao`): `5e` = regras de 2014, `5.5e` = regras de 2024.
 Uma edição sem classes na API aparece desabilitada na criação. O personagem guarda só os ids da API
 (`classKey: "1"`, itens como `"arma:3"`); as regras são lidas da API na ficha.

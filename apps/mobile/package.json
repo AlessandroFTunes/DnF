@@ -9,6 +9,7 @@
     "@expo-google-fonts/cinzel": "^0.4.2",
     "@expo/vector-icons": "^15.0.2",
     "expo": "~57.0.26",
+    "expo-audio": "~57.0.5",
     "expo-constants": "~57.0.20",
     "expo-crypto": "~57.0.3",
     "expo-file-system": "~57.0.7",
@@ -47,7 +48,8 @@
     "db:down": "docker compose -f ../../compose.yaml down",
     "db:logs": "docker compose -f ../../compose.yaml logs -f pocketbase",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "sounds": "bun --env-file=../../.env scripts/sounds.ts"
   },
   "private": true
 }
