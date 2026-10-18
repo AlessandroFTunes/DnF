@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from 'react';
 import {
   Animated,
   Easing,
@@ -469,6 +469,7 @@ function ProgressionView({ sheet, derived }: { sheet: Sheet; derived: SheetData 
   // Um trecho por classe; se não couberem (celular), a árvore é arrastada de lado e começa no trecho ativo.
   const treeWidth = multi ? Math.max(width / ordered.length, Math.min(width, 360)) : width;
   const row = useRef<ScrollView>(null);
+  useMouseDrag(row);
 
   /** Torna ativa a árvore de outra classe (o próximo nível vai para ela). */
   const activate = (key: string) => {
@@ -1250,6 +1251,64 @@ function SkillTree({
       {cardPosition && popover ? <View style={[styles.cardAnchor, { width: cardWidth }, cardPosition]}>{popover}</View> : null}
     </View>
   );
+}
+
+/**
+ * Web com mouse: o ScrollView do react-native-web só rola com a roda. Arrastar a árvore rola ela de lado e a
+ * página para cima/baixo, como no toque; um arrasto de mais de 5 px não vira clique na estrela.
+ */
+function useMouseDrag(ref: RefObject<ScrollView | null>) {
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const el = (ref.current as unknown as { getScrollableNode?: () => HTMLElement } | null)?.getScrollableNode?.();
+    if (!el) return;
+    let page = el.parentElement;
+    while (page && !/(auto|scroll)/.test(getComputedStyle(page).overflowY)) page = page.parentElement;
+
+    let start: { x: number; y: number; left: number; top: number } | null = null;
+    let dragged = false;
+    el.style.cursor = 'grab';
+    const down = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      start = { x: e.clientX, y: e.clientY, left: el.scrollLeft, top: page?.scrollTop ?? 0 };
+      dragged = false;
+    };
+    const move = (e: PointerEvent) => {
+      if (!start) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      if (!dragged && Math.hypot(dx, dy) < 5) return;
+      if (!dragged) {
+        dragged = true;
+        el.style.cursor = 'grabbing';
+        document.body.style.userSelect = 'none';
+      }
+      el.scrollLeft = start.left - dx;
+      if (page) page.scrollTop = start.top - dy;
+    };
+    const up = () => {
+      start = null;
+      el.style.cursor = 'grab';
+      document.body.style.userSelect = '';
+    };
+    // Captura: o clique que termina um arrasto não chega na estrela.
+    const click = (e: MouseEvent) => {
+      if (!dragged) return;
+      dragged = false;
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    el.addEventListener('pointerdown', down);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    el.addEventListener('click', click, true);
+    return () => {
+      el.removeEventListener('pointerdown', down);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      el.removeEventListener('click', click, true);
+    };
+  }, [ref]);
 }
 
 const styles = StyleSheet.create({
