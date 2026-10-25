@@ -16,16 +16,7 @@ const devHost = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
 // Vazia conta como ausente (o `bun phone` zera para passar pelo PocketBase).
 const directUrl = process.env.EXPO_PUBLIC_DND_API_URL?.replace('//localhost', `//${devHost}`) || undefined;
 
-const client = createSrdClient({ baseUrl: directUrl ?? `${PocketBase.client().baseURL}/srd` });
-if (!directUrl) {
-  client.use({
-    onRequest({ request }) {
-      const token = PocketBase.client().authStore.token;
-      if (token) request.headers.set('Authorization', token);
-      return request;
-    },
-  });
-}
+const client = createSrdClient(directUrl ? { baseUrl: directUrl } : { pocketbase: PocketBase.client() });
 
 export const srd = createSrdCatalog(client);
 

@@ -74,6 +74,7 @@
       "name": "@dnf/core",
       "version": "0.0.0",
       "dependencies": {
+        "openapi-fetch": "^0.17.0",
         "pocketbase": "^0.28.1",
         "zod": "^4.6.5",
       },
