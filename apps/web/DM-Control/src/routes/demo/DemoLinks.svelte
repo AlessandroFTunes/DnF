@@ -3,7 +3,7 @@
 
 	const demos = [
 		{ name: 'playwright', href: resolve('/demo/playwright') },
-		{ name: 'better-auth', href: resolve('/demo/better-auth') }
+		{ name: 'auth', href: resolve('/demo/auth') }
 	];
 </script>
 

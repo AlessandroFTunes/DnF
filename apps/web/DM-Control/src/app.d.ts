@@ -1,12 +1,13 @@
-import type { User, Session } from 'better-auth';
+import type PocketBaseClient from 'pocketbase';
+import type { User } from '@dnf/core/user';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {
 	namespace App {
 		interface Locals {
-			user?: User;
-			session?: Session;
+			pb: PocketBaseClient;
+			user?: User.Info;
 		}
 
 		// interface Error {}

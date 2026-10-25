@@ -4,6 +4,7 @@
   "workspaces": [
     "core",
     "apps/*",
+    "apps/web/*",
     "packages/*",
     "packages/ui/*"
   ],
