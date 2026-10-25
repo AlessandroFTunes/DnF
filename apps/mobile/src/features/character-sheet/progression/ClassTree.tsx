@@ -6,6 +6,8 @@ import { fightingStyleSlots, plainText } from '@dnf/sdk/srd';
 import { Button, Chip, fonts, radius, spacing } from '@dnf/ui-react-native';
 import { ABILITY_LABEL } from '../../character-create/labels';
 import type { LevelUpGain } from '../LevelUpCelebration';
+import { SageButton } from '../SageButton';
+import { sageCategory } from '../sageSpeech';
 import type { Sheet, SheetData } from '../useSheet';
 import { tr } from '../../../lib/srd';
 import { branchesOf, buildNodes, starsOf, subclassLabel, type TreeEntry } from './nodes';
@@ -327,6 +329,12 @@ function StarCard({
             {star.original ? ` · ${star.original}` : ''}
           </Text>
         </View>
+        <SageButton
+          name={star.name}
+          desc={star.desc}
+          category={sageCategory(star.name, branch ? 'subclass' : 'class')}
+          color={branch?.color ?? SKY.muted}
+        />
         <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Fechar" hitSlop={10}>
           <MaterialCommunityIcons name="close" size={18} color={SKY.muted} />
         </Pressable>

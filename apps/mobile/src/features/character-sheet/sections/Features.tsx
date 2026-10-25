@@ -7,11 +7,13 @@ import { formatBonus, radius, shadow, spacing, typography, useRpgTheme } from '@
 import { abilityName, classIcon, type IconName } from '../../character-create/labels';
 import { BottomSheet } from '../BottomSheet';
 import { Panel } from '../components';
+import { SageButton } from '../SageButton';
+import { sageCategory, type SageSource } from '../sageSpeech';
 import type { Sheet, SheetData } from '../useSheet';
 import { tr } from '../../../lib/srd';
 
 /** Item expansível: nome + nível; o texto completo da 5e-FastAPI ao abrir. Com resumo, o texto só aparece ao abrir. */
-function Feature({ name, badge, desc, summary, note }: Omit<FeatureItem, 'key'>) {
+function Feature({ name, badge, desc, summary, note, sage }: Omit<FeatureItem, 'key'>) {
   const theme = useRpgTheme();
   const [open, setOpen] = useState(false);
   const text = plainText(desc);
@@ -29,6 +31,7 @@ function Feature({ name, badge, desc, summary, note }: Omit<FeatureItem, 'key'>)
           </View>
         )}
         <Text style={[typography.bodyStrong, styles.flex, { color: theme.text }]}>{name}</Text>
+        <SageButton name={name} desc={desc} category={sageCategory(name, sage)} />
         <MaterialCommunityIcons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={theme.textMuted} />
       </View>
       {summary ? (
@@ -69,6 +72,8 @@ interface FeatureItem {
   summary?: { label: string; value: string; calc: string }[];
   /** Linha curta abaixo do resumo (o que ganha no próximo nível). */
   note?: string;
+  /** De onde vem, para o Grande Sábio dizer a categoria ("Habilidade Inata"). */
+  sage: SageSource;
 }
 
 interface FeatureGroup {
@@ -138,6 +143,7 @@ function featureGroups(data: SheetData): FeatureGroup[] {
         name: tr.name(f),
         badge: levelBadge(f),
         desc: f.desc,
+        sage: 'class',
         ...(isSpellcastingFeature(f.name) ? castingSummary(data, c) : {}),
       })),
     });
@@ -148,7 +154,13 @@ function featureGroups(data: SheetData): FeatureGroup[] {
         kind: 'Subclasse',
         title: tr.name(c.subclass),
         icon: 'star-shooting-outline',
-        items: c.subclassFeatures.map((f) => ({ key: f.key, name: tr.name(f), badge: levelBadge(f), desc: f.desc })),
+        items: c.subclassFeatures.map((f) => ({
+          key: f.key,
+          name: tr.name(f),
+          badge: levelBadge(f),
+          desc: f.desc,
+          sage: 'subclass',
+        })),
       });
     }
   }
@@ -164,6 +176,7 @@ function featureGroups(data: SheetData): FeatureGroup[] {
         key: t.name,
         name: tr.text(t.name),
         desc: tr.field(data.chain[0]?.key ?? '', `trait:${t.name}`, t.desc),
+        sage: 'species',
       })),
     });
   }
@@ -176,6 +189,7 @@ function featureGroups(data: SheetData): FeatureGroup[] {
             name: tr.text(backgroundFeature.name),
             badge: data.background ? tr.name(data.background) : undefined,
             desc: backgroundFeature.desc,
+            sage: 'background' as const,
           },
         ]
       : []),
@@ -186,6 +200,7 @@ function featureGroups(data: SheetData): FeatureGroup[] {
       desc: [tr.desc(f), ...f.benefits.map((b, i) => `• ${tr.field(f.key, `benefit:${i}`, b.desc ?? '')}`)]
         .filter(Boolean)
         .join('\n'),
+      sage: 'feat' as const,
     })),
   ];
   if (origin.length > 0) {

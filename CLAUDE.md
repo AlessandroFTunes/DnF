@@ -53,3 +53,21 @@ Depois:
   consultas no catálogo. As chaves de perícia e idioma já gravadas nos personagens precisam continuar valendo.
 - O equipamento inicial liga cada item pelo nome (`findItem` em `rules.ts`). Um nome que não bater com o
   item da API fica guardado só pelo nome, em `equipment.custom`.
+
+## Deploy (NAS)
+
+Tudo roda no NAS, atrás do Traefik. Para entrar: `ssh ale@nas-ale`. Os apps ficam em `/srv/apps/`.
+
+| O quê | Onde no NAS | Como publicar |
+|---|---|---|
+| PocketBase (`https://dnf-db.developale.com`) | `/srv/apps/dnf-db` (container `dnf-db`) | Copiar `core/pb_hooks/*` para `pb_hooks/` (e `core/pb_migrations/*` para `pb_migrations/`, se mudou), depois `docker compose restart dnf-db` |
+| App web (`https://dnf.developale.com`) | `/srv/apps/dnf-web` (nginx, container `dnf-web`) | `sh apps/mobile/scripts/deploy.sh` (gera o build web e troca `dist/`) |
+
+```sh
+scp core/pb_hooks/tts.pb.js ale@nas-ale:/srv/apps/dnf-db/pb_hooks/
+ssh ale@nas-ale 'cd /srv/apps/dnf-db && docker compose restart dnf-db'
+```
+
+- O `.env` do PocketBase (chaves da ElevenLabs e do Cloudflare Access) fica só no NAS, em `/srv/apps/dnf-db/.env`.
+- Depois de reiniciar, o Traefik só volta a rotear quando o container fica `healthy` (~30 s). Até lá,
+  `dnf-db.developale.com` responde 404.
