@@ -1,3 +1,4 @@
+import type { Rules } from '@dnf/core/rules';
 import type { Ability } from '@dnf/core/character';
 import type { DiferenteKey } from '@dnf/core/util';
 
@@ -54,12 +55,7 @@ export const SKILLS: SrdSkill[] = [
   { key: 'survival', name: 'Sobrevivência', ability: 'wis' },
 ].sort((a, b) => a.name.localeCompare(b.name)) as SrdSkill[];
 
-export interface SrdLanguage {
-  key: string;
-  name: string;
-  is_exotic: boolean;
-  is_secret: boolean;
-}
+export type SrdLanguage = Rules.Language;
 
 /** Idiomas padrão e raros do Livro do Jogador 2024 (capítulo 2). */
 export const LANGUAGES: SrdLanguage[] = [
@@ -90,11 +86,7 @@ export const LANGUAGES: SrdLanguage[] = [
   ].map(([key, name]) => ({ key: key!, name: name!, is_exotic: true, is_secret: true })),
 ];
 
-export interface SrdAlignment {
-  key: string;
-  societal_attitude: 'lawful' | 'neutral' | 'chaotic';
-  morality: 'good' | 'neutral' | 'evil';
-}
+export type SrdAlignment = Rules.Alignment;
 
 export const ALIGNMENTS: SrdAlignment[] = (['lawful', 'neutral', 'chaotic'] as const).flatMap((societal_attitude) =>
   (['good', 'neutral', 'evil'] as const).map((morality) => ({

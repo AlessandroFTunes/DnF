@@ -1,3 +1,4 @@
+import type { Rules } from '@dnf/core/rules';
 import type { components } from './5e-fastapi';
 import type { SrdClient } from './index';
 import { ALIGNMENTS, LANGUAGES, SRD_EDITIONS, type SrdAlignment, type SrdEdition, type SrdLanguage } from './reference';
@@ -10,147 +11,29 @@ type Schemas = components['schemas'];
  * precisam dos campos estruturados.
  */
 
-export interface SrdSource {
-  key: string;
-  name: string;
-  edition: SrdEdition | null;
+/** Registros da 5e-FastAPI que acompanham os tipos do app (`api`, `casting`). */
+export interface SrdRaw extends Rules.RawShapes {
+  class: Schemas['Classe'];
+  casting: Schemas['Conjuracao'];
+  background: Schemas['Antecedente'];
 }
 
-/** Característica de classe/subclasse com o nível em que é ganha. */
-export interface SrdClassFeature {
-  key: string;
-  name: string;
-  desc: string;
-  gained_at: { level: number; detail: string | null }[];
-}
-
-export interface SrdClassDetail {
-  key: string;
-  name: string;
-  desc: string;
-  source: SrdSource;
-  /** "d12", como a ficha mostra. */
-  hit_dice: string;
-  features: SrdClassFeature[];
-  /** Como entra na conta dos espaços de magia de multiclasse; null se não conjura (subclasses: Cavaleiro Místico…). */
-  casting: Schemas['Conjuracao'] | null;
-  /** Registro da classe na API (ausente nas subclasses). */
-  api?: Schemas['Classe'];
-  /** Subclasse feita para a outra edição (a API ainda não mistura edições; fica para o futuro). */
-  adaptedFrom?: SrdEdition;
-}
-
+export type SrdSource = Rules.Source;
+export type SrdClassFeature = Rules.ClassFeature;
+export type SrdClassDetail = Rules.ClassDetail<SrdRaw>;
 export type SrdClass = SrdClassDetail;
-
-export interface SrdSpeciesTrait {
-  name: string;
-  desc: string;
-  type?: 'SIZE' | 'SPEED';
-  order: number;
-}
-
-export interface SrdSpecies {
-  key: string;
-  name: string;
-  desc: string;
-  source: SrdSource;
-  is_subspecies: boolean;
-  subspecies_of: string | null;
-  traits: SrdSpeciesTrait[];
-}
-
-/** Espécie base com as subespécies dela (a API de 2024 não tem subespécies). */
-export interface SrdSpeciesGroup extends SrdSpecies {
-  subspecies: SrdSpecies[];
-}
-
-export interface SrdBackground {
-  key: string;
-  name: string;
-  desc: string;
-  /** Livro de origem (para agrupar a lista). */
-  document: { key: string; name: string };
-  /** Benefícios em texto, para exibir (`type`: ability_score, feat, skill_proficiency, tool_proficiency, equipment). */
-  benefits: { name: string; desc: string; type: string }[];
-  api: Schemas['Antecedente'];
-}
-
-export interface SrdFeat {
-  key: string;
-  name: string;
-  desc: string;
-  /** Categoria do talento ("Origem", "Geral"…). */
-  type: string | null;
-  prerequisite: string | null;
-  benefits: { name: string; desc: string }[];
-}
-
-export interface SrdArmorData {
-  key: string;
-  name: string;
-  category: 'light' | 'medium' | 'heavy' | 'shield';
-  ac_base: number;
-  ac_display: string;
-  ac_add_dexmod: boolean;
-  ac_cap_dexmod: number | null;
-  grants_stealth_disadvantage: boolean;
-  strength_score_required: number | null;
-}
-
-export interface SrdWeaponData {
-  key: string;
-  name: string;
-  damage_type: { name: string; key: string };
-  damage_dice: string;
-  properties: { property: { name: string; type: string | null; desc: string }; detail: string | null }[];
-  is_simple: boolean;
-  is_martial: boolean;
-  is_ranged: boolean;
-  range: number | null;
-  long_range: number | null;
-  mastery: string | null;
-}
-
-export type SrdItemKind = 'arma' | 'armadura' | 'ferramenta' | 'item';
-
-export interface SrdItem {
-  key: string;
-  name: string;
-  kind: SrdItemKind;
-  desc?: string;
-  category: { name: string; key: string };
-  weapon: SrdWeaponData | null;
-  armor: SrdArmorData | null;
-  cost?: string | null;
-  weight?: string;
-  /** Ferramenta com variantes ("Instrumento Musical": Alaúde, Flauta…): a proficiência é numa delas. */
-  variants?: string[];
-}
-
-export interface SrdSpell {
-  key: string;
-  name: string;
-  desc: string;
-  level: number;
-  school: { key: string; name: string };
-  casting_time: string;
-  range_text: string;
-  duration: string;
-  components: string;
-  concentration: boolean;
-  ritual: boolean;
-  verbal: boolean;
-  somatic: boolean;
-  material: boolean;
-  higher_level: string | null;
-  classes: { key: string; name: string }[];
-}
-
-/** Linha da tabela "Conjurador Multiclasse": espaços por círculo (do 1º ao 9º) no nível de conjurador. */
-export interface SrdMulticlassSlots {
-  casterLevel: number;
-  slots: number[];
-}
+export type SrdSpeciesTrait = Rules.SpeciesTrait;
+export type SrdSpecies = Rules.Species;
+export type SrdSpeciesGroup = Rules.SpeciesGroup;
+export type SrdBackground = Rules.Background<SrdRaw>;
+export type SrdFeat = Rules.Feat;
+export type SrdArmorData = Rules.ArmorData;
+export type SrdWeaponData = Rules.WeaponData;
+export type SrdItemKind = Rules.ItemKind;
+export type SrdItem = Rules.Item;
+export type SrdSpell = Rules.Spell;
+export type SrdMulticlassSlots = Rules.MulticlassSlots;
+export type SrdCreature = Rules.Creature;
 
 export type { SrdAlignment, SrdLanguage };
 
@@ -286,6 +169,45 @@ export function toFeat(t: Schemas['Talento']): SrdFeat {
     type: t.categoria ?? null,
     prerequisite: t.pre_requisito ?? null,
     benefits: (t.beneficios ?? []).map((b) => ({ name: b.nome, desc: `${b.nome}. ${b.descricao}` })),
+  };
+}
+
+const toAbilities = (list: Schemas['Capacidade'][] | undefined) => (list ?? []).map((a) => ({ name: a.nome, desc: a.descricao }));
+
+export function toCreature(c: Schemas['Criatura']): SrdCreature {
+  return {
+    key: String(c.id),
+    name: c.nome,
+    source: sourceOf(c.fonte),
+    type: c.tipo,
+    alignment: c.alinhamento,
+    armor_class: c.classe_armadura,
+    initiative: c.iniciativa ?? null,
+    hit_points: c.pontos_vida,
+    speed: c.deslocamento,
+    abilities: c.atributos.map((a) => ({
+      ability: a.atributo,
+      score: a.valor,
+      modifier: a.modificador,
+      save: a.salvaguarda ?? null,
+    })),
+    saves: c.salvaguardas ?? null,
+    skills: c.pericias ?? null,
+    resistances: c.resistencias ?? null,
+    vulnerabilities: c.vulnerabilidades ?? null,
+    damage_immunities: c.imunidades_dano ?? null,
+    condition_immunities: c.imunidades_condicao ?? null,
+    gear: c.equipamento ?? null,
+    senses: c.sentidos,
+    languages: c.idiomas,
+    challenge: c.nivel_desafio,
+    proficiency_bonus: c.bonus_proficiencia ?? null,
+    traits: toAbilities(c.tracos),
+    actions: toAbilities(c.acoes),
+    bonus_actions: toAbilities(c.acoes_bonus),
+    reactions: toAbilities(c.reacoes),
+    legendary_desc: c.descricao_acoes_lendarias ?? null,
+    legendary_actions: toAbilities(c.acoes_lendarias),
   };
 }
 
@@ -610,6 +532,26 @@ export function createSrdCatalog(client: SrdClient) {
       return found.filter((s): s is SrdSpell => !!s).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
     },
 
+    async creatures(edition: SrdEdition, filter: { name?: string } = {}): Promise<SrdCreature[]> {
+      const nome = filter.name?.trim() || undefined;
+      const list = await all('criaturas', (pagina) =>
+        client.GET('/api/v1/criaturas', { params: { query: { nome, pagina, limite: PAGE } } }),
+      );
+      return list.filter(fromEdition(edition)).map(toCreature).sort(byName);
+    },
+
+    async creaturesByKey(keys: string[]): Promise<SrdCreature[]> {
+      const found = await Promise.all(
+        [...new Set(keys)].map(async (key) => {
+          const criatura_id = numericId(key);
+          if (!criatura_id) return null;
+          const r = await one(`criatura ${key}`, client.GET('/api/v1/criaturas/{criatura_id}', { params: { path: { criatura_id } } }));
+          return r && toCreature(r);
+        }),
+      );
+      return found.filter((c): c is SrdCreature => !!c).sort(byName);
+    },
+
     /** Ainda não há endpoint de alinhamentos/idiomas na API: vêm das listas do Livro do Jogador. */
     async alignments(): Promise<SrdAlignment[]> {
       return ALIGNMENTS;
@@ -618,7 +560,7 @@ export function createSrdCatalog(client: SrdClient) {
     async languages(): Promise<SrdLanguage[]> {
       return LANGUAGES;
     },
-  };
+  } satisfies Rules.Port<SrdRaw>;
 }
 
 export type SrdCatalog = ReturnType<typeof createSrdCatalog>;

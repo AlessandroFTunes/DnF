@@ -1,29 +1,20 @@
-import createFetchClient from 'openapi-fetch';
+import { createAdapter, createPocketBaseAdapter, type DndAdapterOptions } from '@dnf/core/dnd';
+import type PocketBaseClient from 'pocketbase';
 import type { components, paths } from './5e-fastapi';
 
 // Tipos gerados de openapi/5e-fastapi.json (`bun run srd:spec && bun run srd:gen`).
 export type { components, paths } from './5e-fastapi';
 export type SrdSchemas = components['schemas'];
 
-/** API de regras de D&D em português (https://github.com/AlessandroFTunes/5e-FastAPI). */
-export const SRD_URL = 'https://5e-fastapi.developale.com';
+export { DND_URL as SRD_URL } from '@dnf/core/dnd';
 
-export interface SrdClientOptions {
-  baseUrl?: string;
-  /**
-   * Service token do Cloudflare Access que fica na frente da API. Vai em toda requisição
-   * (`CF-Access-Client-Id` / `CF-Access-Client-Secret`). Sem ele, o Access responde 401/403.
-   */
-  accessToken?: { clientId: string; clientSecret: string } | null;
+export interface SrdClientOptions extends DndAdapterOptions {
+  /** Passa pelo proxy `/srd` deste PocketBase (com o JWT do login) em vez de falar direto com a API. */
+  pocketbase?: PocketBaseClient;
 }
 
-export function createSrdClient({ baseUrl = SRD_URL, accessToken }: SrdClientOptions = {}) {
-  return createFetchClient<paths>({
-    baseUrl,
-    headers: accessToken
-      ? { 'CF-Access-Client-Id': accessToken.clientId, 'CF-Access-Client-Secret': accessToken.clientSecret }
-      : undefined,
-  });
+export function createSrdClient({ pocketbase, ...options }: SrdClientOptions = {}) {
+  return pocketbase ? createPocketBaseAdapter<paths>(pocketbase) : createAdapter<paths>(options);
 }
 
 export type SrdClient = ReturnType<typeof createSrdClient>;
