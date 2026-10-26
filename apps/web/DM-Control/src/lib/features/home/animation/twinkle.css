@@ -1,0 +1,14 @@
+@keyframes twinkle {
+	from {
+		opacity: 0.35;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.stars-far {
+		animation: none !important;
+	}
+}

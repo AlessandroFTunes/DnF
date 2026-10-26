@@ -2,24 +2,32 @@
 	import DemoLinks from './demo/DemoLinks.svelte';
 	import type { LayoutProps } from './$types';
 	import Header from './Header.svelte';
+	import { page } from '$app/state';
 	import './layout.css';
 
 	let { children }: LayoutProps = $props();
+
+	// A home e o login têm layout próprio, em tela cheia.
+	const isHome = $derived(['/', '/login'].includes(page.url.pathname));
 </script>
 
-<div class="app">
-	<Header />
+{#if isHome}
+	{@render children()}
+{:else}
+	<div class="app">
+		<Header />
 
-	<main>
-		{@render children()}
-	</main>
+		<main>
+			{@render children()}
+		</main>
 
-	<footer>
-		<p>
-			visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to learn about SvelteKit
-		</p>
-	</footer>
-</div>
+		<footer>
+			<p>
+				visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to learn about SvelteKit
+			</p>
+		</footer>
+	</div>
+{/if}
 
 <DemoLinks />
 

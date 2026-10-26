@@ -1,0 +1,15 @@
+/* A parede de pôsteres desliza devagar na diagonal. */
+@keyframes wall-drift {
+	from {
+		translate: 0 0;
+	}
+	to {
+		translate: -3rem -2rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wall-grid {
+		animation: none !important;
+	}
+}
