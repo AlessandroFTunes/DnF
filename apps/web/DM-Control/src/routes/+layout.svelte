@@ -7,8 +7,8 @@
 
 	let { children }: LayoutProps = $props();
 
-	// A home e o login têm layout próprio, em tela cheia.
-	const isHome = $derived(['/', '/login'].includes(page.url.pathname));
+	// A home, o login e o início têm layout próprio, em tela cheia.
+	const isHome = $derived(['/', '/login', '/inicio'].includes(page.url.pathname));
 </script>
 
 {#if isHome}

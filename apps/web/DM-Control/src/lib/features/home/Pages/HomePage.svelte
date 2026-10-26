@@ -7,6 +7,7 @@
 	import HomeConnect from '../Componentes/HomeConnect.svelte';
 	import HomeFaq from '../Componentes/HomeFaq.svelte';
 	import HomeFooter from '../Componentes/HomeFooter.svelte';
+	import HomeToTop from '../Componentes/HomeToTop.svelte';
 </script>
 
 <svelte:head>
@@ -22,4 +23,5 @@
 	<HomeConnect />
 	<HomeFaq />
 	<HomeFooter />
+	<HomeToTop />
 </HomeShell>

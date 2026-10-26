@@ -19,7 +19,7 @@
 	];
 </script>
 
-<section class="wrap">
+<section id="faq" class="wrap">
 	<h2>Perguntas frequentes</h2>
 	<div class="list">
 		{#each perguntas as p (p.q)}

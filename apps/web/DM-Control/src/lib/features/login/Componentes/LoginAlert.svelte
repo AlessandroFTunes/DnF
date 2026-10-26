@@ -9,9 +9,9 @@
 <style>
 	p {
 		margin: 0;
-		padding: 0.7rem 1rem;
+		padding: 0.7rem 1.4rem;
 		border: 1px solid var(--danger);
-		border-radius: 6px;
+		border-radius: 999px;
 		background: rgb(255 138 138 / 0.1);
 		font-size: 0.9rem;
 		color: var(--danger);

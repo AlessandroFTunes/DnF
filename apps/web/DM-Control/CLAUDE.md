@@ -15,6 +15,12 @@ App SvelteKit (Svelte 5) do DM-Control. Veja também `AGENTS.md` (MCP do Svelte 
 - **Só rode o typecheck (`svelte-check`, `tsc`, `bun run check`) se o usuário pedir.** Ele pesa muito e trava o
   computador dele. O `svelte-autofixer` pode continuar sendo usado.
 
+## Escopo das mudanças
+
+- **1 prompt = pequenas mudanças.** Faça só o que o prompt pediu, em passos curtos.
+- **Não refatore sem ordem direta.** Nada de renomear, mover, reorganizar ou "melhorar" código que não faz
+  parte do pedido. Se achar algo que merece refatoração, avise em uma linha e espere o usuário mandar.
+
 ## Arquitetura
 
 ### Rotas

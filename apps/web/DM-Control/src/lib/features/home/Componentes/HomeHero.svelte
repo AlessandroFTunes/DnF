@@ -1,21 +1,28 @@
 <script lang="ts">
 	import HomeHeader from './HomeHeader.svelte';
 	import HomeSky from './HomeSky.svelte';
-	import HomePosterWall from './HomePosterWall.svelte';
 	import HomeSignup from './HomeSignup.svelte';
+	import AppMockup from '../../../components/AppMockup.svelte';
 </script>
 
 <div class="hero">
 	<HomeSky />
-	<HomePosterWall />
 	<div class="shade" aria-hidden="true"></div>
 
 	<HomeHeader />
 
 	<section>
-		<h1>Mesas, fichas e monstros, sem limites</h1>
-		<p class="lead">Painel do mestre para D&amp;D 2014 e 2024. Tudo num só lugar para a sua mesa.</p>
-		<HomeSignup text="Pronto para mestrar? Informe seu email para criar ou acessar sua conta." />
+		<div class="text">
+			<h1>Mesas, fichas e monstros, sem limites</h1>
+			<p class="lead">
+				Painel do mestre para D&amp;D 2014 e 2024. Tudo num só lugar para a sua mesa.
+			</p>
+			<HomeSignup text="Pronto para mestrar? Crie ou acesse sua conta." />
+		</div>
+
+		<div class="art">
+			<AppMockup />
+		</div>
 	</section>
 
 	<div class="arc" aria-hidden="true"></div>
@@ -44,29 +51,47 @@
 	section {
 		position: relative;
 		z-index: 2;
-		display: flex;
+		display: grid;
 		flex: 1;
-		flex-direction: column;
+		grid-template-columns: 1fr;
+		gap: clamp(2rem, 6vw, 5rem);
 		align-items: center;
-		justify-content: center;
-		padding: 2rem 1.5rem 8rem;
-		text-align: center;
+		width: 100%;
+		max-width: 80rem;
+		margin: 0 auto;
+		padding: 2rem clamp(1rem, 4vw, 3rem) 9rem;
+		box-sizing: border-box;
 	}
 
 	h1 {
-		max-width: 54rem;
 		margin: 0;
-		font-size: clamp(2.2rem, 6vw, 4rem);
+		font-size: clamp(2.2rem, 5vw, 4rem);
 		font-weight: 900;
 		line-height: 1.08;
 		letter-spacing: -0.03em;
-		text-align: center;
+		text-align: left;
 	}
 
 	.lead {
 		margin: 1.2rem 0 2rem;
-		font-size: clamp(1.05rem, 2.4vw, 1.5rem);
+		font-size: clamp(1.05rem, 2vw, 1.4rem);
 		font-weight: 600;
+	}
+
+	/* A tela do app só aparece ao lado do texto; no celular só empurraria o conteúdo. */
+	.art {
+		display: none;
+		height: 32rem;
+	}
+
+	@media (min-width: 56rem) {
+		section {
+			grid-template-columns: 1fr 1.1fr;
+		}
+
+		.art {
+			display: block;
+		}
 	}
 
 	.arc {

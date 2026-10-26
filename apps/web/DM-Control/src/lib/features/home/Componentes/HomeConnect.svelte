@@ -18,7 +18,7 @@
 	];
 </script>
 
-<section aria-labelledby="conecta-titulo">
+<section id="sobre" aria-labelledby="conecta-titulo">
 	<p class="tag">DM Control + DnF</p>
 	<h2 id="conecta-titulo">Dois apps, uma mesa</h2>
 	<p class="lead">
@@ -48,6 +48,16 @@
 			width={348}
 			height={783}
 		/>
+		<div class="cta">
+			<h3>DnF: fichas rápidas e intuitivas</h3>
+			<p>
+				Chega de jogador passando anos trancado numa torre só para criar um personagem. No DnF a
+				ficha sai em minutos, direto do celular, e a aventura começa de verdade.
+			</p>
+			<a class="dnf lift" href="https://dnf.developale.com">
+				Curioso com Dungeon and Fichas? Acesse aqui <span aria-hidden="true">›</span>
+			</a>
+		</div>
 	</div>
 </section>
 
@@ -55,6 +65,8 @@
 	section {
 		--gold: #f5c542;
 		--gold-light: #ffe08a;
+
+		scroll-margin-top: 1rem;
 
 		position: relative;
 		z-index: 1;
@@ -128,7 +140,47 @@
 	.telas {
 		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
 		gap: 1.5rem;
 		margin-top: 3rem;
+	}
+
+	.cta {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 1rem;
+		max-width: 26rem;
+		margin-left: 4rem;
+	}
+
+	.cta h3 {
+		margin: 0;
+		font-size: clamp(2.2rem, 5vw, 3.6rem);
+		font-weight: 800;
+		line-height: 1;
+		letter-spacing: -0.04em;
+	}
+
+	.cta p {
+		margin: 0;
+		font-size: 1rem;
+		line-height: 1.45;
+		color: var(--gold-light);
+	}
+
+	.dnf {
+		padding: 1rem 1.6rem;
+		border-radius: 4px;
+		background: var(--gold);
+		color: #2a1d00;
+		font-size: 1.1rem;
+		font-weight: 800;
+		text-decoration: none;
+	}
+
+	.dnf:focus-visible {
+		outline: 2px solid #fff;
+		outline-offset: 2px;
 	}
 </style>

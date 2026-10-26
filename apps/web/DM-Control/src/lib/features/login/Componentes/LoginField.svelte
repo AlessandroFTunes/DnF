@@ -3,9 +3,10 @@
 
 	let {
 		label,
+		hideLabel = false,
 		issues,
 		...input
-	}: HTMLInputAttributes & { label: string; issues?: { message: string }[] } = $props();
+	}: HTMLInputAttributes & { label: string; hideLabel?: boolean; issues?: { message: string }[] } = $props();
 
 	let visible = $state(false);
 
@@ -14,7 +15,7 @@
 </script>
 
 <label>
-	<span class="label">{label}</span>
+	<span class="label" class:sr-only={hideLabel}>{label}</span>
 	<span class="control">
 		<input {...input} type={isPassword && visible ? 'text' : input.type} />
 		{#if isPassword}
@@ -42,8 +43,18 @@
 	}
 
 	.label {
+		padding-left: 1.4rem;
 		font-size: 0.85rem;
 		font-weight: 700;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
 	}
 
 	.control {
@@ -54,9 +65,9 @@
 	input {
 		flex: 1;
 		min-width: 0;
-		padding: 0.9rem 1rem;
+		padding: 0.95rem 1.4rem;
 		border: 1px solid rgb(255 255 255 / 0.3);
-		border-radius: 6px;
+		border-radius: 999px;
 		background: var(--field);
 		color: #fff;
 		font-size: 1rem;
@@ -79,7 +90,7 @@
 	.eye {
 		position: absolute;
 		top: 50%;
-		right: 0.6rem;
+		right: 1.2rem;
 		padding: 0.25rem 0.4rem;
 		border: 0;
 		background: none;

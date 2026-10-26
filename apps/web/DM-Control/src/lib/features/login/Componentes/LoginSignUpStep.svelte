@@ -1,5 +1,6 @@
 <script lang="ts">
 	import LoginField from './LoginField.svelte';
+	import LoginTitle from './LoginTitle.svelte';
 	import LoginSubmit from './LoginSubmit.svelte';
 	import LoginAlert from './LoginAlert.svelte';
 	import { signUp } from '../api.remote';
@@ -20,8 +21,7 @@
 		}
 	})}
 >
-	<h1>Criar conta</h1>
-	<p>Não encontramos uma conta com esse email. Complete para criar a sua.</p>
+	<LoginTitle title="Criar conta" subtitle="Não encontramos uma conta com esse email" />
 
 	<div class="email">
 		<span>{email}</span>
@@ -52,28 +52,14 @@
 		gap: 1.1rem;
 	}
 
-	h1 {
-		margin: 0;
-		font-size: 1.6rem;
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		text-align: left;
-	}
-
-	p {
-		margin: 0;
-		font-size: 0.95rem;
-		color: rgb(255 255 255 / 0.7);
-	}
-
 	.email {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
-		padding: 0.7rem 1rem;
-		border: 1px solid rgb(245 197 66 / 0.3);
-		border-radius: 6px;
+		padding: 0.8rem 1.4rem;
+		border: 1px solid rgb(255 255 255 / 0.3);
+		border-radius: 999px;
 		background: var(--field);
 		font-size: 0.95rem;
 		overflow-wrap: anywhere;

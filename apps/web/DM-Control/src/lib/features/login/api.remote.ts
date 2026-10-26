@@ -3,7 +3,7 @@ import { invalid, redirect } from '@sveltejs/kit';
 import { ClientResponseError } from '@dnf/core/pocketbase';
 import { User } from '@dnf/core/user';
 
-const HOME = '/';
+const HOME = '/inicio';
 
 /**
  * Texto para a pessoa a partir do que o PocketBase devolveu. Erro que não é do PocketBase é bug nosso:

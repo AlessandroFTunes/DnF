@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 
 	import '../animation/lift.css';
+	import '../animation/scroll.css';
 
 	let { children }: { children: Snippet } = $props();
 </script>

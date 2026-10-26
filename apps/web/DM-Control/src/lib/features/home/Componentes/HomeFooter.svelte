@@ -1,9 +1,4 @@
-<script lang="ts">
-	import HomeSignup from './HomeSignup.svelte';
-</script>
-
 <footer>
-	<HomeSignup text="Pronto para mestrar? Informe seu email para criar ou acessar sua conta." />
 	<p>DM Control · Painel do mestre para suas mesas de D&amp;D</p>
 </footer>
 
@@ -17,7 +12,7 @@
 	}
 
 	p {
-		margin: 3rem 0 0;
+		margin: 0;
 		font-size: 0.85rem;
 		text-align: center;
 		color: rgb(255 255 255 / 0.55);

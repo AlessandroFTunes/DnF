@@ -1,0 +1,6 @@
+/* "Ver mais" desce até a seção em vez de pular; quem prefere menos movimento recebe o salto direto. */
+@media (prefers-reduced-motion: no-preference) {
+	html {
+		scroll-behavior: smooth;
+	}
+}

@@ -4,19 +4,18 @@
 	let { text }: { text: string } = $props();
 </script>
 
-<form action={resolve('/login')}>
+<div class="signup">
 	<p>{text}</p>
 	<div class="row">
-		<input type="email" name="email" placeholder="Email" autocomplete="email" aria-label="Email" />
-		<button type="submit" class="lift">Vamos lá <span aria-hidden="true">›</span></button>
+		<a class="start lift" href={resolve('/login')}>Get started <span aria-hidden="true">›</span></a>
+		<a class="more" href={resolve('/') + '#sobre'}>Ver mais</a>
 	</div>
-</form>
+</div>
 
 <style>
-	form {
+	.signup {
 		width: 100%;
 		max-width: 38rem;
-		margin: 0 auto;
 	}
 
 	p {
@@ -27,44 +26,46 @@
 
 	.row {
 		display: flex;
-		gap: 0.5rem;
+		align-items: center;
+		gap: 1.5rem;
 	}
 
-	input {
-		flex: 1;
-		min-width: 0;
-		padding: 1rem;
-		border: 1px solid rgb(255 255 255 / 0.35);
-		border-radius: 4px;
-		background: rgb(10 7 22 / 0.7);
-		color: #fff;
-		font-size: 1rem;
-	}
-
-	input:focus-visible {
-		outline: 2px solid var(--gold);
-		outline-offset: 1px;
-	}
-
-	button {
-		padding: 0 1.6rem;
-		border: 0;
+	.start {
+		padding: 1rem 1.6rem;
 		border-radius: 4px;
 		background: var(--gold);
 		color: var(--on-gold);
 		font-size: clamp(1rem, 2.4vw, 1.4rem);
 		font-weight: 800;
 		white-space: nowrap;
-		cursor: pointer;
+		text-decoration: none;
+	}
+
+	.more {
+		color: var(--gold);
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.more:hover {
+		text-decoration: underline;
+	}
+
+	.start:focus-visible,
+	.more:focus-visible {
+		outline: 2px solid var(--gold);
+		outline-offset: 2px;
 	}
 
 	@media (max-width: 36rem) {
 		.row {
 			flex-direction: column;
+			gap: 1rem;
 		}
 
-		button {
-			padding: 0.9rem;
+		.start {
+			align-self: stretch;
+			text-align: center;
 		}
 	}
 </style>

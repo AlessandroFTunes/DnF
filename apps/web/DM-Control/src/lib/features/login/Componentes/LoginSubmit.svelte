@@ -8,7 +8,7 @@
 	button {
 		padding: 0.95rem 1rem;
 		border: 0;
-		border-radius: 6px;
+		border-radius: 999px;
 		background: var(--gold);
 		color: var(--on-gold);
 		font-size: 1.05rem;
