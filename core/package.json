@@ -13,6 +13,7 @@
     "@dnf/tsconfig": "workspace:*"
   },
   "dependencies": {
+    "@techstark/opencv-js": "^5.0.0-release.1",
     "openapi-fetch": "^0.17.0",
     "pixi.js": "^8.22.0",
     "pocketbase": "^0.28.1",
