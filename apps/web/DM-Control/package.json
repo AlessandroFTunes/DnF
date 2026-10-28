@@ -16,7 +16,9 @@
 		"test": "npm run test:e2e"
 	},
 	"dependencies": {
-		"@dnf/core": "workspace:*"
+		"@dnf/core": "workspace:*",
+		"@lucide/svelte": "^1.61.0",
+		"@techstark/opencv-js": "^5.0.0-release.1"
 	},
 	"devDependencies": {
 		"@fontsource/fira-mono": "^5.2.7",

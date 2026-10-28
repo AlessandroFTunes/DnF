@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { criarMesa, inicio } from '../api.remote';
 
 	const abas = [
@@ -46,13 +48,15 @@
 	onclick={(e) => e.target === dialog && dialog.close()}
 >
 	<form
+		enctype="multipart/form-data"
 		{...criarMesa.enhance(async ({ submit }) => {
 			failure = undefined;
 			try {
 				await submit();
 				if (criarMesa.result?.ok) {
 					dialog?.close();
-					await inicio().refresh();
+					void inicio().refresh();
+					await goto(resolve('/mesa/[id]/grid', { id: criarMesa.result.id }));
 				} else if (comErro) {
 					aba = comErro;
 				}
@@ -98,7 +102,7 @@
 						<span class="trocar">Trocar imagem</span>
 					{:else}
 						<strong>Escolher imagem</strong>
-						<small>Imagem de capa (opcional) · JPG, PNG ou WebP, até 5 MB</small>
+						<small>Imagem de capa (opcional) · JPG, PNG ou WebP, até 30 MB</small>
 					{/if}
 				</button>
 				{#if previa && arquivo}
@@ -146,9 +150,12 @@
 				<p class="dica">
 					Os personagens que entrarem precisam ser da mesma edição. Não dá para trocar depois.
 				</p>
-				{#each edicoes as ed, i (ed.valor)}
+				{#each edicoes as ed (ed.valor)}
 					<label class="opcao">
-						<input type="radio" name="edition" value={ed.valor} checked={i === 0} />
+						<input
+							{...criarMesa.fields.edition.as('radio', ed.valor)}
+							checked={(criarMesa.fields.edition.value() ?? edicoes[0].valor) === ed.valor}
+						/>
 						<span><strong>{ed.titulo}</strong><small>{ed.texto}</small></span>
 					</label>
 				{/each}

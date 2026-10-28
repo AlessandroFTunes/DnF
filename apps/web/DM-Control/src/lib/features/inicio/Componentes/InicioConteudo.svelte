@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { inicio } from '../api.remote';
 	import InicioCriarMesa from './InicioCriarMesa.svelte';
+	import InicioMesaCard from './InicioMesaCard.svelte';
 
 	const dados = inicio();
-
-	const data = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' });
 </script>
 
 {#if dados.error}
@@ -31,15 +30,7 @@
 		</div>
 		<ul>
 			{#each mesas as mesa (mesa.id)}
-				<li>
-					{#if mesa.image}<img src={mesa.image} alt="" />{/if}
-					<strong>{mesa.name}</strong>
-					<span class="meta"
-						>D&amp;D {mesa.edition} · atualizada em {data.format(new Date(mesa.timeUpdated))}</span
-					>
-					{#if mesa.description}<p>{mesa.description}</p>{/if}
-					<span class="code">Código: {mesa.inviteCode}</span>
-				</li>
+				<li><InicioMesaCard {mesa} /></li>
 			{/each}
 		</ul>
 	{/if}
@@ -47,6 +38,7 @@
 
 <style>
 	h1 {
+		text-align: left;
 		margin: 0 0 2rem;
 		font-size: clamp(1.9rem, 3.4vw, 2.8rem);
 		font-weight: 600;
@@ -98,48 +90,11 @@
 
 	ul {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
 		gap: 1rem;
 		margin: 0;
 		padding: 0;
 		list-style: none;
-	}
-
-	li {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		padding: 1.1rem;
-		border-radius: 1rem;
-		background: #231c33;
-	}
-
-	li img {
-		width: 100%;
-		aspect-ratio: 16 / 9;
-		object-fit: cover;
-		border-radius: 0.7rem;
-	}
-
-	li strong {
-		font-size: 1.1rem;
-	}
-
-	li p {
-		margin: 0;
-		font-size: 0.9rem;
-		color: rgb(255 255 255 / 0.7);
-	}
-
-	.meta,
-	.code {
-		font-size: 0.8rem;
-		color: rgb(255 255 255 / 0.45);
-	}
-
-	.code {
-		font-family: var(--font-mono);
-		color: var(--gold);
 	}
 
 	.aviso {

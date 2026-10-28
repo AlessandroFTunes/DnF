@@ -9,3 +9,6 @@ dist/
 core/pb_data/
 core/pocketbase
 core/pocketbase.exe
+
+# Arquivos enviados (storage local do NAS)
+nas/

@@ -2,31 +2,27 @@
 migrate((app) => {
   const collection = app.findCollectionByNameOrId("pbc_2204324178")
 
-  // imagem da mesa (opcional)
+  // Só o caminho da capa no storage do NAS (ex.: "<id da mesa>/imagens/capa.png"); o arquivo não fica no PocketBase.
   collection.fields.add(new Field({
+    "autogeneratePattern": "",
     "hidden": false,
-    "id": "file_mesa_image",
-    "maxSelect": 1,
-    "maxSize": 5242880,
-    "mimeTypes": [
-      "image/jpeg",
-      "image/png",
-      "image/webp"
-    ],
-    "name": "image",
+    "id": "text_mesa_cover",
+    "max": 255,
+    "min": 0,
+    "name": "cover",
+    "pattern": "",
     "presentable": false,
-    "protected": false,
+    "primaryKey": false,
     "required": false,
     "system": false,
-    "thumbs": [],
-    "type": "file"
+    "type": "text"
   }))
 
   return app.save(collection)
 }, (app) => {
   const collection = app.findCollectionByNameOrId("pbc_2204324178")
 
-  collection.fields.removeById("file_mesa_image")
+  collection.fields.removeById("text_mesa_cover")
 
   return app.save(collection)
 })

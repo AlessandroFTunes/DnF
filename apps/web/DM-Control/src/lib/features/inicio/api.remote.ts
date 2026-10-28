@@ -1,9 +1,9 @@
 import { form, getRequestEvent, query } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { Mesa } from '@dnf/core/mesa';
+import { Nas } from '@dnf/core/storage';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 /** Nome da pessoa logada e as mesas que ela mestra ou joga (o PocketBase filtra pelas API rules). */
 export const inicio = query(async () => {
@@ -13,10 +13,10 @@ export const inicio = query(async () => {
 	try {
 		// Cliente da requisição: o compartilhado do `core` não tem o login desta pessoa.
 		const result = await locals.pb.collection('mesas').getList(1, 50, { sort: '-updated' });
-		// `image` não faz parte do `Mesa.Info` do core: aqui vira a URL do arquivo (ou null).
+		// A capa é servida por /nas/<caminho>, rota que lê do NAS.
 		const mesas = result.items.map((record) => ({
 			...Mesa.serialize(record),
-			image: record.image ? locals.pb.files.getURL(record, record.image) : null
+			image: record.cover ? `/nas/${record.cover}` : null
 		}));
 		return { name: locals.user.name, mesas } as const;
 	} catch (failure) {
@@ -42,25 +42,38 @@ export const criarMesa = form(
 		const image = data.image instanceof File && data.image.size > 0 ? data.image : undefined;
 		if (image && !IMAGE_TYPES.includes(image.type))
 			invalid(issue.image('Use uma imagem JPG, PNG ou WebP.'));
-		if (image && image.size > IMAGE_MAX_BYTES) invalid(issue.image('A imagem pode ter até 5 MB.'));
+		if (image && image.size > Nas.MAX_BYTES) invalid(issue.image('A imagem pode ter até 30 MB.'));
 
 		const { locals } = getRequestEvent();
 		if (!locals.user) invalid(issue.name('Entre para criar uma mesa.'));
 
+		// A mesa nasce primeiro porque a pasta do arquivo leva o id dela: nas/<id da mesa>/imagens/.
+		let created;
 		try {
 			// Cliente da requisição: o PocketBase confere pelo login quem é o mestre.
-			const body = new FormData();
-			body.set('name', parsed.data.name);
-			body.set('description', parsed.data.description);
-			body.set('edition', parsed.data.edition);
-			body.set('gm', locals.user.id);
-			if (image) body.set('image', image);
-			await locals.pb.collection('mesas').create(body);
+			created = await locals.pb.collection('mesas').create({ ...parsed.data, gm: locals.user.id });
 		} catch (failure) {
 			console.error('[inicio] criarMesa', failure);
 			invalid(issue.name('Não foi possível criar a mesa. Tente de novo.'));
 		}
 
-		return { ok: true } as const;
+		if (image) {
+			const cover = `${created.id}/imagens/capa.${Nas.extensionOf(image.type)}`;
+			try {
+				await Mesa.adicionarCapa(cover, image);
+				await locals.pb.collection('mesas').update(created.id, { cover });
+			} catch (failure) {
+				console.error('[inicio] capa', failure);
+				// Sem a capa a mesa não fica pela metade: volta ao estado de antes do envio.
+				await Nas.remove(cover);
+				await locals.pb
+					.collection('mesas')
+					.delete(created.id)
+					.catch(() => {});
+				invalid(issue.image('Não foi possível guardar a imagem. Tente de novo.'));
+			}
+		}
+
+		return { ok: true, id: created.id } as const;
 	}
 );
