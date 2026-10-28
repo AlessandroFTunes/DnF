@@ -1,3 +1,5 @@
+export * as Calibration from './calibration';
+
 /**
  * Rastreio de tokens reais: o Port. Define o que o resto do app espera de um detector de marcadores
  * (ArUco) sem conhecer OpenCV, câmera ou DOM. Quem implementa recebe um frame e devolve os marcadores
