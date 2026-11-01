@@ -6,10 +6,10 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Character } from '@dnf/core/character';
 import { Button, D20, DnfLogo, DnfSpinner, fonts, mixColor, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { classIcon } from '../features/character-create/labels';
-import { HeroArt } from '../features/home/HeroArt';
-import { useSession } from '../hooks/hook.session';
-import { srd, tr, useSrd } from '../lib/srd';
+import { classIcon } from '../lib/features/character-create/functions/labels';
+import { HeroArt } from '../lib/features/home/components/HeroArt';
+import { useSession } from '../lib/features/auth/functions/hook.session';
+import { srd, tr, useSrd } from '../lib/features/srd/functions';
 
 type Load = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Character.Info[] };
 

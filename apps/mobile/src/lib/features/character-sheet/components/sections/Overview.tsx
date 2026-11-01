@@ -2,10 +2,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ABILITIES, abilityModifier } from '@dnf/core/character';
 import { fonts, formatBonus, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { ABILITY_LABEL } from '../../character-create/labels';
+import { ABILITY_LABEL } from '../../../character-create/functions/labels';
 import { HpTracker, Panel, SmallButton } from '../components';
 import { Emblem, type EmblemShape } from '../emblems';
-import type { Sheet } from '../useSheet';
+import type { Sheet } from '../../functions/useSheet';
 
 /** Emblema do painel de status: o número dentro da forma, com o nome e um detalhe embaixo. */
 function Tile({ label, value, detail, shape, accent }: { label: string; value: string; detail?: string; shape: EmblemShape; accent?: boolean }) {

@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Chip, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
-import { useCharacterDraft } from '../../features/character-create/draft';
+import { LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { useCharacterDraft } from '../functions/draft';
 import {
   ALIGNMENT_ATTITUDES,
   ALIGNMENT_MORALITIES,
   alignmentLabel,
   alignmentShort,
-} from '../../features/character-create/labels';
-import { srd, tr, useSrd } from '../../lib/srd';
-import { useCreation } from '../../features/character-create/useCreation';
+} from '../functions/labels';
+import { srd, tr, useSrd } from '../../srd/functions';
+import { useCreation } from '../functions/useCreation';
 
 const NAME_MAX = 64;
 

@@ -4,16 +4,16 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ABILITIES } from '@dnf/core/character';
 import { fightingStyleSlots, plainText } from '@dnf/sdk/srd';
 import { Button, Chip, fonts, radius, spacing } from '@dnf/ui-react-native';
-import { ABILITY_LABEL } from '../../character-create/labels';
-import type { LevelUpGain } from '../LevelUpCelebration';
+import { ABILITY_LABEL } from '../../../character-create/functions/labels';
+import type { LevelUpGain } from '../../animations/LevelUpCelebration';
 import { SageButton } from '../SageButton';
-import { sageCategory } from '../sageSpeech';
-import type { Sheet, SheetData } from '../useSheet';
-import { tr } from '../../../lib/srd';
-import { branchesOf, buildNodes, starsOf, subclassLabel, type TreeEntry } from './nodes';
-import { MAX_LEVEL, SKY } from './sky';
+import { sageCategory } from '../../functions/sageSpeech';
+import type { Sheet, SheetData } from '../../functions/useSheet';
+import { tr } from '../../../srd/functions';
+import { branchesOf, buildNodes, starsOf, subclassLabel, type TreeEntry } from '../../functions/progression/nodes';
+import { MAX_LEVEL, SKY } from '../../functions/progression/sky';
 import { Tree } from './Tree';
-import { useLevelUp, type LevelUp } from './useLevelUp';
+import { useLevelUp, type LevelUp } from '../../functions/progression/useLevelUp';
 
 /** Habilidades do nível recém-ganho: brilham até o jogador tocar nelas. */
 export interface Fresh {

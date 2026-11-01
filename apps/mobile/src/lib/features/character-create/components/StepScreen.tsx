@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, DnfSpinner, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { useCharacterDraft } from './draft';
-import { EDITION_INFO, type IconName } from './labels';
-import { useSteps, type StepId } from './steps';
+import { useCharacterDraft } from '../functions/draft';
+import { EDITION_INFO, type IconName } from '../functions/labels';
+import { useSteps, type StepId } from '../functions/steps';
 
 interface StepScreenProps {
   /** Etapa atual; omita na escolha de edição (antes das etapas). */

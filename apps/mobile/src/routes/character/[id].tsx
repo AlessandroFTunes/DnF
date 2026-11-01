@@ -1,1 +1,1 @@
-export { default } from '../../pages/character-sheet/SheetPage';
+export { default } from '../../lib/features/character-sheet/pages/SheetPage';

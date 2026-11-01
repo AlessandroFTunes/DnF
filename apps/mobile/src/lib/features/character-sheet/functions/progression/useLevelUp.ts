@@ -2,11 +2,11 @@ import { useContext, useMemo, useState } from 'react';
 import { abilityModifier, type Ability } from '@dnf/core/character';
 import { abilityIncreaseOf, featHitPointsPerLevel, featuresByLevel, fightingStyleSlots, type SrdClassFeature } from '@dnf/sdk/srd';
 import { formatBonus } from '@dnf/ui-react-native';
-import { ABILITY_LABEL } from '../../character-create/labels';
-import type { LevelUpGain } from '../LevelUpCelebration';
-import { ThemeHold } from '../themeBlend';
+import { ABILITY_LABEL } from '../../../character-create/functions/labels';
+import type { LevelUpGain } from '../../animations/LevelUpCelebration';
+import { ThemeHold } from '../../animations/themeBlend';
 import type { Sheet, SheetData } from '../useSheet';
-import { tr } from '../../../lib/srd';
+import { tr } from '../../../srd/functions';
 import type { StarData } from './nodes';
 
 /** Escolhas da subida de nível (feitas tocando nas estrelas; só valem ao confirmar). */

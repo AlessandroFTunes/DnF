@@ -3,7 +3,7 @@ import { AccessibilityInfo, Animated, Easing, Modal, Platform, Pressable, StyleS
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { D20, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { AuthButton } from '../auth/AuthButton';
+import { AuthButton } from '../../auth/components/AuthButton';
 
 const useNativeDriver = Platform.OS !== 'web';
 

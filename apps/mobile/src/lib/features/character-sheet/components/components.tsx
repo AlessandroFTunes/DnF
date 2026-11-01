@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type View
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Character } from '@dnf/core/character';
 import { fonts, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import type { IconName } from '../character-create/labels';
+import type { IconName } from '../../character-create/functions/labels';
 import { HeartGauge } from './emblems';
 
 /** Bloco com título usado em todas as seções da ficha. */

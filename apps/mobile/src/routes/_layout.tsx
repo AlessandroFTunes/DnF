@@ -5,8 +5,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Cinzel_600SemiBold, Cinzel_700Bold, Cinzel_800ExtraBold } from '@expo-google-fonts/cinzel';
 import { fonts, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { useSession } from '../hooks/hook.session';
-import { prefetchSrd } from '../lib/srd';
+import { useSession } from '../lib/features/auth/functions/hook.session';
+import { prefetchSrd } from '../lib/features/srd/functions';
 
 // A splash nativa fica até o primeiro quadro do app; o compêndio começa a abrir já aqui, durante ela.
 void SplashScreen.preventAutoHideAsync().catch(() => {});

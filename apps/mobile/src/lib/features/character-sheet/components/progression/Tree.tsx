@@ -4,7 +4,7 @@ import Svg, { Circle, Defs, Ellipse, RadialGradient, Stop } from 'react-native-s
 import { spacing } from '@dnf/ui-react-native';
 import { Line } from './Line';
 import { Point } from './Point';
-import { MAX_LEVEL, NEBULAE, seeded } from './sky';
+import { MAX_LEVEL, NEBULAE, seeded } from '../../functions/progression/sky';
 
 /** Um item do array da árvore: define a estrela e (por `from`) a linha que chega nela. */
 export interface TreeNode {

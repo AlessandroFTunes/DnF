@@ -1,1 +1,1 @@
-export { default } from '../../../pages/character-create/ReviewPage';
+export { default } from '../../../lib/features/character-create/pages/ReviewPage';

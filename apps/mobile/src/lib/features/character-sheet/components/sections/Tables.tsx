@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Mesa } from '@dnf/core/mesa';
 import { Button, DnfSpinner, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { Panel } from '../components';
-import type { Sheet } from '../useSheet';
+import type { Sheet } from '../../functions/useSheet';
 
 /** Mesas em que o personagem está, e o atalho para entrar em outra. */
 export function Tables({ sheet }: { sheet: Sheet }) {

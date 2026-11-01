@@ -3,8 +3,8 @@ import { AccessibilityInfo, Animated, Easing, Modal, Platform, Pressable, StyleS
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { fonts, radius, spacing, textGlow } from '@dnf/ui-react-native';
 import { D20Animation } from './D20Animation';
-import { loadSpeech, type Speech } from '../../lib/narration';
-import { celebrationSounds, type SoundCue } from './levelUpSounds';
+import { loadSpeech, type Speech } from '../../../narration';
+import { celebrationSounds, type SoundCue } from '../functions/levelUpSounds';
 
 /** O que o personagem ganhou ao subir (aparece um por um na celebração). */
 export interface LevelUpGain {

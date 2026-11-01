@@ -5,7 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Mesa } from '@dnf/core/mesa';
 import { Button, DnfSpinner, radius, type RpgTheme, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { useSession } from '../../hooks/hook.session';
+import { useSession } from '../../auth/functions/hook.session';
 
 type Load = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Mesa.Info[] };
 

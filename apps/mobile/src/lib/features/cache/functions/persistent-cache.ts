@@ -6,7 +6,7 @@ import { Directory, File, Paths } from 'expo-file-system';
  * pode apagar quando falta espaço). Web: ver `persistent-cache.web.ts`.
  */
 
-// Formato do envelope no disco. A versão dos *dados* fica em `features/srd` (SRD_CACHE_VERSION).
+// Formato do envelope no disco. A versão dos *dados* fica em `features/srd/functions` (SRD_CACHE_VERSION).
 const VERSION = 1;
 // Os dados de regra quase não mudam; depois disso, busca de novo para pegar correções.
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;

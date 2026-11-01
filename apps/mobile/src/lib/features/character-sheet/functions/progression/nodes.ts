@@ -1,8 +1,8 @@
 import { featuresByLevel, isFightingStyleFeature, type SrdClassDetail, type SrdClassFeature } from '@dnf/sdk/srd';
-import { subclassOrigin } from '../../character-create/labels';
-import { tr } from '../../../lib/srd';
+import { subclassOrigin } from '../../../character-create/functions/labels';
+import { tr } from '../../../srd/functions';
 import { NEBULAE, SKY } from './sky';
-import type { TreeNode } from './Tree';
+import type { TreeNode } from '../../components/progression/Tree';
 
 export interface StarData {
   id: string;

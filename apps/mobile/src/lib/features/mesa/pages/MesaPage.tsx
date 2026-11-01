@@ -5,10 +5,10 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Mesa } from '@dnf/core/mesa';
 import { Button, DnfSpinner, fonts, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { classIcon } from '../../features/character-create/labels';
-import { formatCode } from '../../features/mesa/code';
-import { useSession } from '../../hooks/hook.session';
-import { srd, tr, useSrd } from '../../lib/srd';
+import { classIcon } from '../../character-create/functions/labels';
+import { formatCode } from '../functions/code';
+import { useSession } from '../../auth/functions/hook.session';
+import { srd, tr, useSrd } from '../../srd/functions';
 
 // Sem realtime no React Native (o SDK usa EventSource): a mesa se atualiza sozinha a cada 10 s.
 const POLL_MS = 10_000;

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Line as SvgLine } from 'react-native-svg';
-import { SKY } from './sky';
+import { SKY } from '../../functions/progression/sky';
 
 export interface LineProps {
   x1: number;

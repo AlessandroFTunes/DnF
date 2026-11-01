@@ -4,10 +4,10 @@ import { Redirect, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { User } from '@dnf/core/user';
 import { Button, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { toErrors, type AuthErrors, type AuthField } from '../../features/auth/errors';
-import { Field } from '../../features/auth/Field';
-import { useAuthFlow } from '../../features/auth/flow';
-import { useSession } from '../../hooks/hook.session';
+import { toErrors, type AuthErrors, type AuthField } from '../../lib/features/auth/functions/errors';
+import { Field } from '../../lib/features/auth/components/Field';
+import { useAuthFlow } from '../../lib/features/auth/functions/flow';
+import { useSession } from '../../lib/features/auth/functions/hook.session';
 
 /** Segunda etapa: senha para entrar; nome, senha e confirmação para criar a conta. */
 export default function PasswordStep() {

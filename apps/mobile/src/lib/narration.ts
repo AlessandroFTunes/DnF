@@ -1,14 +1,16 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import { Narration } from '@dnf/core/narration';
 import { PocketBase } from '@dnf/core/pocketbase';
+import { ttsCache } from './features/cache/functions/tts-cache';
 import { audioFromBase64 } from './audio-file';
-import { ttsCache, type TtsResult } from './tts-cache';
 import './pocketbase';
 
 /**
- * Narração da ElevenLabs. O app não tem a chave: pede `/tts` ao PocketBase (`core/pb_hooks/tts.pb.js`), que
- * gera o mp3 com o tempo de cada letra e só atende logados. Sem a chave no servidor (ou sem rede), não há fala.
- * Cada fala gerada fica guardada no aparelho (`tts-cache.ts`).
+ * Toca a narração no aparelho. Quem gera a fala é o port `Narration` do core (o provedor fica no servidor);
+ * cada fala gerada fica guardada no aparelho (`features/cache/functions/tts-cache.ts`).
  */
+const narration = Narration.withCache(Narration.createPocketBaseAdapter(PocketBase.client()), ttsCache);
+
 export interface Speech {
   /** Duração da fala (ms). */
   durationMs: number;
@@ -39,25 +41,12 @@ function whenLoaded(player: AudioPlayer): Promise<boolean> {
   });
 }
 
-/**
- * Jeito de falar (ver `tts.pb.js`): `calm` é plana e pausada (avisos da subida de nível); `sage` tem mais
- * entonação, para o Grande Sábio explicar uma habilidade.
- */
-export type SpeechStyle = 'calm' | 'sage';
+export type SpeechStyle = Narration.Style;
 
 /** Gera a fala de `text` e devolve pronta para tocar, com o momento em que cada trecho de `marks` é dito (na ordem). */
 export async function loadSpeech(text: string, marks: string[] = [], style: SpeechStyle = 'calm'): Promise<Speech | null> {
-  // A mesma fala já gerada toca do aparelho, sem gastar créditos.
-  const key = style === 'calm' ? text : `${style}|${text}`;
-  let res = await ttsCache.get(key);
-  if (!res) {
-    try {
-      res = await PocketBase.client().send<TtsResult>('/tts', { query: { text, style }, requestKey: null });
-    } catch {
-      return null;
-    }
-    void ttsCache.set(key, res);
-  }
+  const res = await narration.synthesize(text, style);
+  if (!res) return null;
   void setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
   const file = audioFromBase64(res.audio, 'narration');
   const player = createAudioPlayer(file.source);
@@ -77,17 +66,9 @@ export async function loadSpeech(text: string, marks: string[] = [], style: Spee
     return null;
   }
 
-  let from = 0;
-  const marksMs = marks.map((mark) => {
-    const i = text.indexOf(mark, from);
-    if (i < 0) return null;
-    from = i + mark.length;
-    return Math.round((res.starts[i] ?? 0) * 1000);
-  });
-
   return {
     durationMs: Math.round(res.duration * 1000),
-    marksMs,
+    marksMs: Narration.marksMs(text, marks, res),
     play() {
       if (started || disposed) return;
       started = true;

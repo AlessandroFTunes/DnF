@@ -6,12 +6,12 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
  * instantes da animação. Gerados pela ElevenLabs (`bun run sounds`, prompts em `scripts/sounds.ts`).
  */
 const SOUNDS = {
-  burst: require('../../../assets/sounds/burst.mp3'),
-  collide: require('../../../assets/sounds/collide.mp3'),
-  shake: require('../../../assets/sounds/shake.mp3'),
-  shatter: require('../../../assets/sounds/shatter.mp3'),
+  burst: require('../../../../../assets/sounds/burst.mp3'),
+  collide: require('../../../../../assets/sounds/collide.mp3'),
+  shake: require('../../../../../assets/sounds/shake.mp3'),
+  shatter: require('../../../../../assets/sounds/shatter.mp3'),
 } as const;
-const AMBIENCE = require('../../../assets/sounds/ambience.mp3');
+const AMBIENCE = require('../../../../../assets/sounds/ambience.mp3');
 
 export type SoundCue = { at: number; sound: keyof typeof SOUNDS };
 

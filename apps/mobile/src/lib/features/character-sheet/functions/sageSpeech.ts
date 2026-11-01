@@ -1,5 +1,5 @@
 import { isSpellcastingFeature, plainText } from '@dnf/sdk/srd';
-import { ttsHash } from '../../lib/tts-key';
+import { Narration } from '@dnf/core/narration';
 
 /**
  * Roteiro do Grande Sábio: abertura, confirmação, apresentação da habilidade pela categoria, resumo da regra e
@@ -83,7 +83,7 @@ export function quickSummary(desc = '', max = 380): string {
 }
 
 export function sageSpeech(name: string, desc: string | undefined, category: SageCategory): string {
-  const seed = parseInt(ttsHash(name), 36);
+  const seed = parseInt(Narration.hash(name), 36);
   const pick = <T>(list: readonly T[], salt: number) => list[(seed >>> salt) % list.length]!;
   const { title, article } = SAGE_CATEGORY[category];
   const intro = pick(article === 'Seu' ? INTROS_M : INTROS, 6)

@@ -1,1 +1,1 @@
-export { default } from '../../../pages/character-create/ClassPage';
+export { default } from '../../../lib/features/character-create/pages/ClassPage';

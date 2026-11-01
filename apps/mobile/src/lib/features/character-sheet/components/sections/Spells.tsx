@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { plainText, type SrdSpell } from '@dnf/sdk/srd';
 import { Chip, formatBonus, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { srd, tr, useSrd } from '../../../lib/srd';
-import { abilityName, rangeLabel } from '../../character-create/labels';
+import { srd, tr, useSrd } from '../../../srd/functions';
+import { abilityName, rangeLabel } from '../../../character-create/functions/labels';
 import { Panel, SmallButton, StatBox } from '../components';
-import type { Sheet } from '../useSheet';
+import type { Sheet } from '../../functions/useSheet';
 
 const LEVEL_LABEL = (level: number) => (level === 0 ? 'Truques' : `${level}º círculo`);
 

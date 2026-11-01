@@ -19,17 +19,17 @@ import {
   typography,
   useRpgTheme,
 } from '@dnf/ui-react-native';
-import { classIcon, type IconName } from '../../features/character-create/labels';
-import { Features, Story } from '../../features/character-sheet/sections/Features';
-import { Attacks, Inventory } from '../../features/character-sheet/sections/Inventory';
-import { Abilities, StatusPanel } from '../../features/character-sheet/sections/Overview';
-import { Progression } from '../../features/character-sheet/sections/Progression';
-import { Skills } from '../../features/character-sheet/sections/Skills';
-import { Spells } from '../../features/character-sheet/sections/Spells';
-import { Tables } from '../../features/character-sheet/sections/Tables';
-import { ThemeHold, useBlend } from '../../features/character-sheet/themeBlend';
-import { useSheet, type Sheet } from '../../features/character-sheet/useSheet';
-import { tr } from '../../lib/srd';
+import { classIcon, type IconName } from '../../character-create/functions/labels';
+import { Features, Story } from '../components/sections/Features';
+import { Attacks, Inventory } from '../components/sections/Inventory';
+import { Abilities, StatusPanel } from '../components/sections/Overview';
+import { Progression } from '../components/sections/Progression';
+import { Skills } from '../components/sections/Skills';
+import { Spells } from '../components/sections/Spells';
+import { Tables } from '../components/sections/Tables';
+import { ThemeHold, useBlend } from '../animations/themeBlend';
+import { useSheet, type Sheet } from '../functions/useSheet';
+import { tr } from '../../srd/functions';
 
 type TabId = 'sheet' | 'progression' | 'story' | 'tables';
 

@@ -4,8 +4,8 @@ import { useRouter } from 'expo-router';
 import { ClientResponseError } from '@dnf/core/pocketbase';
 import { User } from '@dnf/core/user';
 import { Button, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { Field } from '../../features/auth/Field';
-import { useAuthFlow } from '../../features/auth/flow';
+import { Field } from '../../lib/features/auth/components/Field';
+import { useAuthFlow } from '../../lib/features/auth/functions/flow';
 
 /**
  * Primeira etapa: só o email. O servidor diz se já há conta com ele; a próxima etapa pede a senha

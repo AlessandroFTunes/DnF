@@ -3,11 +3,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { sizeLabel, speciesRules, type SkillInfo, type SrdSpecies } from '@dnf/sdk/srd';
 import type { Ability } from '@dnf/core/character';
 import { Chip, OptionCard, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { InfoRow, LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
-import { useCharacterDraft } from '../../features/character-create/draft';
-import { srd, tr, useSrd } from '../../lib/srd';
-import { useCreation } from '../../features/character-create/useCreation';
-import { abilityShort } from '../../features/character-create/labels';
+import { InfoRow, LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { useCharacterDraft } from '../functions/draft';
+import { srd, tr, useSrd } from '../../srd/functions';
+import { useCreation } from '../functions/useCreation';
+import { abilityShort } from '../functions/labels';
 
 export default function SpeciesPage() {
   const theme = useRpgTheme();

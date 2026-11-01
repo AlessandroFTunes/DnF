@@ -14,8 +14,8 @@ interface Art {
 
 /** Ilustrações que se revezam no topo da Home, na ordem. */
 const ARTS: Art[] = [
-  { source: require('../../../assets/images/home-party.jpg'), ratio: 1536 / 1024, focus: { x: 0.47, y: 0.5 } },
-  { source: require('../../../assets/images/home-party-2.jpg'), ratio: 1159 / 1357, focus: { x: 0.5, y: 0.4 } },
+  { source: require('../../../../../assets/images/home-party.jpg'), ratio: 1536 / 1024, focus: { x: 0.47, y: 0.5 } },
+  { source: require('../../../../../assets/images/home-party-2.jpg'), ratio: 1159 / 1357, focus: { x: 0.5, y: 0.4 } },
 ];
 
 /** Quanto cada arte fica parada antes de trocar, e quanto dura o esmaecimento. */

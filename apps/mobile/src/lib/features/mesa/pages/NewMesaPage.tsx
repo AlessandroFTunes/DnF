@@ -6,7 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Mesa } from '@dnf/core/mesa';
 import { DiferenteKey } from '@dnf/core/util';
 import { Button, fonts, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { EDITION_INFO } from '../../features/character-create/labels';
+import { EDITION_INFO } from '../../character-create/functions/labels';
 
 /** Mestre cria a mesa: nome, edição e um recado para os jogadores. */
 export default function NewMesaPage() {

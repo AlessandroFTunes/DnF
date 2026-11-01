@@ -4,12 +4,12 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { backgroundRules, plainText } from '@dnf/sdk/srd';
 import { OptionCard, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { InfoRow, LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
-import { useCharacterDraft } from '../../features/character-create/draft';
-import { abilityName, skillLabel } from '../../features/character-create/labels';
-import { useSteps } from '../../features/character-create/steps';
-import { useCreation } from '../../features/character-create/useCreation';
-import { tr } from '../../lib/srd';
+import { InfoRow, LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { useCharacterDraft } from '../functions/draft';
+import { abilityName, skillLabel } from '../functions/labels';
+import { useSteps } from '../functions/steps';
+import { useCreation } from '../functions/useCreation';
+import { tr } from '../../srd/functions';
 
 export default function BackgroundPage() {
   const theme = useRpgTheme();

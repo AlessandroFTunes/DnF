@@ -1,1 +1,1 @@
-export { default } from '../../pages/mesa/MesasPage';
+export { default } from '../../lib/features/mesa/pages/MesasPage';

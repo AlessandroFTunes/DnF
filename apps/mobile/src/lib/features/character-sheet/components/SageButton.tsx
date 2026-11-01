@@ -3,11 +3,11 @@ import { AccessibilityInfo, ActivityIndicator, Animated, Easing, Modal, Platform
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { fonts, spacing, textGlow, useRpgTheme } from '@dnf/ui-react-native';
-import { loadSpeech, type Speech } from '../../lib/narration';
-import { D20Animation } from './D20Animation';
-import { GOLD_DIE } from './LevelUpCelebration';
-import { celebrationSounds } from './levelUpSounds';
-import { SAGE_CATEGORY, sageSpeech, type SageCategory } from './sageSpeech';
+import { loadSpeech, type Speech } from '../../../narration';
+import { D20Animation } from '../animations/D20Animation';
+import { GOLD_DIE } from '../animations/LevelUpCelebration';
+import { celebrationSounds } from '../functions/levelUpSounds';
+import { SAGE_CATEGORY, sageSpeech, type SageCategory } from '../functions/sageSpeech';
 
 type State = 'idle' | 'loading' | 'playing';
 

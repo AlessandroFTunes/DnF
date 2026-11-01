@@ -4,10 +4,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Character } from '@dnf/core/character';
 import { isBodyArmor, isShield } from '@dnf/sdk/srd';
 import { formatBonus, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import type { IconName } from '../../character-create/labels';
+import type { IconName } from '../../../character-create/functions/labels';
 import { Panel, SmallButton } from '../components';
-import type { Sheet } from '../useSheet';
-import { tr } from '../../../lib/srd';
+import type { Sheet } from '../../functions/useSheet';
+import { tr } from '../../../srd/functions';
 
 type Equipment = Character.Info['equipment'];
 const COINS = [

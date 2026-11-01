@@ -6,10 +6,10 @@ import { ABILITIES, abilityModifier, Character, proficiencyBonus } from '@dnf/co
 import { ClientResponseError } from '@dnf/core/pocketbase';
 import { isWeaponProficient, skillBonus, weaponAttack } from '@dnf/sdk/srd';
 import { fonts, formatBonus, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
-import { buildCharacter, startingHitPoints } from '../../features/character-create/build';
-import { useCharacterDraft } from '../../features/character-create/draft';
-import { buildInventory, inventoryArmorClass } from '../../features/character-create/inventory';
+import { LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { buildCharacter, startingHitPoints } from '../functions/build';
+import { useCharacterDraft } from '../functions/draft';
+import { buildInventory, inventoryArmorClass } from '../functions/inventory';
 import {
   ABILITY_LABEL,
   alignmentLabel,
@@ -17,10 +17,10 @@ import {
   EDITION_INFO,
   skillLabel,
   type IconName,
-} from '../../features/character-create/labels';
-import { STEP_DEFS, type StepId } from '../../features/character-create/steps';
-import { combined, useCreation } from '../../features/character-create/useCreation';
-import { srd, tr, useSrd } from '../../lib/srd';
+} from '../functions/labels';
+import { STEP_DEFS, type StepId } from '../functions/steps';
+import { combined, useCreation } from '../functions/useCreation';
+import { srd, tr, useSrd } from '../../srd/functions';
 
 const PB = proficiencyBonus(1);
 

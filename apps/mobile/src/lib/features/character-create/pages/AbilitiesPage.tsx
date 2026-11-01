@@ -14,11 +14,11 @@ import {
   typography,
   useRpgTheme,
 } from '@dnf/ui-react-native';
-import { SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
-import { STANDARD_ARRAY, useCharacterDraft, type AbilityMethod } from '../../features/character-create/draft';
-import { ABILITY_LABEL, abilityShort } from '../../features/character-create/labels';
-import { useCreation } from '../../features/character-create/useCreation';
-import { tr } from '../../lib/srd';
+import { SectionLabel, StepScreen } from '../components/StepScreen';
+import { STANDARD_ARRAY, useCharacterDraft, type AbilityMethod } from '../functions/draft';
+import { ABILITY_LABEL, abilityShort } from '../functions/labels';
+import { useCreation } from '../functions/useCreation';
+import { tr } from '../../srd/functions';
 
 /** 4d6, descarta o menor. */
 function rollAbility(): number {

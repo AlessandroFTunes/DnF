@@ -1,1 +1,1 @@
-export { default } from '../../../pages/character-create/SpeciesPage';
+export { default } from '../../../lib/features/character-create/pages/SpeciesPage';

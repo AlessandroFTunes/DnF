@@ -31,11 +31,11 @@ import {
   type SrdClassFeature,
 } from '@dnf/sdk/srd';
 import { Button, Chip, fonts, formatBonus, radius, spacing } from '@dnf/ui-react-native';
-import { ABILITY_LABEL, subclassOrigin } from '../../character-create/labels';
-import { LevelUpCelebration, type LevelUpGain } from '../LevelUpCelebration';
-import { ThemeHold } from '../themeBlend';
-import type { Sheet, SheetData } from '../useSheet';
-import { srd, tr, useSrd } from '../../../lib/srd';
+import { ABILITY_LABEL, subclassOrigin } from '../../../character-create/functions/labels';
+import { LevelUpCelebration, type LevelUpGain } from '../../animations/LevelUpCelebration';
+import { ThemeHold } from '../../animations/themeBlend';
+import type { Sheet, SheetData } from '../../functions/useSheet';
+import { srd, tr, useSrd } from '../../../srd/functions';
 
 /** A árvore é sempre noturna (céu estilo Skyrim), nos dois temas. */
 const SKY = {

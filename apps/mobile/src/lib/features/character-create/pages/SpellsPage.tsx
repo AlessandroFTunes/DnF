@@ -4,11 +4,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { proficiencyBonus } from '@dnf/core/character';
 import { plainText, spellStats, type SrdSpell } from '@dnf/sdk/srd';
 import { Chip, fonts, formatBonus, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
-import { useCharacterDraft } from '../../features/character-create/draft';
-import { abilityName, rangeLabel } from '../../features/character-create/labels';
-import { useCreation } from '../../features/character-create/useCreation';
-import { srd, tr, useSrd } from '../../lib/srd';
+import { LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { useCharacterDraft } from '../functions/draft';
+import { abilityName, rangeLabel } from '../functions/labels';
+import { useCreation } from '../functions/useCreation';
+import { srd, tr, useSrd } from '../../srd/functions';
 
 type Tab = 'cantrips' | 'spells' | 'feat';
 

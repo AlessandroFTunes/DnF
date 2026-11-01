@@ -4,13 +4,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Character } from '@dnf/core/character';
 import { isSpellcastingFeature, plainText, spellCountsAt } from '@dnf/sdk/srd';
 import { formatBonus, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { abilityName, classIcon, type IconName } from '../../character-create/labels';
+import { abilityName, classIcon, type IconName } from '../../../character-create/functions/labels';
 import { BottomSheet } from '../BottomSheet';
 import { Panel } from '../components';
 import { SageButton } from '../SageButton';
-import { sageCategory, type SageSource } from '../sageSpeech';
-import type { Sheet, SheetData } from '../useSheet';
-import { tr } from '../../../lib/srd';
+import { sageCategory, type SageSource } from '../../functions/sageSpeech';
+import type { Sheet, SheetData } from '../../functions/useSheet';
+import { tr } from '../../../srd/functions';
 
 /** Item expansível: nome + nível; o texto completo da 5e-FastAPI ao abrir. Com resumo, o texto só aparece ao abrir. */
 function Feature({ name, badge, desc, summary, note, sage }: Omit<FeatureItem, 'key'>) {

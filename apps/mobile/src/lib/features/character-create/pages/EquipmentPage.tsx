@@ -9,11 +9,11 @@ import {
   type SrdItem,
 } from '@dnf/sdk/srd';
 import { Chip, fonts, formatBonus, OptionCard, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
-import { useCharacterDraft } from '../../features/character-create/draft';
-import { buildInventory, inventoryArmorClass, pickId } from '../../features/character-create/inventory';
-import { combined, useCreation } from '../../features/character-create/useCreation';
-import { tr } from '../../lib/srd';
+import { LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { useCharacterDraft } from '../functions/draft';
+import { buildInventory, inventoryArmorClass, pickId } from '../functions/inventory';
+import { combined, useCreation } from '../functions/useCreation';
+import { tr } from '../../srd/functions';
 
 export default function EquipmentPage() {
   const theme = useRpgTheme();

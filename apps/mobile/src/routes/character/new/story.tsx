@@ -1,1 +1,1 @@
-export { default } from '../../../pages/character-create/StoryPage';
+export { default } from '../../../lib/features/character-create/pages/StoryPage';

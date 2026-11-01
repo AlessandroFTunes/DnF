@@ -2,10 +2,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { skillBonus } from '@dnf/sdk/srd';
 import { formatBonus, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { ABILITY_LABEL, skillLabel } from '../../character-create/labels';
+import { ABILITY_LABEL, skillLabel } from '../../../character-create/functions/labels';
 import { Panel } from '../components';
-import type { SheetData } from '../useSheet';
-import { tr } from '../../../lib/srd';
+import type { SheetData } from '../../functions/useSheet';
+import { tr } from '../../../srd/functions';
 
 export function Skills({ data }: { data: SheetData }) {
   const theme = useRpgTheme();

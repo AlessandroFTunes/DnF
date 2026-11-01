@@ -1,1 +1,1 @@
-export { default } from '../../../pages/character-create/AbilitiesPage';
+export { default } from '../../../lib/features/character-create/pages/AbilitiesPage';

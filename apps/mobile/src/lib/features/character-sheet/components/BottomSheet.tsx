@@ -3,7 +3,7 @@ import { AccessibilityInfo, Animated, Easing, Modal, Platform, Pressable, Scroll
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import type { IconName } from '../character-create/labels';
+import type { IconName } from '../../character-create/functions/labels';
 
 const useNativeDriver = Platform.OS !== 'web';
 

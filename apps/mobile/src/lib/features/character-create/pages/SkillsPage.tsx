@@ -3,11 +3,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ABILITIES, abilityModifier, proficiencyBonus } from '@dnf/core/character';
 import { MAGIC_INITIATE, plainText, skillBonus } from '@dnf/sdk/srd';
 import { Chip, formatBonus, OptionCard, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
-import { useCharacterDraft } from '../../features/character-create/draft';
-import { ABILITY_LABEL, abilityShort, skillLabel } from '../../features/character-create/labels';
-import { combined, useCreation } from '../../features/character-create/useCreation';
-import { tr } from '../../lib/srd';
+import { LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { useCharacterDraft } from '../functions/draft';
+import { ABILITY_LABEL, abilityShort, skillLabel } from '../functions/labels';
+import { combined, useCreation } from '../functions/useCreation';
+import { tr } from '../../srd/functions';
 
 const PB = proficiencyBonus(1);
 

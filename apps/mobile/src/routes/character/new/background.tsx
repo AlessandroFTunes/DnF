@@ -1,1 +1,1 @@
-export { default } from '../../../pages/character-create/BackgroundPage';
+export { default } from '../../../lib/features/character-create/pages/BackgroundPage';

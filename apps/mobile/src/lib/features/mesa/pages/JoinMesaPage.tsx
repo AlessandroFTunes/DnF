@@ -7,9 +7,9 @@ import { Character } from '@dnf/core/character';
 import { Mesa } from '@dnf/core/mesa';
 import { ClientResponseError } from '@dnf/core/pocketbase';
 import { Button, DnfSpinner, fonts, OptionCard, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { classIcon } from '../../features/character-create/labels';
-import { formatCode } from '../../features/mesa/code';
-import { srd, useSrd } from '../../lib/srd';
+import { classIcon } from '../../character-create/functions/labels';
+import { formatCode } from '../functions/code';
+import { srd, useSrd } from '../../srd/functions';
 
 /** Jogador entra numa mesa: digita o código, vê a mesa e escolhe o personagem da mesma edição. */
 export default function JoinMesaPage() {

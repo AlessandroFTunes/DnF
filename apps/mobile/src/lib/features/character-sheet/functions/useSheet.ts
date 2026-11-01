@@ -27,8 +27,8 @@ import {
   type SrdClassDetail,
   type SrdSpecies,
 } from '@dnf/sdk/srd';
-import { useSession } from '../../hooks/hook.session';
-import { srd, useSrd } from '../../lib/srd';
+import { useSession } from '../../auth/functions/hook.session';
+import { srd, useSrd } from '../../srd/functions';
 
 type Patch = Omit<Parameters<typeof Character.update>[0], 'id'>;
 

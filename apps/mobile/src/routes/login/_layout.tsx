@@ -3,8 +3,8 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { AuthButton } from '../../features/auth/AuthButton';
-import { AuthFlowProvider, useAuthFlow } from '../../features/auth/flow';
+import { AuthButton } from '../../lib/features/auth/components/AuthButton';
+import { AuthFlowProvider, useAuthFlow } from '../../lib/features/auth/functions/flow';
 
 /**
  * Moldura do fluxo de entrar/criar conta: cabeçalho em cima e o corte de baixo ("ou" + Apple/Google)

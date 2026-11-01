@@ -1,5 +1,22 @@
 # CLAUDE.md
 
+## Arquitetura: app limpo, regras no core
+
+- O app (`apps/mobile`) é um ambiente externo: não tem regra de negócio. Regras, cache e integrações ficam em
+  módulos de `core/src/<módulo>/`, com um port (interface) e adapters trocáveis.
+- `apps/mobile/src` tem só duas pastas:
+  - `routes/`: as rotas do Expo Router (configurado em `root` no plugin `expo-router` do `app.json`). Cada
+    arquivo só monta a página da feature, sem lógica.
+  - `lib/`: as libs do app na raiz (`pocketbase.ts`, `secure-storage.ts`, `narration.ts`…) e
+    `lib/features/<nome-da-feature>/`, com as subpastas que a feature usar: `components/`, `pages/`,
+    `animations/` e `functions/` (hooks, contexto, cálculos, caches). Ex.: `lib/features/cache/functions/`.
+  - Não crie `src/app`, `src/pages`, `src/features` nem `src/hooks`.
+- As libs do app (`apps/mobile/src/lib`) devem ser limpas: cada uma faz só o mínimo para funcionar no app,
+  sem opções extras.
+- Cada serviço externo expõe um comando só. Ex.: o provedor de voz (ElevenLabs, VoiceStudio…) tem apenas
+  "criar voz", que recebe o texto e usa a voz padrão que definirmos. Voz, modelo e ajustes ficam fixos no
+  adapter, sem parâmetros nem variáveis para trocar.
+
 ## API de regras (5e-FastAPI)
 
 As regras de D&D (classes, espécies, antecedentes, talentos, magias, equipamento) vêm da
@@ -17,7 +34,8 @@ Onde fica cada parte:
 | `packages/sdk/src/srd/catalog.ts` | Consultas e conversão da API para os formatos do app (`toClass`, `toSpecies`, `toWeapon`…) |
 | `packages/sdk/src/srd/rules.ts` | Regras lidas dos dados (perícias, conjuração, CA, equipamento…) |
 | `packages/sdk/src/srd/reference.ts` | Listas que a API ainda não serve: perícias, idiomas, alinhamentos |
-| `apps/mobile/src/lib/srd.ts` | Cliente do app, cache e `SRD_CACHE_VERSION` |
+| `core/src/cache` | Cache em memória → disco → rede (`Cache.Store` é o port do armazenamento) |
+| `apps/mobile/src/lib/features/srd/functions` | Liga o catálogo ao cache do app, `useSrd` e `SRD_CACHE_VERSION` |
 
 ### Quando a API for atualizada
 
@@ -27,8 +45,8 @@ regras são genéricas e uma edição passa a aparecer na criação quando ganha
 edição sem equivalente nesta também entra (`adaptedFrom`, ex.: o Artífice do Tasha na criação 2024), e
 `srd.spells(classe, círculo, edição)` mostra uma vez só a magia que existe nos dois livros, ficando a da edição
 do personagem. O app guarda as consultas no aparelho por 30 dias (`MAX_AGE_MS` em
-`apps/mobile/src/lib/persistent-cache.ts`). Para todos verem os dados novos já, aumente `SRD_CACHE_VERSION`
-em `apps/mobile/src/lib/srd.ts` e publique o app.
+`apps/mobile/src/lib/features/cache/functions/persistent-cache.ts`). Para todos verem os dados novos já, aumente `SRD_CACHE_VERSION`
+em `apps/mobile/src/lib/features/srd/functions/index.ts` e publique o app.
 
 **Formato mudou** (endpoint ou campo novo, renomeado ou removido):
 
@@ -60,14 +78,14 @@ Tudo roda no NAS, atrás do Traefik. Para entrar: `ssh ale@nas-ale`. Os apps fic
 
 | O quê | Onde no NAS | Como publicar |
 |---|---|---|
-| PocketBase (`https://dnf-db.developale.com`) | `/srv/apps/dnf-db` (container `dnf-db`) | Copiar `core/pb_hooks/*` para `pb_hooks/` (e `core/pb_migrations/*` para `pb_migrations/`, se mudou), depois `docker compose restart dnf-db` |
+| PocketBase (`https://dnf-db.developale.com`) | `/srv/apps/dnf-db` (container `dnf-db`) | Copiar `core/pb_hooks/*` (com a pasta `tts/`) para `pb_hooks/` (e `core/pb_migrations/*` para `pb_migrations/`, se mudou), depois `docker compose restart dnf-db` |
 | App web (`https://dnf.developale.com`) | `/srv/apps/dnf-web` (nginx, container `dnf-web`) | `sh apps/mobile/scripts/deploy.sh` (gera o build web e troca `dist/`) |
 
 ```sh
-scp core/pb_hooks/tts.pb.js ale@nas-ale:/srv/apps/dnf-db/pb_hooks/
+scp -r core/pb_hooks/tts.pb.js core/pb_hooks/tts ale@nas-ale:/srv/apps/dnf-db/pb_hooks/
 ssh ale@nas-ale 'cd /srv/apps/dnf-db && docker compose restart dnf-db'
 ```
 
-- O `.env` do PocketBase (chaves da ElevenLabs e do Cloudflare Access) fica só no NAS, em `/srv/apps/dnf-db/.env`.
+- O `.env` do PocketBase (chaves dos provedores de voz, `TTS_PROVIDERS` e o token do Cloudflare Access) fica só no NAS, em `/srv/apps/dnf-db/.env`.
 - Depois de reiniciar, o Traefik só volta a rotear quando o container fica `healthy` (~30 s). Até lá,
   `dnf-db.developale.com` responde 404.

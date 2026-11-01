@@ -12,7 +12,7 @@ import {
   type SrdSpecies,
   type SrdSpeciesGroup,
 } from '@dnf/sdk/srd';
-import { srd, useSrd } from '../../lib/srd';
+import { srd, useSrd } from '../../srd/functions';
 import { useCharacterDraft, type CharacterDraft } from './draft';
 
 /** Atributos base (antes dos bônus), ou null se ainda não foram todos distribuídos. */

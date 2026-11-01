@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { featuresByLevel, plainText } from '@dnf/sdk/srd';
 import { OptionCard } from '@dnf/ui-react-native';
-import { InfoRow, LoadState, SectionLabel, StepScreen } from '../../features/character-create/StepScreen';
-import { useCharacterDraft } from '../../features/character-create/draft';
-import { abilityName, classIcon, skillLabel, subclassOrigin } from '../../features/character-create/labels';
-import { useCreation } from '../../features/character-create/useCreation';
-import { srd, tr, useSrd } from '../../lib/srd';
+import { InfoRow, LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { useCharacterDraft } from '../functions/draft';
+import { abilityName, classIcon, skillLabel, subclassOrigin } from '../functions/labels';
+import { useCreation } from '../functions/useCreation';
+import { srd, tr, useSrd } from '../../srd/functions';
 
 export default function ClassPage() {
   const { draft, setClass, update } = useCharacterDraft();

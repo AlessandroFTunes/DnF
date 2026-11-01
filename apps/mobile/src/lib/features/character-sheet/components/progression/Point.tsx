@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, StyleSheet, Text } from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { fonts, textGlow } from '@dnf/ui-react-native';
-import { seeded, SKY } from './sky';
+import { seeded, SKY } from '../../functions/progression/sky';
 
 /** Caixa de cada estrela (cabe o halo maior e serve de área de toque). */
 const SIZE = 56;

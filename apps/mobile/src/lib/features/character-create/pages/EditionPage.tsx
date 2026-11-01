@@ -2,10 +2,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DiferenteKey } from '@dnf/core/util';
 import { radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { StepScreen } from '../../features/character-create/StepScreen';
-import { useCharacterDraft } from '../../features/character-create/draft';
-import { EDITION_INFO } from '../../features/character-create/labels';
-import { srd, useSrd } from '../../lib/srd';
+import { StepScreen } from '../components/StepScreen';
+import { useCharacterDraft } from '../functions/draft';
+import { EDITION_INFO } from '../functions/labels';
+import { srd, useSrd } from '../../srd/functions';
 
 /** Antes das etapas: escolher entre as regras de 2014 e de 2024. */
 export default function EditionPage() {

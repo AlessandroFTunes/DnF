@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { User } from '@dnf/core/user';
 import { PocketBase, ClientResponseError } from '@dnf/core/pocketbase';
 import { Assert, fn } from '@dnf/core/util';
-import '../lib/pocketbase';
+import '../../../pocketbase';
 
 type SessionState =
   | { status: 'loading' }

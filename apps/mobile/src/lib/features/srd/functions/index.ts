@@ -3,8 +3,8 @@ import { createSrdCatalog, createSrdClient } from '@dnf/sdk/srd';
 import Constants from 'expo-constants';
 import { Cache } from '@dnf/core/cache';
 import { PocketBase } from '@dnf/core/pocketbase';
-import { persistentCache } from '../cache/persistent-cache';
-import '../../lib/pocketbase';
+import { persistentCache } from '../../cache/functions/persistent-cache';
+import '../../../pocketbase';
 
 /**
  * Compêndio de regras: a 5e-FastAPI (dados em português). O app não fala direto com ela: passa pelo
