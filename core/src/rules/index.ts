@@ -239,8 +239,6 @@ export namespace Rules {
     feats(edition: Edition): Promise<Feat[]>;
     /** Armas, armaduras, ferramentas e equipamento de aventura da edição. */
     items(edition: Edition): Promise<Item[]>;
-    /** Itens por chave ("arma:3", "armadura:1"…), para montar a ficha. */
-    itemsByKey(keys: string[]): Promise<Item[]>;
     /** Magias da lista de uma classe até o círculo `maxLevel` (0 = truques). */
     spells(classKey: string, maxLevel: number, edition?: Edition): Promise<Spell[]>;
     spellsByKey(keys: string[]): Promise<Spell[]>;

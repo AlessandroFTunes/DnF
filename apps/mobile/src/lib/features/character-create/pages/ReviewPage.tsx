@@ -21,7 +21,7 @@ import {
 } from '../functions/labels';
 import { STEP_DEFS, type StepId } from '../functions/steps';
 import { combined, useCreation } from '../functions/useCreation';
-import { srd, tr, useSrd } from '../../srd/functions';
+import { spellsByKey, srd, tr, useSrd } from '../../srd/functions';
 
 const PB = proficiencyBonus(1);
 
@@ -35,7 +35,7 @@ export default function ReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const alignments = useSrd('alignments', () => srd.alignments());
   const spellKeys = [...draft.cantrips, ...draft.spells, ...draft.featCantrips, ...(draft.featSpell ? [draft.featSpell] : [])];
-  const spells = useSrd(spellKeys.length ? `spellsByKey:${spellKeys.join(',')}` : null, () => srd.spellsByKey(spellKeys));
+  const spells = useSrd(spellKeys.length ? `spellsByKey:${[...spellKeys].sort().join(',')}` : null, () => spellsByKey(spellKeys));
 
   const load = combined(c.queries.classQ, c.queries.itemsQ, c.queries.speciesQ);
   if (!klass || !scores || !items || !skills) {

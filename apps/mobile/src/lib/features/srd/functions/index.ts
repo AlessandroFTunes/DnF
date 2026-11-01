@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createSrdCatalog, createSrdClient } from '@dnf/sdk/srd';
+import { createSrdCatalog, createSrdClient, type SrdSpell } from '@dnf/sdk/srd';
 import Constants from 'expo-constants';
 import { Cache } from '@dnf/core/cache';
 import { PocketBase } from '@dnf/core/pocketbase';
@@ -64,6 +64,17 @@ export function prefetchSrd(timeoutMs = 8000): Promise<void> {
     loads[`items:${edition}`] = () => srd.items(edition);
   }
   return cache.prefetch(loads, timeoutMs);
+}
+
+/**
+ * Magias por chave, cada uma guardada à parte: aprender uma magia nova não busca de novo as que já vieram.
+ * Mesma ordem de `srd.spellsByKey` (círculo, depois nome).
+ */
+export async function spellsByKey(keys: string[]): Promise<SrdSpell[]> {
+  const found = await Promise.all(
+    [...new Set(keys)].map((key) => cache.cached(`spell:${key}`, async () => (await srd.spellsByKey([key]))[0] ?? null)),
+  );
+  return found.filter((s): s is SrdSpell => !!s).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 }
 
 /** Apaga o compêndio guardado (memória e disco): a próxima consulta busca tudo de novo na rede. */

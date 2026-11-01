@@ -383,11 +383,23 @@ const numericId = (key: string) => (/^\d+$/.test(key) ? Number(key) : null);
 export function createSrdCatalog(client: SrdClient) {
   const query = (pagina: number) => ({ params: { query: { pagina, limite: PAGE } } });
 
-  const allClasses = () => all('classes', (p) => client.GET('/api/v1/classes', query(p)));
-  const allWeapons = () => all('armas', (p) => client.GET('/api/v1/equipamentos/armas', query(p)));
-  const allArmor = () => all('armaduras', (p) => client.GET('/api/v1/equipamentos/armaduras', query(p)));
-  const allTools = () => all('ferramentas', (p) => client.GET('/api/v1/equipamentos/ferramentas', query(p)));
-  const allGear = () => all('itens', (p) => client.GET('/api/v1/equipamentos/itens', query(p)));
+  // A API devolve as duas edições juntas e o filtro é aqui: as consultas de 2014 e 2024 feitas ao mesmo tempo
+  // (ex.: o prefetch ao abrir o app) dividem a mesma busca. Acabou, a próxima busca de novo.
+  const inFlight = new Map<string, Promise<unknown>>();
+  function shared<T>(resource: string, fetchPage: (pagina: number) => Promise<Page<T>>): Promise<T[]> {
+    let promise = inFlight.get(resource) as Promise<T[]> | undefined;
+    if (!promise) {
+      promise = all(resource, fetchPage).finally(() => inFlight.delete(resource));
+      inFlight.set(resource, promise);
+    }
+    return promise;
+  }
+
+  const allClasses = () => shared('classes', (p) => client.GET('/api/v1/classes', query(p)));
+  const allWeapons = () => shared('armas', (p) => client.GET('/api/v1/equipamentos/armas', query(p)));
+  const allArmor = () => shared('armaduras', (p) => client.GET('/api/v1/equipamentos/armaduras', query(p)));
+  const allTools = () => shared('ferramentas', (p) => client.GET('/api/v1/equipamentos/ferramentas', query(p)));
+  const allGear = () => shared('itens', (p) => client.GET('/api/v1/equipamentos/itens', query(p)));
 
   /** Um registro por id; 404 vira `null` (chave de um personagem antigo, registro removido…). */
   async function one<T>(resource: string, request: Promise<{ data?: T; error?: unknown; response: Response }>) {
@@ -433,7 +445,7 @@ export function createSrdCatalog(client: SrdClient) {
 
     /** Tabela de espaços de magia do conjurador multiclasse da edição. */
     async multiclassSlots(edition: SrdEdition): Promise<SrdMulticlassSlots[]> {
-      const list = await all('espaços de magia multiclasse', (p) => client.GET('/api/v1/regras/multiclasse/espacos-magia', query(p)));
+      const list = await shared('espaços de magia multiclasse', (p) => client.GET('/api/v1/regras/multiclasse/espacos-magia', query(p)));
       return list
         .filter(fromEdition(edition))
         .map((r) => ({ casterLevel: r.nivel_conjurador, slots: r.espacos_magia }))
@@ -441,17 +453,17 @@ export function createSrdCatalog(client: SrdClient) {
     },
 
     async species(edition: SrdEdition): Promise<SrdSpeciesGroup[]> {
-      const list = await all('espécies', (p) => client.GET('/api/v1/especies', query(p)));
+      const list = await shared('espécies', (p) => client.GET('/api/v1/especies', query(p)));
       return list.filter(fromEdition(edition)).map(toSpecies).sort(byName);
     },
 
     async backgrounds(edition: SrdEdition): Promise<SrdBackground[]> {
-      const list = await all('antecedentes', (p) => client.GET('/api/v1/antecedentes', query(p)));
+      const list = await shared('antecedentes', (p) => client.GET('/api/v1/antecedentes', query(p)));
       return list.filter(fromEdition(edition)).map(toBackground).sort(byName);
     },
 
     async feats(edition: SrdEdition): Promise<SrdFeat[]> {
-      const list = await all('talentos', (p) => client.GET('/api/v1/talentos', query(p)));
+      const list = await shared('talentos', (p) => client.GET('/api/v1/talentos', query(p)));
       return list.filter(fromEdition(edition)).map(toFeat).sort(byName);
     },
 
@@ -465,38 +477,6 @@ export function createSrdCatalog(client: SrdClient) {
         ...tools.filter(keep).map(toTool),
         ...gear.filter(keep).map(toGear),
       ];
-    },
-
-    /** Itens por chave ("arma:3", "armadura:1"…), para montar a ficha. */
-    async itemsByKey(keys: string[]): Promise<SrdItem[]> {
-      const found = await Promise.all(
-        [...new Set(keys)].map(async (key) => {
-          const [kind, raw] = key.split(':');
-          const id = numericId(raw ?? '');
-          if (!id) return null;
-          switch (kind as SrdItemKind) {
-            case 'arma': {
-              const r = await one(key, client.GET('/api/v1/equipamentos/armas/{arma_id}', { params: { path: { arma_id: id } } }));
-              return r && toWeapon(r);
-            }
-            case 'armadura': {
-              const r = await one(key, client.GET('/api/v1/equipamentos/armaduras/{armadura_id}', { params: { path: { armadura_id: id } } }));
-              return r && toArmor(r);
-            }
-            case 'ferramenta': {
-              const r = await one(key, client.GET('/api/v1/equipamentos/ferramentas/{ferramenta_id}', { params: { path: { ferramenta_id: id } } }));
-              return r && toTool(r);
-            }
-            case 'item': {
-              const r = await one(key, client.GET('/api/v1/equipamentos/itens/{item_id}', { params: { path: { item_id: id } } }));
-              return r && toGear(r);
-            }
-            default:
-              return null;
-          }
-        }),
-      );
-      return found.filter((i): i is SrdItem => !!i);
     },
 
     /**

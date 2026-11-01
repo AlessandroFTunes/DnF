@@ -217,6 +217,26 @@ export namespace Mesa {
     { title: 'List table members', description: 'Players at a table with their characters (HP etc.).' },
   );
 
+  /**
+   * Avisa (`onChange`) quando a mesa, a lista de membros ou um personagem dela muda, pelo realtime do
+   * PocketBase. Cada um só recebe o que as API rules deixam ver. Também avisa a cada (re)conexão, para quem
+   * ficou sem rede buscar o que perdeu. Devolve a função que para de ouvir.
+   */
+  export async function watch(mesaID: string, onChange: () => void): Promise<() => Promise<void>> {
+    const pb = PocketBase.use();
+    const stops = await Promise.all([
+      pb.realtime.subscribe('PB_CONNECT', onChange),
+      pb.collection('mesas').subscribe(mesaID, onChange),
+      pb.collection('mesa_members').subscribe('*', onChange, { filter: pb.filter('mesa = {:mesaID}', { mesaID }) }),
+      pb
+        .collection('characters')
+        .subscribe('*', onChange, { filter: pb.filter('mesa_members_via_character.mesa ?= {:mesaID}', { mesaID }) }),
+    ]);
+    return async () => {
+      await Promise.all(stops.map((stop) => stop()));
+    };
+  }
+
   /** O próprio jogador sai, ou o mestre remove alguém. */
   export const removeMember = fn(
     Member.shape.id,

@@ -11,9 +11,6 @@ import { formatCode } from '../functions/code';
 import { useSession } from '../../auth/functions/hook.session';
 import { srd, tr, useSrd } from '../../srd/functions';
 
-// Sem realtime no React Native (o SDK usa EventSource): a mesa se atualiza sozinha a cada 10 s.
-const POLL_MS = 10_000;
-
 export default function MesaPage() {
   const theme = useRpgTheme();
   const router = useRouter();
@@ -39,9 +36,18 @@ export default function MesaPage() {
   useFocusEffect(
     useCallback(() => {
       void load();
-      const timer = setInterval(() => void load(), POLL_MS);
-      return () => clearInterval(timer);
-    }, [load]),
+      // A mesa se atualiza sozinha pelo realtime (quem entra, sai ou muda o PV), enquanto a tela está aberta.
+      let stop: (() => Promise<void>) | undefined;
+      let closed = false;
+      Mesa.watch(id, () => void load()).then(
+        (unsubscribe) => (closed ? void unsubscribe() : (stop = unsubscribe)),
+        () => {}, // sem realtime: fica o que carregou e o "puxar para atualizar"
+      );
+      return () => {
+        closed = true;
+        void stop?.();
+      };
+    }, [id, load]),
   );
 
   const userID = session.status === 'signedIn' ? session.session.userID : null;

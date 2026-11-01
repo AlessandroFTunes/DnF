@@ -1,4 +1,5 @@
 import './crypto';
+import './eventsource';
 import Constants from 'expo-constants';
 import { PocketBase } from '@dnf/core/pocketbase';
 import { User } from '@dnf/core/user';

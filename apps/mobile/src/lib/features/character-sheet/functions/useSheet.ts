@@ -28,7 +28,7 @@ import {
   type SrdSpecies,
 } from '@dnf/sdk/srd';
 import { useSession } from '../../auth/functions/hook.session';
-import { srd, useSrd } from '../../srd/functions';
+import { spellsByKey, srd, useSrd } from '../../srd/functions';
 import { persistentCache } from '../../cache/functions/persistent-cache';
 
 type Patch = Omit<Parameters<typeof Character.update>[0], 'id'>;
@@ -112,14 +112,13 @@ export function useSheet(id: string) {
   const languagesQ = useSrd('languages', () => srd.languages());
   const featsQ = useSrd(edition && `feats:${edition}`, () => srd.feats(edition!));
   const itemKeys = character?.equipment.items.map((i) => i.key) ?? [];
-  const itemsQ = useSrd(itemKeys.length ? `itemsByKey:${[...itemKeys].sort().join(',')}` : null, () =>
-    srd.itemsByKey(itemKeys),
-  );
+  // Os itens saem da lista da edição (já baixada ao abrir o app): mudar o inventário não busca nada.
+  const itemsQ = useSrd(edition && itemKeys.length ? `items:${edition}` : null, () => srd.items(edition!));
   // Nomes das ferramentas guardadas (ex.: as da multiclasse) vêm da lista da edição.
   const toolsQ = useSrd(edition && character?.proficiencies.tools.length ? `items:${edition}` : null, () => srd.items(edition!));
   const spellKeys = character?.spellcasting.spells.map((s) => s.key) ?? [];
   const spellsQ = useSrd(spellKeys.length ? `spellsByKey:${[...spellKeys].sort().join(',')}` : null, () =>
-    srd.spellsByKey(spellKeys),
+    spellsByKey(spellKeys),
   );
 
   const derived = useMemo(() => {
