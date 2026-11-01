@@ -11,12 +11,11 @@ services:
       DND_API_ACCESS_ID: ${DND_API_ACCESS_ID:-}
       DND_API_ACCESS_SECRET: ${DND_API_ACCESS_SECRET:-}
       DND_API_URL: ${DND_API_URL:-}
-      # Narração (core/pb_hooks/tts.pb.js): TTS_PROVIDERS é a ordem dos provedores (ex.: voicestudio,elevenlabs). Sem chave, fica muda.
+      # Narração (core/pb_hooks/tts.pb.js): TTS_PROVIDERS é a ordem dos provedores (ex.: elevenlabs). Sem chave, fica muda.
       TTS_PROVIDERS: ${TTS_PROVIDERS:-}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
-      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
-      ELEVENLABS_MODEL_ID: ${ELEVENLABS_MODEL_ID:-}
-      ELEVENLABS_ENVIRONMENT: ${ELEVENLABS_ENVIRONMENT:-}
+      # Voz do Grande Sábio (/tts/sage): a ponte HTTP do Piper (core/piper-http). Vazia, o Sábio usa a ElevenLabs.
+      PIPER_URL: ${PIPER_URL:-}
     # Cria/atualiza o superuser de dev e sobe em modo --dev (logs SQL, migrations geradas pelo Dashboard).
     command: >
       sh -c './pocketbase superuser upsert "$$PB_ADMIN_EMAIL" "$$PB_ADMIN_PASSWORD"

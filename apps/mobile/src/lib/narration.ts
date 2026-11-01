@@ -8,8 +8,13 @@ import './pocketbase';
 /**
  * Toca a narração no aparelho. Quem gera a fala é o port `Narration` do core (o provedor fica no servidor);
  * cada fala gerada fica guardada no aparelho (`features/cache/functions/tts-cache.ts`).
+ * Duas vozes: o narrador (avisos da subida de nível) e o Grande Sábio (`/tts/sage`).
  */
-const narration = Narration.withCache(Narration.createPocketBaseAdapter(PocketBase.client()), ttsCache);
+const voices = {
+  narrator: Narration.withCache(Narration.createPocketBaseAdapter(PocketBase.client()), ttsCache),
+  sage: Narration.withCache(Narration.createPocketBaseAdapter(PocketBase.client(), '/tts/sage'), ttsCache, 'sage|'),
+};
+export type Voice = keyof typeof voices;
 
 export interface Speech {
   /** Duração da fala (ms). */
@@ -41,14 +46,12 @@ function whenLoaded(player: AudioPlayer): Promise<boolean> {
   });
 }
 
-export type SpeechStyle = Narration.Style;
-
 /** Gera a fala de `text` e devolve pronta para tocar, com o momento em que cada trecho de `marks` é dito (na ordem). */
-export async function loadSpeech(text: string, marks: string[] = [], style: SpeechStyle = 'calm'): Promise<Speech | null> {
-  const res = await narration.synthesize(text, style);
+export async function loadSpeech(text: string, marks: string[] = [], voice: Voice = 'narrator'): Promise<Speech | null> {
+  const res = await voices[voice].createVoice(text);
   if (!res) return null;
   void setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
-  const file = audioFromBase64(res.audio, 'narration');
+  const file = audioFromBase64(res.audio, 'narration', res.format);
   const player = createAudioPlayer(file.source);
   let started = false;
   let disposed = false;

@@ -1,13 +1,1 @@
-import { Stack } from 'expo-router';
-import { useRpgTheme } from '@dnf/ui-react-native';
-import { CharacterDraftProvider } from '../../../lib/features/character-create/functions/draft';
-
-/** Fluxo de criação: as etapas compartilham o rascunho; cada tela desenha o próprio cabeçalho. */
-export default function NewCharacterLayout() {
-  const theme = useRpgTheme();
-  return (
-    <CharacterDraftProvider>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.surface } }} />
-    </CharacterDraftProvider>
-  );
-}
+export { default } from '../../../lib/features/character-create/pages/CreationLayout';

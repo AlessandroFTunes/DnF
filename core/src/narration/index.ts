@@ -2,24 +2,23 @@ import type PocketBaseClient from 'pocketbase';
 
 /**
  * Narração (texto → fala). O app só conhece o port `Narration.Port`; cada provedor é um adapter. O provedor de
- * verdade (VoiceStudio, ElevenLabs…) roda no servidor, que guarda as chaves: `core/pb_hooks/tts.pb.js` tenta os
+ * verdade (ElevenLabs, Piper…) roda no servidor, que guarda as chaves: `core/pb_hooks/tts.pb.js` tenta os
  * provedores de `TTS_PROVIDERS` em ordem, e cada um mora em `core/pb_hooks/tts/<nome>.js`. Trocar ou adicionar
  * provedor não muda nada aqui nem no app.
  */
 export namespace Narration {
-  /** `calm` é plana e pausada (avisos da subida de nível); `sage` tem mais entonação (o Grande Sábio). */
-  export type Style = 'calm' | 'sage';
-
-  /** Fala gerada: mp3 em base64, início de cada letra do texto (s) e duração (s). */
+  /** Fala gerada: áudio em base64, início de cada letra do texto (s) e duração (s). */
   export interface Result {
     audio: string;
+    /** Formato do áudio; sem o campo, mp3 (respostas e cache de antes do Piper). */
+    format?: 'mp3' | 'wav';
     starts: number[];
     duration: number;
   }
 
-  /** Port: gera a fala de `text`, ou `null` se não há narração (sem rede, sem provedor no servidor…). */
+  /** Port: um comando só, "criar voz". Gera a fala de `text` na voz padrão, ou `null` se não há narração. */
   export interface Port {
-    synthesize(text: string, style: Style): Promise<Result | null>;
+    createVoice(text: string): Promise<Result | null>;
   }
 
   /** Port do cache de falas (arquivo no celular, Cache Storage na web). Nunca lança. */
@@ -28,15 +27,21 @@ export namespace Narration {
     set(key: string, result: Result): Promise<void>;
   }
 
-  /** Aumente para descartar as falas guardadas (ex.: trocou a voz ou o provedor padrão no servidor). */
-  export const CACHE_VERSION = 1;
+  /**
+   * Aumente para descartar as falas guardadas (ex.: trocou a voz padrão ou o provedor no servidor).
+   *  2: o Grande Sábio voltou para a ElevenLabs (as falas dele geradas pelo Piper saem do cache)
+   */
+  export const CACHE_VERSION = 2;
 
-  /** Adapter: pede `/tts` ao PocketBase, que escolhe o provedor. Só atende logados. */
-  export function createPocketBaseAdapter(pocketbase: PocketBaseClient): Port {
+  /**
+   * Adapter: pede a fala ao PocketBase, que escolhe o provedor. Cada voz é uma rota: `/tts` (narrador) e
+   * `/tts/sage` (Grande Sábio). Só atende logados.
+   */
+  export function createPocketBaseAdapter(pocketbase: PocketBaseClient, route: '/tts' | '/tts/sage' = '/tts'): Port {
     return {
-      async synthesize(text, style) {
+      async createVoice(text) {
         try {
-          return await pocketbase.send<Result>('/tts', { query: { text, style }, requestKey: null });
+          return await pocketbase.send<Result>(route, { query: { text }, requestKey: null });
         } catch {
           return null;
         }
@@ -44,15 +49,14 @@ export namespace Narration {
     };
   }
 
-  /** A mesma fala já gerada sai do `store`, sem gastar créditos do provedor. */
-  export function withCache(port: Port, store: Store): Port {
+  /** A mesma fala já gerada sai do `store`, sem gastar créditos do provedor. `prefix` separa as falas de cada voz. */
+  export function withCache(port: Port, store: Store, prefix = ''): Port {
     return {
-      async synthesize(text, style) {
-        const key = style === 'calm' ? text : `${style}|${text}`;
-        const saved = await store.get(key);
+      async createVoice(text) {
+        const saved = await store.get(prefix + text);
         if (saved) return saved;
-        const result = await port.synthesize(text, style);
-        if (result) void store.set(key, result);
+        const result = await port.createVoice(text);
+        if (result) void store.set(prefix + text, result);
         return result;
       },
     };

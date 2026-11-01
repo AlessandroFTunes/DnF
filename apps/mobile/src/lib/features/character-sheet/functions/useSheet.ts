@@ -29,8 +29,12 @@ import {
 } from '@dnf/sdk/srd';
 import { useSession } from '../../auth/functions/hook.session';
 import { srd, useSrd } from '../../srd/functions';
+import { persistentCache } from '../../cache/functions/persistent-cache';
 
 type Patch = Omit<Parameters<typeof Character.update>[0], 'id'>;
+
+/** Chave do personagem no cache do aparelho (o mesmo do compêndio). */
+const cacheKey = (id: string) => `character:${id}`;
 
 /** Personagem + regras da 5e-FastAPI já aplicadas, e as ações da ficha (PV, espaços, itens…). */
 export function useSheet(id: string) {
@@ -44,13 +48,23 @@ export function useSheet(id: string) {
 
   useEffect(() => {
     let active = true;
+    let fresh = false;
+    // Abre já com a última versão guardada no aparelho; a do servidor substitui quando chegar.
+    void persistentCache.get<Character.Info | null>(cacheKey(id)).then((saved) => {
+      if (!active || fresh || !saved) return;
+      setCharacter(saved);
+      setStatus('ready');
+    });
     Character.fromID(id).then(
       (found) => {
         if (!active) return;
+        fresh = true;
         setCharacter(found);
         setStatus(found ? 'ready' : 'missing');
+        void persistentCache.set(cacheKey(id), found);
       },
-      () => active && setStatus('error'),
+      // Sem rede: se a versão guardada já está na tela, segue com ela.
+      () => active && setStatus((current) => (current === 'ready' ? current : 'error')),
     );
     return () => {
       active = false;
@@ -65,7 +79,9 @@ export function useSheet(id: string) {
       if (optimistic) setCharacter(optimistic(character));
       setSaving(true);
       try {
-        setCharacter(await Character.update({ id: character.id, ...patch }));
+        const updated = await Character.update({ id: character.id, ...patch });
+        setCharacter(updated);
+        void persistentCache.set(cacheKey(updated.id), updated);
         return true;
       } catch {
         setCharacter(previous);

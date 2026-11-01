@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from 'react';
+import { memo, useCallback, useContext, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from 'react';
 import {
   Animated,
   Easing,
@@ -879,6 +879,8 @@ const FAB_BAND = 44;
 
 interface Placed {
   star: StarData;
+  /** Linha da árvore (nível somado ao deslocamento do trecho), para desenhar aos poucos. */
+  row: number;
   x: number;
   y: number;
   lit: boolean;
@@ -907,6 +909,8 @@ interface PlacedStar extends Placed {
 const TITLE_SPACE = 64;
 /** Distância mínima entre as ramificações das subclasses ainda não escolhidas. */
 const BRANCH_GAP = 64;
+/** Níveis acima do atual que entram já na primeira pintura; o resto da árvore vem logo depois, em segundo plano. */
+const FIRST_LEVELS_AHEAD = 3;
 
 /** Largura de cada trecho: cresce com as subclasses à mostra, para elas não ficarem grudadas (a árvore rola de lado). */
 function sectionWidths(sections: TreeSection[], base: number): number[] {
@@ -983,6 +987,9 @@ function SkillTree({
   let actionCenter: number | null = null;
   const rowHeight = ACTION_ROW + (floating ? FAB_BAND : 0);
   const activeBase = baseRows[sections.indexOf(active)] ?? 0;
+  // Primeiro só até um pouco acima do nível atual; o React completa a árvore depois, sem travar a tela
+  // (e interrompe esse trabalho se o jogador tocar em algo).
+  const shownRows = useDeferredValue(rows, Math.min(rows, activeBase + active.level + FIRST_LEVELS_AHEAD));
   for (let row = 1; row <= rows; row++) {
     if (levelAction && row === activeBase + active.level + 1) {
       actionCenter = offset + rowHeight / 2;
@@ -1013,7 +1020,13 @@ function SkillTree({
     loop.start();
     return () => loop.stop();
   }, [animating, pulse]);
-  const haloOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.7] });
+  const haloOpacity = useMemo(() => pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.7] }), [pulse]);
+  // O `onSelect` do pai muda a cada render; os nós recebem uma função estável que chama a versão atual.
+  const onSelectRef = useRef(onSelect);
+  useLayoutEffect(() => {
+    onSelectRef.current = onSelect;
+  });
+  const select = useCallback((section: string, id: string) => onSelectRef.current(section, id), []);
 
   // Estrelas do mesmo nível: uma em cada espaço, subindo (a bifurcação da subclasse fica por cima).
   const placed = shapes.map((shape, i) => {
@@ -1024,7 +1037,8 @@ function SkillTree({
       const ordered = [...stars].sort((a, b) => a.level - b.level || Number(a.kind === 'subclass') - Number(b.kind === 'subclass'));
       return ordered.map((star) => {
         const slot = ordered.filter((st) => st.level === star.level).indexOf(star) + (branch ? liftOf(shape, star.level) : 0);
-        return { star, branch, section: sec.key, lit: lit(star), x: baseX, y: yOf(baseRows[i]! + star.level, slot) };
+        const row = baseRows[i]! + star.level;
+        return { star, row, branch, section: sec.key, lit: lit(star), x: baseX, y: yOf(row, slot) };
       });
     };
     // Tronco no meio do trecho; as ramificações alternam à direita e à esquerda dele, cada par mais afastado.
@@ -1039,35 +1053,19 @@ function SkillTree({
     });
     return { shape, x0, w, trunk, fork, branches };
   });
-  const everything = placed.flatMap((p) => [...p.trunk, ...p.branches.flat()]);
+  const everything = placed.flatMap((p) => [...p.trunk, ...p.branches.flat()]).filter((pl) => pl.row <= shownRows);
   const selected = everything.find((pl) => pl.section === active.key && pl.star.id === selectedId);
   const uid = (pl: PlacedStar) => `${pl.section}:${pl.star.id}`;
 
-  const backgroundStars = Array.from({ length: 110 * sections.length }, (_, i) => ({
-    x: seeded('tree-bg', i) * width,
-    y: seeded('tree-bg', i + 100000) * height,
-    r: 0.4 + seeded('tree-bg', i + 200000) * 1.1,
-    o: 0.2 + seeded('tree-bg', i + 300000) * 0.7,
-  }));
-  const palette = NEBULAE[0]!;
+  // Trechos do céu em texto: o fundo (`TreeSky`) só desenha de novo quando o tamanho ou os trechos mudam.
+  const skyLayout = placed.map(({ shape, x0, w }) => `${shape.sec.key}|${x0}|${w}`).join(';');
 
   const chain = (list: Placed[], color: string, key: string, from?: Placed) => {
     const points = from ? [from, ...list] : list;
     return points.slice(1).map((pl, i) => {
       const prev = points[i]!;
-      const lit = prev.lit && pl.lit;
-      return (
-        <Line
-          key={`${key}-${i}`}
-          x1={prev.x}
-          y1={prev.y}
-          x2={pl.x}
-          y2={pl.y}
-          stroke={lit ? color : SKY.locked}
-          strokeOpacity={lit ? 0.6 : 0.3}
-          strokeWidth={lit ? 1.2 : 1}
-        />
-      );
+      if (pl.row > shownRows) return null;
+      return <Link key={`${key}-${i}`} x1={prev.x} y1={prev.y} x2={pl.x} y2={pl.y} color={color} lit={prev.lit && pl.lit} />;
     });
   };
 
@@ -1077,7 +1075,7 @@ function SkillTree({
     const left = p.trunk[0];
     const source = placed[i + 1]!.trunk;
     const right = [...source].reverse().find((pl) => pl.lit) ?? source[0];
-    if (!left || !right) return null;
+    if (!left || !right || left.row > shownRows) return null;
     const lit = left.lit && right.lit;
     // Sai do tronco subindo e se abre para a esquerda, como um galho.
     return (
@@ -1131,35 +1129,7 @@ function SkillTree({
   return (
     <View style={{ width, height }}>
       <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
-        <Defs>
-          {palette.map((color, i) => (
-            <RadialGradient key={i} id={`tree-neb-${i}`} cx="50%" cy="50%" r="50%">
-              <Stop offset="0" stopColor={color} stopOpacity={0.5} />
-              <Stop offset="1" stopColor={color} stopOpacity={0} />
-            </RadialGradient>
-          ))}
-          <RadialGradient id="tree-glow" cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={SKY.star} stopOpacity={0.95} />
-            <Stop offset="0.35" stopColor={SKY.glow} stopOpacity={0.45} />
-            <Stop offset="1" stopColor={SKY.glow} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-
-        {placed.flatMap(({ shape, x0, w }) =>
-          palette.map((_, i) => (
-            <Ellipse
-              key={`neb-${shape.sec.key}-${i}`}
-              cx={x0 + w * (0.25 + seeded(`tree:${shape.sec.key}`, 10 + i) * 0.5)}
-              cy={height * (0.15 + i * 0.32)}
-              rx={w * (0.4 + seeded(`tree:${shape.sec.key}`, 30 + i) * 0.3)}
-              ry={height * 0.18}
-              fill={`url(#tree-neb-${i})`}
-            />
-          )),
-        )}
-        {backgroundStars.map((st, i) => (
-          <Circle key={i} cx={st.x} cy={st.y} r={st.r} fill="#FFFFFF" opacity={st.o} />
-        ))}
+        <TreeSky width={width} height={height} layout={skyLayout} />
 
         {multiclassLinks}
         {placed.map((p) => chain(p.trunk, SKY.line, `trunk-${p.shape.sec.key}`))}
@@ -1169,44 +1139,31 @@ function SkillTree({
 
         {/* Brilho suave atrás das habilidades acesas (os quadrados ficam por cima, fora do Svg). */}
         {everything.map((pl) =>
-          pl.lit || glowsOf(pl) ? (
-            <Circle key={`g-${uid(pl)}`} cx={pl.x} cy={pl.y} r={pl === selected ? 22 : 17} fill="url(#tree-glow)" opacity={pl.lit ? 0.45 : 0.3} />
-          ) : null,
+          pl.lit || glowsOf(pl) ? <GlowDot key={`g-${uid(pl)}`} x={pl.x} y={pl.y} big={pl === selected} lit={pl.lit} /> : null,
         )}
       </Svg>
 
       {/* Habilidades: quadrado com ícone, sem nome (o nome e a descrição aparecem no painel ao tocar). */}
       {everything.map((pl) => {
-        const { star, x, y, lit, branch } = pl;
+        const { star, lit, branch } = pl;
         const glows = glowsOf(pl);
-        const on = lit || glows;
-        const tint = tintOf(pl, SKY.star);
-        const isSelected = pl === selected;
-        const size = isSelected ? NODE + 4 : NODE;
         return (
-          <Pressable
+          <SkillNode
             key={`p-${uid(pl)}`}
-            onPress={() => onSelect(pl.section, star.id)}
-            accessibilityRole="button"
-            accessibilityLabel={`${branch ? `${tr.name(branch.sub)}: ` : ''}${star.name}, nível ${star.level}${lit ? ', desbloqueada' : ''}`}
-            style={[styles.hit, { left: x - HIT / 2, top: y - HIT / 2 }]}
-          >
-            {glows && <Animated.View style={[styles.halo, { borderColor: branch ? branch.color : SKY.glow, opacity: haloOpacity }]} />}
-            <View
-              style={[
-                styles.node,
-                {
-                  width: size,
-                  height: size,
-                  borderColor: on ? tint : SKY.locked,
-                  borderWidth: isSelected ? 2 : 1,
-                  opacity: on ? 1 : 0.55,
-                },
-              ]}
-            >
-              <MaterialCommunityIcons name={STAR_ICON[star.kind]} size={13} color={on ? tint : SKY.locked} />
-            </View>
-          </Pressable>
+            section={pl.section}
+            id={star.id}
+            kind={star.kind}
+            x={pl.x}
+            y={pl.y}
+            on={lit || glows}
+            glows={glows}
+            selected={pl === selected}
+            tint={tintOf(pl, SKY.star)}
+            haloColor={branch ? branch.color : SKY.glow}
+            haloOpacity={haloOpacity}
+            label={`${branch ? `${tr.name(branch.sub)}: ` : ''}${star.name}, nível ${star.level}${lit ? ', desbloqueada' : ''}`}
+            onSelect={select}
+          />
         );
       })}
 
@@ -1259,6 +1216,125 @@ function SkillTree({
     </View>
   );
 }
+
+/** Fundo da árvore (nebulosas, estrelas e os gradientes): não muda ao tocar nas habilidades. */
+const TreeSky = memo(function TreeSky({ width, height, layout }: { width: number; height: number; layout: string }) {
+  const palette = NEBULAE[0]!;
+  const parts = layout.split(';').map((part) => {
+    const [key, x0, w] = part.split('|');
+    return { key: key!, x0: Number(x0), w: Number(w) };
+  });
+  return (
+    <>
+      <Defs>
+        {palette.map((color, i) => (
+          <RadialGradient key={i} id={`tree-neb-${i}`} cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={color} stopOpacity={0.5} />
+            <Stop offset="1" stopColor={color} stopOpacity={0} />
+          </RadialGradient>
+        ))}
+        <RadialGradient id="tree-glow" cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor={SKY.star} stopOpacity={0.95} />
+          <Stop offset="0.35" stopColor={SKY.glow} stopOpacity={0.45} />
+          <Stop offset="1" stopColor={SKY.glow} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      {parts.flatMap(({ key, x0, w }) =>
+        palette.map((_, i) => (
+          <Ellipse
+            key={`neb-${key}-${i}`}
+            cx={x0 + w * (0.25 + seeded(`tree:${key}`, 10 + i) * 0.5)}
+            cy={height * (0.15 + i * 0.32)}
+            rx={w * (0.4 + seeded(`tree:${key}`, 30 + i) * 0.3)}
+            ry={height * 0.18}
+            fill={`url(#tree-neb-${i})`}
+          />
+        )),
+      )}
+      {Array.from({ length: 110 * parts.length }, (_, i) => (
+        <Circle
+          key={i}
+          cx={seeded('tree-bg', i) * width}
+          cy={seeded('tree-bg', i + 100000) * height}
+          r={0.4 + seeded('tree-bg', i + 200000) * 1.1}
+          fill="#FFFFFF"
+          opacity={0.2 + seeded('tree-bg', i + 300000) * 0.7}
+        />
+      ))}
+    </>
+  );
+});
+
+/** Linha entre duas estrelas (acesa na cor do ramo). */
+const Link = memo(function Link({ x1, y1, x2, y2, color, lit }: { x1: number; y1: number; x2: number; y2: number; color: string; lit: boolean }) {
+  return (
+    <Line
+      x1={x1}
+      y1={y1}
+      x2={x2}
+      y2={y2}
+      stroke={lit ? color : SKY.locked}
+      strokeOpacity={lit ? 0.6 : 0.3}
+      strokeWidth={lit ? 1.2 : 1}
+    />
+  );
+});
+
+/** Brilho suave atrás de uma habilidade acesa. */
+const GlowDot = memo(function GlowDot({ x, y, big, lit }: { x: number; y: number; big: boolean; lit: boolean }) {
+  return <Circle cx={x} cy={y} r={big ? 22 : 17} fill="url(#tree-glow)" opacity={lit ? 0.45 : 0.3} />;
+});
+
+/** Habilidade: quadrado com ícone (o nome e a descrição aparecem no painel ao tocar). */
+const SkillNode = memo(function SkillNode({
+  section,
+  id,
+  kind,
+  x,
+  y,
+  on,
+  glows,
+  selected,
+  tint,
+  haloColor,
+  haloOpacity,
+  label,
+  onSelect,
+}: {
+  section: string;
+  id: string;
+  kind: StarData['kind'];
+  x: number;
+  y: number;
+  on: boolean;
+  glows: boolean;
+  selected: boolean;
+  tint: string;
+  haloColor: string;
+  haloOpacity: Animated.AnimatedInterpolation<number>;
+  label: string;
+  onSelect: (section: string, id: string) => void;
+}) {
+  const size = selected ? NODE + 4 : NODE;
+  return (
+    <Pressable
+      onPress={() => onSelect(section, id)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={[styles.hit, { left: x - HIT / 2, top: y - HIT / 2 }]}
+    >
+      {glows && <Animated.View style={[styles.halo, { borderColor: haloColor, opacity: haloOpacity }]} />}
+      <View
+        style={[
+          styles.node,
+          { width: size, height: size, borderColor: on ? tint : SKY.locked, borderWidth: selected ? 2 : 1, opacity: on ? 1 : 0.55 },
+        ]}
+      >
+        <MaterialCommunityIcons name={STAR_ICON[kind]} size={13} color={on ? tint : SKY.locked} />
+      </View>
+    </Pressable>
+  );
+});
 
 /**
  * Web com mouse: o ScrollView do react-native-web só rola com a roda. Arrastar a árvore rola ela de lado e a

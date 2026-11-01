@@ -17,49 +17,58 @@ function Feature({ name, badge, desc, summary, note, sage }: Omit<FeatureItem, '
   const theme = useRpgTheme();
   const [open, setOpen] = useState(false);
   const text = plainText(desc);
+  const toggle = () => setOpen(!open);
+  // O botão do Grande Sábio fica ao lado da área que abre o item, não dentro dela (na web, botão dentro de
+  // botão é HTML inválido). Nome, seta e texto abrem o item.
   return (
-    <Pressable
-      onPress={() => setOpen(!open)}
-      accessibilityRole="button"
-      accessibilityState={{ expanded: open }}
-      style={[styles.feature, { borderColor: theme.border }]}
-    >
+    <View style={[styles.feature, { borderColor: theme.border }]}>
       <View style={styles.featureHeader}>
-        {badge && (
-          <View style={[styles.badge, { backgroundColor: theme.goldSoft, borderColor: theme.gold }]}>
-            <Text style={[styles.badgeText, { color: theme.text }]}>{badge}</Text>
-          </View>
-        )}
-        <Text style={[typography.bodyStrong, styles.flex, { color: theme.text }]}>{name}</Text>
-        <SageButton name={name} desc={desc} category={sageCategory(name, sage)} />
-        <MaterialCommunityIcons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={theme.textMuted} />
-      </View>
-      {summary ? (
-        <>
-          <View style={styles.summary}>
-            {summary.map((s) => (
-              <View key={s.label} style={[styles.summaryItem, { borderColor: theme.border }]}>
-                <Text style={[typography.heading, styles.summaryValue, { color: theme.text }]}>{s.value}</Text>
-                <View style={styles.flex}>
-                  <Text style={[typography.bodyStrong, { color: theme.text }]}>{s.label}</Text>
-                  <Text style={[typography.caption, { color: theme.textMuted }]}>{s.calc}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-          {note && <Text style={[typography.caption, { color: theme.gold, fontWeight: '700' }]}>{note}</Text>}
-          {open ? (
-            <Text style={[typography.caption, { color: theme.text }]}>{text}</Text>
-          ) : (
-            <Text style={[typography.caption, { color: theme.accent }]}>Ver regra completa</Text>
+        <Pressable
+          onPress={toggle}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          style={[styles.featureHeader, styles.flex]}
+        >
+          {badge && (
+            <View style={[styles.badge, { backgroundColor: theme.goldSoft, borderColor: theme.gold }]}>
+              <Text style={[styles.badgeText, { color: theme.text }]}>{badge}</Text>
+            </View>
           )}
-        </>
-      ) : (
-        <Text style={[typography.caption, { color: theme.text }]} numberOfLines={open ? undefined : 2}>
-          {text}
-        </Text>
-      )}
-    </Pressable>
+          <Text style={[typography.bodyStrong, styles.flex, { color: theme.text }]}>{name}</Text>
+        </Pressable>
+        <SageButton name={name} desc={desc} category={sageCategory(name, sage)} />
+        <Pressable onPress={toggle} hitSlop={8} importantForAccessibility="no">
+          <MaterialCommunityIcons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={theme.textMuted} />
+        </Pressable>
+      </View>
+      <Pressable onPress={toggle} importantForAccessibility="no" style={styles.featureBody}>
+        {summary ? (
+          <>
+            <View style={styles.summary}>
+              {summary.map((s) => (
+                <View key={s.label} style={[styles.summaryItem, { borderColor: theme.border }]}>
+                  <Text style={[typography.heading, styles.summaryValue, { color: theme.text }]}>{s.value}</Text>
+                  <View style={styles.flex}>
+                    <Text style={[typography.bodyStrong, { color: theme.text }]}>{s.label}</Text>
+                    <Text style={[typography.caption, { color: theme.textMuted }]}>{s.calc}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+            {note && <Text style={[typography.caption, { color: theme.gold, fontWeight: '700' }]}>{note}</Text>}
+            {open ? (
+              <Text style={[typography.caption, { color: theme.text }]}>{text}</Text>
+            ) : (
+              <Text style={[typography.caption, { color: theme.accent }]}>Ver regra completa</Text>
+            )}
+          </>
+        ) : (
+          <Text style={[typography.caption, { color: theme.text }]} numberOfLines={open ? undefined : 2}>
+            {text}
+          </Text>
+        )}
+      </Pressable>
+    </View>
   );
 }
 
@@ -371,6 +380,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   feature: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.sm, gap: spacing.xs },
   featureHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  featureBody: { gap: spacing.xs },
   badge: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 1 },
   badgeText: { fontSize: 11, fontWeight: '800' },
   summary: { gap: spacing.xs },

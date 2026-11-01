@@ -2,24 +2,63 @@
 
 ## Arquitetura: app limpo, regras no core
 
-- O app (`apps/mobile`) é um ambiente externo: não tem regra de negócio. Regras, cache e integrações ficam em
-  módulos de `core/src/<módulo>/`, com um port (interface) e adapters trocáveis.
-- `apps/mobile/src` tem só duas pastas:
-  - `routes/`: as rotas do Expo Router (configurado em `root` no plugin `expo-router` do `app.json`). Cada
-    arquivo só monta a página da feature, sem lógica.
-  - `lib/`: as libs do app na raiz (`pocketbase.ts`, `secure-storage.ts`, `narration.ts`…) e
-    `lib/features/<nome-da-feature>/`, com as subpastas que a feature usar: `components/`, `pages/`,
-    `animations/` e `functions/` (hooks, contexto, cálculos, caches). Ex.: `lib/features/cache/functions/`.
-  - `lib/components/`: blocos de tela usados por mais de uma feature (`Header`, `PageHeading`, `FooterBar`,
-    `ListCard`, `HighlightCard`, `Stat`, `ChipPicker`, `TilePicker`, `Badge`, `LoadState`…). Os básicos
-    (`Button`, `Chip`, `OptionCard`, tema) ficam em `@dnf/ui-react-native`. Antes de criar um bloco numa
-    página, veja se já existe aqui.
-  - Não crie `src/app`, `src/pages`, `src/features` nem `src/hooks`.
-- As libs do app (`apps/mobile/src/lib`) devem ser limpas: cada uma faz só o mínimo para funcionar no app,
-  sem opções extras.
-- Cada serviço externo expõe um comando só. Ex.: o provedor de voz (ElevenLabs, VoiceStudio…) tem apenas
-  "criar voz", que recebe o texto e usa a voz padrão que definirmos. Voz, modelo e ajustes ficam fixos no
-  adapter, sem parâmetros nem variáveis para trocar.
+O app (`apps/mobile`) é um ambiente externo: não tem regra de negócio. Regras, cache e integrações ficam em
+módulos de `core/src/<módulo>/index.ts` (um namespace, como `User`, `Cache`, `Narration`), com um **port**
+(interface) e **adapters** trocáveis. O app só implementa os ports da plataforma (disco, Keychain, player) e
+liga as peças. O core não importa o `@dnf/sdk` (o sdk depende do core).
+
+### Estrutura do app (`apps/mobile/src`)
+
+```
+src/
+├── routes/                       rotas do Expo Router ("root" do plugin expo-router no app.json)
+│   ├── _layout.tsx               export { default } from '../lib/features/navigation/pages/RootLayout';
+│   ├── index.tsx                 export { default } from '../lib/features/home/pages/HomePage';
+│   └── mesa/[id].tsx …           uma linha cada, sempre reexportando uma página
+└── lib/
+    ├── pocketbase.ts, crypto.ts, secure-storage(.web).ts, audio-file(.web).ts, narration.ts
+    ├── components/               blocos de tela usados por mais de uma feature
+    └── features/
+        └── <nome-da-feature>/    ex.: auth, cache, character-create, character-sheet, home, mesa,
+            ├── components/            navigation, srd, welcome
+            ├── pages/            telas e layouts (as rotas reexportam daqui)
+            ├── animations/
+            └── functions/        hooks, contexto, cálculos, caches
+```
+
+- **`routes/`**: todo arquivo, inclusive os `_layout.tsx`, tem uma linha: `export { default } from '…/pages/X'`.
+  A tela (e o `Stack` de navegação) fica na `pages/` da feature. Rota nova: crie a página na feature e a linha
+  em `routes/`.
+- **`lib/` (raiz)**: as libs do app, limpas. Cada uma faz só o mínimo para funcionar no app (iniciar o
+  PocketBase, guardar o token, tocar o áudio), sem opções extras e sem regra de negócio.
+- **`lib/features/<feature>/`**: só as subpastas que a feature usar. Uma feature pode importar de outra
+  (ex.: `../../srd/functions`).
+- **`lib/components/`**: `Header`, `PageHeading`, `SectionLabel`, `IconButton`, `FooterBar`, `ListCard`,
+  `HighlightCard`, `Stat`, `ChipPicker`, `TilePicker`, `Badge`, `LoadState`. Os básicos (`Button`, `Chip`,
+  `OptionCard`, tema, `DnfSpinner`) ficam em `@dnf/ui-react-native`. Antes de criar um bloco numa página, veja
+  se já existe em um dos dois. Bloco usado por uma feature só fica em `components/` dela.
+- Não crie `src/app`, `src/pages`, `src/features` nem `src/hooks`.
+
+### Serviços externos
+
+Cada serviço externo expõe **um comando só**, com a configuração padrão fixa no adapter (sem parâmetros nem
+variáveis de ambiente para trocar voz, modelo ou ajustes; do ambiente vem só a chave). Ex.: a narração é
+`Narration.Port.createVoice(texto)` no core. No servidor, cada provedor é um arquivo
+`core/pb_hooks/tts/<provedor>.js` com `available()` e `createVoice(text)`. `TTS_PROVIDERS` (ex.:
+`elevenlabs`) define a ordem, e se um provedor cair o `/tts` tenta o próximo. Trocar a voz padrão:
+edite o adapter e aumente `Narration.CACHE_VERSION`.
+
+Vozes do app (cada uma é uma rota e um adapter `Narration.createPocketBaseAdapter(pb, rota)`):
+
+| Voz | Rota | Provedor | Configuração no servidor |
+|---|---|---|---|
+| Narrador (subida de nível) | `/tts` | `TTS_PROVIDERS` (padrão `elevenlabs`) | `ELEVENLABS_API_KEY` |
+| Grande Sábio | `/tts/sage` | `tts/elevenlabs-sage.js` (mesma voz, mais entonação); se cair, `tts/piper.js` (Piper do NAS, grátis) e os do narrador | `ELEVENLABS_API_KEY`, `PIPER_URL` |
+
+O Piper fica de reserva: a voz dele é plana, sem entonação nem ritmo. O Piper do NAS (`rpg-piper`, voz `pt_BR-cadu-medium`) só fala o protocolo Wyoming via TCP, que o PocketBase não
+alcança. A ponte `core/piper-http/server.py` (só biblioteca padrão do Python) recebe `GET /tts?text=...`, pede a
+fala ao Piper e devolve o formato do `/tts`. O Piper não informa o tempo de cada letra: a ponte estima pela
+duração, com pausa maior na pontuação. No NAS ele gera mais ou menos em tempo real (frase curta ≈ 3 s).
 
 ## API de regras (5e-FastAPI)
 
@@ -83,6 +122,7 @@ Tudo roda no NAS, atrás do Traefik. Para entrar: `ssh ale@nas-ale`. Os apps fic
 | O quê | Onde no NAS | Como publicar |
 |---|---|---|
 | PocketBase (`https://dnf-db.developale.com`) | `/srv/apps/dnf-db` (container `dnf-db`) | Copiar `core/pb_hooks/*` (com a pasta `tts/`) para `pb_hooks/` (e `core/pb_migrations/*` para `pb_migrations/`, se mudou), depois `docker compose restart dnf-db` |
+| Ponte do Piper (voz do Grande Sábio) | `/srv/apps/piper-http` (container `piper-http`, redes `proxy` e `rpg-piper_default`, sem porta exposta) | Copiar `core/piper-http/server.py` para lá e `docker compose restart piper-http` |
 | Cache do `/srd` (Redis, 64 MB, respostas por 1 dia) | Mesma stack do `dnf-db`: containers `dnf-redis` e `dnf-webdis` (ponte HTTP, porque os hooks não abrem TCP), só na rede interna da stack | Config do Webdis em `core/redis/webdis.json` (só `GET`/`SETEX`/`PING`) → `/srv/apps/dnf-db/webdis.json`. `CACHE_URL=http://dnf-webdis:7379` no `.env`; sem ele, ou com o Redis fora, o `/srd` repassa direto. Limpar: `docker exec dnf-redis redis-cli flushall` |
 | App web (`https://dnf.developale.com`) | `/srv/apps/dnf-web` (nginx, container `dnf-web`) | `sh apps/mobile/scripts/deploy.sh` (gera o build web e troca `dist/`) |
 

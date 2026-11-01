@@ -21,7 +21,7 @@ export const ttsCache: Narration.Store = {
       if (!file.exists) return undefined;
       const entry = JSON.parse(await file.text()) as Entry;
       if (entry.v !== Narration.CACHE_VERSION || entry.text !== text) return undefined;
-      return { audio: entry.audio, starts: entry.starts, duration: entry.duration };
+      return { audio: entry.audio, format: entry.format, starts: entry.starts, duration: entry.duration };
     } catch {
       return undefined; // arquivo corrompido: gera de novo
     }
