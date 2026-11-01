@@ -7,6 +7,7 @@ import { PocketBase, sortable } from '../pocketbase';
 import { Common } from '../common';
 import { Examples } from '../examples';
 import { Character } from '../character';
+import { Nas } from '../storage';
 
 /**
  * Mesa de jogo: por enquanto serve para o mestre acompanhar os personagens (PV) dos jogadores.
@@ -27,6 +28,9 @@ export namespace Mesa {
         description: 'Rules edition; characters must use the same one.',
       }),
       inviteCode: z.string().meta({ description: 'Code players use to join.' }),
+      cover: z.string().nullable().meta({
+        description: 'Path of the cover image in the NAS storage (e.g. "<mesaID>/imagens/capa.png"), or null for none.',
+      }),
       timeCreated: z.iso.datetime().meta({ description: 'When it was created.' }),
       timeUpdated: z.iso.datetime().meta({ description: 'When it was last updated.' }),
     })
@@ -228,6 +232,12 @@ export namespace Mesa {
     { title: 'Remove table member', description: 'Leave a table, or (game master) remove a player.' },
   );
 
+  /** Guarda a capa da mesa no NAS (imagem, até 30 MB). `url` é o caminho dentro da pasta do NAS. */
+  export async function adicionarCapa(url: string, arquivo: Blob) {
+    const data = await Nas.save({ url, file: arquivo });
+    return data;
+  }
+
   export function serialize(record: RecordModel): Info {
     return {
       id: record.id,
@@ -236,6 +246,7 @@ export namespace Mesa {
       description: record.description,
       edition: record.edition,
       inviteCode: record.inviteCode,
+      cover: record.cover || null,
       timeCreated: Common.toISO(record.created),
       timeUpdated: Common.toISO(record.updated),
     };

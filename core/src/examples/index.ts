@@ -67,6 +67,7 @@ export namespace Examples {
     description: 'Campanha de quinta à noite.',
     edition: '2024',
     inviteCode: 'K7Q2XMH4',
+    cover: null,
     timeCreated: '2026-10-04T05:24:30.227Z',
     timeUpdated: '2026-10-04T05:24:30.227Z',
   };
