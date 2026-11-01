@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Mesa } from '@dnf/core/mesa';
 import { DiferenteKey } from '@dnf/core/util';
-import { Button, fonts, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { Button, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { FooterBar, Header, PageHeading, SectionLabel, TilePicker } from '../../../components';
 import { EDITION_INFO } from '../../character-create/functions/labels';
 
 /** Mestre cria a mesa: nome, edição e um recado para os jogadores. */
@@ -34,29 +35,16 @@ export default function NewMesaPage() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.surface }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.topBar}>
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-            accessibilityRole="button"
-            accessibilityLabel="Cancelar"
-            style={[styles.iconButton, { borderColor: theme.border, backgroundColor: theme.surfaceRaised }]}
-          >
-            <MaterialCommunityIcons name="close" size={22} color={theme.text} />
-          </Pressable>
-          <Text style={[typography.overline, { color: theme.textMuted }]}>Nova mesa</Text>
-          <View style={styles.iconSpacer} />
-        </View>
+        <Header action={{ kind: 'close', onPress: () => (router.canGoBack() ? router.back() : router.replace('/')) }} title="Nova mesa" />
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.heading}>
-            <MaterialCommunityIcons name="crown-outline" size={36} color={theme.gold} />
-            <Text style={[typography.title, { color: theme.text }]}>Seja o mestre</Text>
-            <Text style={[typography.body, { color: theme.textMuted, textAlign: 'center' }]}>
-              Crie a mesa e compartilhe o código. Você acompanha a ficha e os PV de todo o grupo.
-            </Text>
-          </View>
+          <PageHeading
+            icon="crown-outline"
+            title="Seja o mestre"
+            subtitle="Crie a mesa e compartilhe o código. Você acompanha a ficha e os PV de todo o grupo."
+          />
 
-          <Text style={[typography.overline, { color: theme.textMuted }]}>Nome da mesa</Text>
+          <SectionLabel>Nome da mesa</SectionLabel>
           <TextInput
             value={name}
             onChangeText={setName}
@@ -67,31 +55,14 @@ export default function NewMesaPage() {
             style={[styles.nameInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceRaised }]}
           />
 
-          <Text style={[typography.overline, { color: theme.textMuted }]}>Edição das regras</Text>
-          <View style={styles.editions}>
-            {DiferenteKey.EDITIONS.map((e) => {
-              const selected = edition === e;
-              return (
-                <Pressable
-                  key={e}
-                  onPress={() => setEdition(e)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: selected }}
-                  accessibilityLabel={`D&D ${e}`}
-                  style={[
-                    styles.edition,
-                    { borderColor: selected ? theme.accent : theme.border, backgroundColor: selected ? theme.accentSoft : theme.surfaceRaised },
-                    selected && shadow(theme, 2),
-                  ]}
-                >
-                  <Text style={[styles.year, { color: selected ? theme.accent : theme.text }]}>{e}</Text>
-                  <Text style={[typography.caption, { color: theme.textMuted, textAlign: 'center' }]}>{EDITION_INFO[e].subtitle}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <SectionLabel>Edição das regras</SectionLabel>
+          <TilePicker
+            value={edition}
+            onChange={setEdition}
+            options={DiferenteKey.EDITIONS.map((e) => ({ value: e, label: e, caption: EDITION_INFO[e].subtitle }))}
+          />
 
-          <Text style={[typography.overline, { color: theme.textMuted }]}>Recado para os jogadores (opcional)</Text>
+          <SectionLabel>Recado para os jogadores (opcional)</SectionLabel>
           <TextInput
             value={description}
             onChangeText={setDescription}
@@ -106,15 +77,16 @@ export default function NewMesaPage() {
           {error && <Text style={[typography.caption, { color: theme.negative }]}>{error}</Text>}
         </ScrollView>
 
-        <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <FooterBar>
           <Button
             label="Criar mesa"
             onPress={() => void create()}
             disabled={!edition || !name.trim()}
             loading={saving}
             icon={(c) => <MaterialCommunityIcons name="castle" size={18} color={c} />}
+            style={styles.flex}
           />
-        </View>
+        </FooterBar>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -122,15 +94,8 @@ export default function NewMesaPage() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  iconButton: { width: 40, height: 40, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  iconSpacer: { width: 40 },
+  flex: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, maxWidth: 640, width: '100%', alignSelf: 'center' },
-  heading: { alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
   nameInput: { borderWidth: 1.5, borderRadius: radius.lg, padding: spacing.lg, fontFamily: fonts.display, fontSize: 18 },
-  editions: { flexDirection: 'row', gap: spacing.md },
-  edition: { flex: 1, borderWidth: 2, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', gap: spacing.xs },
-  year: { fontFamily: fonts.displayHeavy, fontSize: 32 },
   description: { borderWidth: 1, borderRadius: radius.md, padding: spacing.md, minHeight: 90, textAlignVertical: 'top', fontSize: 15 },
-  footer: { padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth },
 });

@@ -3,6 +3,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DiferenteKey } from '@dnf/core/util';
 import { radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { StepScreen } from '../components/StepScreen';
+import { Stat } from '../../../components';
 import { useCharacterDraft } from '../functions/draft';
 import { EDITION_INFO } from '../functions/labels';
 import { srd, useSrd } from '../../srd/functions';
@@ -102,15 +103,6 @@ function EditionCard({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  const theme = useRpgTheme();
-  return (
-    <View style={styles.stat}>
-      <Text style={[typography.heading, { color: theme.text }]}>{value}</Text>
-      <Text style={[typography.caption, { color: theme.textMuted }]}>{label}</Text>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   card: {
@@ -146,5 +138,4 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  stat: { flex: 1, alignItems: 'center' },
 });

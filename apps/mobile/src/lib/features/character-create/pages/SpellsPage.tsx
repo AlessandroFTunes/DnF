@@ -3,8 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { proficiencyBonus } from '@dnf/core/character';
 import { plainText, spellStats, type SrdSpell } from '@dnf/sdk/srd';
-import { Chip, fonts, formatBonus, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { formatBonus, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { StepScreen } from '../components/StepScreen';
+import { ChipPicker, LoadState, SectionLabel, Stat } from '../../../components';
 import { useCharacterDraft } from '../functions/draft';
 import { abilityName, rangeLabel } from '../functions/labels';
 import { useCreation } from '../functions/useCreation';
@@ -75,36 +76,24 @@ export default function SpellsPage() {
     >
       {stats && casting && (
         <View style={[styles.stats, { backgroundColor: theme.surfaceRaised, borderColor: theme.gold }, shadow(theme, 1)]}>
-          <Stat label="Atributo" value={abilityName(casting.ability)} />
-          <Stat label="CD de magia" value={String(stats.saveDC)} big />
-          <Stat label="Ataque mágico" value={formatBonus(stats.attack)} big />
-          <Stat label="Espaços 1º" value={String(casting.slots)} big />
+          <Stat label="Atributo" value={abilityName(casting.ability)} size="sm" />
+          <Stat label="CD de magia" value={String(stats.saveDC)} size="lg" />
+          <Stat label="Ataque mágico" value={formatBonus(stats.attack)} size="lg" />
+          <Stat label="Espaços 1º" value={String(casting.slots)} size="lg" />
         </View>
       )}
 
-      <View style={styles.tabs}>
-        {cantripsNeeded > 0 && (
-          <Chip
-            label={`Truques ${draft.cantrips.length}/${cantripsNeeded}`}
-            selected={tab === 'cantrips'}
-            onPress={() => setTab('cantrips')}
-          />
-        )}
-        {spellsNeeded > 0 && (
-          <Chip
-            label={`1º círculo ${draft.spells.length}/${spellsNeeded}`}
-            selected={tab === 'spells'}
-            onPress={() => setTab('spells')}
-          />
-        )}
-        {featNeeded > 0 && (
-          <Chip
-            label={`${bg?.feat ? tr.text(bg.feat.name) : 'Talento'} ${featDone}/${featNeeded}`}
-            selected={tab === 'feat'}
-            onPress={() => setTab('feat')}
-          />
-        )}
-      </View>
+      <ChipPicker<Tab>
+        value={tab}
+        onChange={setTab}
+        options={[
+          ...(cantripsNeeded > 0 ? [{ value: 'cantrips' as const, label: `Truques ${draft.cantrips.length}/${cantripsNeeded}` }] : []),
+          ...(spellsNeeded > 0 ? [{ value: 'spells' as const, label: `1º círculo ${draft.spells.length}/${spellsNeeded}` }] : []),
+          ...(featNeeded > 0
+            ? [{ value: 'feat' as const, label: `${bg?.feat ? tr.text(bg.feat.name) : 'Talento'} ${featDone}/${featNeeded}` }]
+            : []),
+        ]}
+      />
 
       {tab === 'feat' && (
         <Text style={[typography.caption, { color: theme.textMuted }]}>
@@ -161,17 +150,6 @@ export default function SpellsPage() {
   );
 }
 
-function Stat({ label, value, big }: { label: string; value: string; big?: boolean }) {
-  const theme = useRpgTheme();
-  return (
-    <View style={styles.stat}>
-      <Text style={[big ? styles.statBig : typography.bodyStrong, { color: theme.text }]} numberOfLines={1}>
-        {value}
-      </Text>
-      <Text style={[typography.caption, { color: theme.textMuted, textAlign: 'center' }]}>{label}</Text>
-    </View>
-  );
-}
 
 const CASTING_TIME: Record<string, string> = {
   action: '1 ação',
@@ -232,9 +210,6 @@ export function SpellCard({ spell, selected, onPress }: { spell: SrdSpell; selec
 
 const styles = StyleSheet.create({
   stats: { flexDirection: 'row', borderWidth: 1.5, borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs },
-  stat: { flex: 1, alignItems: 'center', gap: 2 },
-  statBig: { fontFamily: fonts.displayHeavy, fontSize: 22 },
-  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   spell: { borderWidth: 1.5, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm },
   spellRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1 },

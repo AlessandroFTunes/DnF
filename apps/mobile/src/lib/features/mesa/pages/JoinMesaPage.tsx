@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Character } from '@dnf/core/character';
 import { Mesa } from '@dnf/core/mesa';
 import { ClientResponseError } from '@dnf/core/pocketbase';
-import { Button, DnfSpinner, fonts, OptionCard, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { Button, DnfSpinner, fonts, OptionCard, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { FooterBar, Header, HighlightCard, PageHeading, SectionLabel } from '../../../components';
 import { classIcon } from '../../character-create/functions/labels';
 import { formatCode } from '../functions/code';
 import { srd, useSrd } from '../../srd/functions';
@@ -71,24 +72,10 @@ export default function JoinMesaPage() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.surface }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.topBar}>
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-            accessibilityRole="button"
-            accessibilityLabel="Cancelar"
-            style={[styles.iconButton, { borderColor: theme.border, backgroundColor: theme.surfaceRaised }]}
-          >
-            <MaterialCommunityIcons name="close" size={22} color={theme.text} />
-          </Pressable>
-          <Text style={[typography.overline, { color: theme.textMuted }]}>Entrar numa mesa</Text>
-          <View style={styles.iconSpacer} />
-        </View>
+        <Header action={{ kind: 'close', onPress: () => (router.canGoBack() ? router.back() : router.replace('/')) }} title="Entrar numa mesa" />
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.heading}>
-            <MaterialCommunityIcons name="door-open" size={36} color={theme.gold} />
-            <Text style={[typography.title, { color: theme.text }]}>Código do mestre</Text>
-          </View>
+          <PageHeading icon="door-open" title="Código do mestre" />
 
           <TextInput
             value={clean.length > 4 ? formatCode(clean) : clean}
@@ -117,16 +104,16 @@ export default function JoinMesaPage() {
 
           {mesa && (
             <>
-              <View style={[styles.mesa, { backgroundColor: theme.surfaceRaised, borderColor: theme.gold }, shadow(theme, 2)]}>
+              <HighlightCard>
                 <MaterialCommunityIcons name="castle" size={28} color={theme.gold} />
                 <View style={styles.flex}>
                   <Text style={[typography.heading, { color: theme.text }]}>{mesa.name}</Text>
                   <Text style={[typography.caption, { color: theme.textMuted }]}>D&D {mesa.edition}</Text>
                   {mesa.description ? <Text style={[typography.caption, { color: theme.text }]}>{mesa.description}</Text> : null}
                 </View>
-              </View>
+              </HighlightCard>
 
-              <Text style={[typography.overline, { color: theme.textMuted }]}>Com qual personagem?</Text>
+              <SectionLabel>Com qual personagem?</SectionLabel>
               {characters === null ? (
                 <DnfSpinner size={36} />
               ) : eligible.length === 0 ? (
@@ -154,15 +141,16 @@ export default function JoinMesaPage() {
         </ScrollView>
 
         {mesa && eligible.length > 0 && (
-          <View style={[styles.footer, { borderTopColor: theme.border }]}>
+          <FooterBar>
             <Button
               label="Sentar à mesa"
               onPress={() => void join()}
               disabled={!characterID || !eligible.some((c) => c.id === characterID)}
               loading={busy}
               icon={(c) => <MaterialCommunityIcons name="sword-cross" size={18} color={c} />}
+              style={styles.flex}
             />
-          </View>
+          </FooterBar>
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -172,11 +160,7 @@ export default function JoinMesaPage() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   flex: { flex: 1 },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  iconButton: { width: 40, height: 40, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  iconSpacer: { width: 40 },
   content: { padding: spacing.lg, gap: spacing.md, maxWidth: 640, width: '100%', alignSelf: 'center' },
-  heading: { alignItems: 'center', gap: spacing.xs },
   code: {
     borderWidth: 2,
     borderRadius: radius.lg,
@@ -186,7 +170,5 @@ const styles = StyleSheet.create({
     fontSize: 34,
     letterSpacing: 4,
   },
-  mesa: { flexDirection: 'row', gap: spacing.md, borderWidth: 1.5, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center' },
   empty: { gap: spacing.md },
-  footer: { padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth },
 });

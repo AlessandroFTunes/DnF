@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { suggestedCharacteristics, type SuggestedCharacteristics } from '@dnf/sdk/srd';
 import { radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { SectionLabel, StepScreen } from '../components/StepScreen';
+import { StepScreen } from '../components/StepScreen';
+import { SectionLabel } from '../../../components';
 import { useCharacterDraft, type CharacterDraft } from '../functions/draft';
 import { useCreation } from '../functions/useCreation';
 

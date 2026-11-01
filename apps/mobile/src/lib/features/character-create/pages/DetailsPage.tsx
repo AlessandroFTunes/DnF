@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Chip, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { StepScreen } from '../components/StepScreen';
+import { LoadState, SectionLabel } from '../../../components';
 import { useCharacterDraft } from '../functions/draft';
 import {
   ALIGNMENT_ATTITUDES,

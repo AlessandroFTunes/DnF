@@ -14,7 +14,8 @@ import {
   typography,
   useRpgTheme,
 } from '@dnf/ui-react-native';
-import { SectionLabel, StepScreen } from '../components/StepScreen';
+import { StepScreen } from '../components/StepScreen';
+import { ChipPicker, SectionLabel } from '../../../components';
 import { STANDARD_ARRAY, useCharacterDraft, type AbilityMethod } from '../functions/draft';
 import { ABILITY_LABEL, abilityShort } from '../functions/labels';
 import { useCreation } from '../functions/useCreation';
@@ -110,32 +111,16 @@ export default function AbilitiesPage() {
       }
       canContinue={base !== null && bonusOk && originComplete}
     >
-      <View style={styles.methods}>
-        <Chip
-          label="Conjunto padrão"
-          selected={method === 'standard'}
-          onPress={() => setMethod('standard')}
-          icon={(c) => <MaterialCommunityIcons name="format-list-numbered" size={16} color={c} />}
-        />
-        <Chip
-          label="Compra por pontos"
-          selected={method === 'pointBuy'}
-          onPress={() => setMethod('pointBuy')}
-          icon={(c) => <MaterialCommunityIcons name="calculator-variant-outline" size={16} color={c} />}
-        />
-        <Chip
-          label="Rolar 4d6"
-          selected={method === 'roll'}
-          onPress={() => setMethod('roll')}
-          icon={(c) => <MaterialCommunityIcons name="dice-multiple-outline" size={16} color={c} />}
-        />
-        <Chip
-          label="Manual"
-          selected={method === 'manual'}
-          onPress={() => setMethod('manual')}
-          icon={(c) => <MaterialCommunityIcons name="pencil-outline" size={16} color={c} />}
-        />
-      </View>
+      <ChipPicker
+        value={method}
+        onChange={setMethod}
+        options={[
+          { value: 'standard', label: 'Conjunto padrão', icon: 'format-list-numbered' },
+          { value: 'pointBuy', label: 'Compra por pontos', icon: 'calculator-variant-outline' },
+          { value: 'roll', label: 'Rolar 4d6', icon: 'dice-multiple-outline' },
+          { value: 'manual', label: 'Manual', icon: 'pencil-outline' },
+        ]}
+      />
 
       {method === 'pointBuy' ? (
         <View style={[styles.poolCard, { backgroundColor: theme.surfaceSunken, borderColor: theme.border }]}>

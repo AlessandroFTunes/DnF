@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { featuresByLevel, plainText } from '@dnf/sdk/srd';
 import { OptionCard } from '@dnf/ui-react-native';
-import { InfoRow, LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { InfoRow, StepScreen } from '../components/StepScreen';
+import { LoadState, SectionLabel } from '../../../components';
 import { useCharacterDraft } from '../functions/draft';
 import { abilityName, classIcon, skillLabel, subclassOrigin } from '../functions/labels';
 import { useCreation } from '../functions/useCreation';

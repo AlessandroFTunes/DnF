@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Mesa } from '@dnf/core/mesa';
-import { Button, DnfSpinner, fonts, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { Button, DnfSpinner, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { Badge, Header, HighlightCard, ListCard, PageHeading } from '../../../components';
 import { classIcon } from '../../character-create/functions/labels';
 import { formatCode } from '../functions/code';
 import { useSession } from '../../auth/functions/hook.session';
@@ -79,20 +80,10 @@ export default function MesaPage() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.surface }]} edges={['top', 'bottom']}>
-      <View style={styles.topBar}>
-        <Pressable
-          onPress={back}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          style={[styles.iconButton, { borderColor: theme.border, backgroundColor: theme.surfaceRaised }]}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={22} color={theme.text} />
-        </Pressable>
-        <View style={[styles.role, { backgroundColor: isGM ? theme.accent : theme.goldSoft, borderColor: isGM ? theme.accent : theme.gold }]}>
-          <MaterialCommunityIcons name={isGM ? 'crown-outline' : 'account-outline'} size={14} color={isGM ? theme.accentText : theme.gold} />
-          <Text style={[styles.roleText, { color: isGM ? theme.accentText : theme.gold }]}>{isGM ? 'MESTRE' : 'JOGADOR'}</Text>
-        </View>
-      </View>
+      <Header
+        action={{ kind: 'back', onPress: back }}
+        right={<Badge icon={isGM ? 'crown-outline' : 'account-outline'} label={isGM ? 'MESTRE' : 'JOGADOR'} solid={isGM} />}
+      />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -108,17 +99,10 @@ export default function MesaPage() {
           />
         }
       >
-        <View style={styles.heading}>
-          <MaterialCommunityIcons name="castle" size={36} color={theme.gold} />
-          <Text style={[typography.title, { color: theme.text, textAlign: 'center' }]}>{mesa.name}</Text>
-          <Text style={[typography.overline, { color: theme.gold }]}>D&D {mesa.edition}</Text>
-          {mesa.description ? (
-            <Text style={[typography.body, { color: theme.textMuted, textAlign: 'center' }]}>{mesa.description}</Text>
-          ) : null}
-        </View>
+        <PageHeading icon="castle" title={mesa.name} overline={`D&D ${mesa.edition}`} subtitle={mesa.description || undefined} />
 
         {isGM && (
-          <View style={[styles.invite, { backgroundColor: theme.surfaceRaised, borderColor: theme.gold }, shadow(theme, 2)]}>
+          <HighlightCard center>
             <Text style={[typography.overline, { color: theme.textMuted }]}>Código de convite</Text>
             <Text style={[styles.code, { color: theme.accent }]} selectable accessibilityLabel={`Código ${mesa.inviteCode.split('').join(' ')}`}>
               {formatCode(mesa.inviteCode)}
@@ -142,7 +126,7 @@ export default function MesaPage() {
                 icon={(c) => <MaterialCommunityIcons name="refresh" size={18} color={c} />}
               />
             </View>
-          </View>
+          </HighlightCard>
         )}
 
         <View style={styles.partyHeader}>
@@ -219,19 +203,15 @@ function MemberCard({
   const color = c.combat.hpCurrent === 0 ? theme.negative : ratio > 0.5 ? theme.positive : ratio > 0.25 ? theme.gold : theme.negative;
 
   return (
-    <View style={[styles.member, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }, shadow(theme, 1)]}>
-      <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={`Abrir ficha de ${c.name}`} style={styles.memberTop}>
-        <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-          <MaterialCommunityIcons name={classIcon(className ?? '')} size={24} color={theme.accentText} />
-        </View>
-        <View style={styles.flex}>
-          <Text style={[typography.subheading, { color: theme.text }]} numberOfLines={1}>
-            {c.name}
-          </Text>
-          <Text style={[typography.caption, { color: theme.textMuted }]}>{[className, `Nível ${c.level}`].filter(Boolean).join(' · ')}</Text>
-        </View>
-        <MaterialCommunityIcons name="chevron-right" size={20} color={theme.textMuted} />
-      </Pressable>
+    <ListCard
+      title={c.name}
+      subtitle={[className, `Nível ${c.level}`].filter(Boolean).join(' · ')}
+      icon={classIcon(className ?? '')}
+      tone="accent"
+      accessibilityLabel={`Abrir ficha de ${c.name}`}
+      onPress={onOpen}
+      style={styles.member}
+    >
       <View style={styles.hpRow}>
         <MaterialCommunityIcons name={c.combat.hpCurrent === 0 ? 'skull-outline' : 'heart'} size={16} color={color} />
         <View style={[styles.bar, { backgroundColor: theme.surfaceSunken }]}>
@@ -248,7 +228,7 @@ function MemberCard({
       <Pressable onPress={onAction} accessibilityRole="button" style={styles.memberAction}>
         <Text style={[typography.caption, { color: theme.negative, fontWeight: '700' }]}>{actionLabel}</Text>
       </Pressable>
-    </View>
+    </ListCard>
   );
 }
 
@@ -256,20 +236,12 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   flex: { flex: 1 },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  iconButton: { width: 40, height: 40, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  role: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 4 },
-  roleText: { fontSize: 11, fontWeight: '900', letterSpacing: 1 },
   content: { padding: spacing.lg, gap: spacing.lg, maxWidth: 900, width: '100%', alignSelf: 'center' },
-  heading: { alignItems: 'center', gap: spacing.xs },
-  invite: { borderWidth: 1.5, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', gap: spacing.sm },
   code: { fontFamily: fonts.displayHeavy, fontSize: 40, letterSpacing: 4 },
   row: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch' },
   partyHeader: { flexDirection: 'row', alignItems: 'center' },
   party: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  member: { flexGrow: 1, flexBasis: 280, borderWidth: 1, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
-  memberTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  avatar: { width: 44, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  member: { flexGrow: 1, flexBasis: 280 },
   hpRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   bar: { flex: 1, height: 8, borderRadius: radius.pill, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: radius.pill },

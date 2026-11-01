@@ -9,7 +9,8 @@ import {
   type SrdItem,
 } from '@dnf/sdk/srd';
 import { Chip, fonts, formatBonus, OptionCard, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { StepScreen } from '../components/StepScreen';
+import { LoadState, SectionLabel } from '../../../components';
 import { useCharacterDraft } from '../functions/draft';
 import { buildInventory, inventoryArmorClass, pickId } from '../functions/inventory';
 import { combined, useCreation } from '../functions/useCreation';

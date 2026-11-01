@@ -6,7 +6,8 @@ import { ABILITIES, abilityModifier, Character, proficiencyBonus } from '@dnf/co
 import { ClientResponseError } from '@dnf/core/pocketbase';
 import { isWeaponProficient, skillBonus, weaponAttack } from '@dnf/sdk/srd';
 import { fonts, formatBonus, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { LoadState, SectionLabel, StepScreen } from '../components/StepScreen';
+import { StepScreen } from '../components/StepScreen';
+import { LoadState, SectionLabel } from '../../../components';
 import { buildCharacter, startingHitPoints } from '../functions/build';
 import { useCharacterDraft } from '../functions/draft';
 import { buildInventory, inventoryArmorClass } from '../functions/inventory';

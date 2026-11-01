@@ -10,6 +10,10 @@
   - `lib/`: as libs do app na raiz (`pocketbase.ts`, `secure-storage.ts`, `narration.ts`…) e
     `lib/features/<nome-da-feature>/`, com as subpastas que a feature usar: `components/`, `pages/`,
     `animations/` e `functions/` (hooks, contexto, cálculos, caches). Ex.: `lib/features/cache/functions/`.
+  - `lib/components/`: blocos de tela usados por mais de uma feature (`Header`, `PageHeading`, `FooterBar`,
+    `ListCard`, `HighlightCard`, `Stat`, `ChipPicker`, `TilePicker`, `Badge`, `LoadState`…). Os básicos
+    (`Button`, `Chip`, `OptionCard`, tema) ficam em `@dnf/ui-react-native`. Antes de criar um bloco numa
+    página, veja se já existe aqui.
   - Não crie `src/app`, `src/pages`, `src/features` nem `src/hooks`.
 - As libs do app (`apps/mobile/src/lib`) devem ser limpas: cada uma faz só o mínimo para funcionar no app,
   sem opções extras.
