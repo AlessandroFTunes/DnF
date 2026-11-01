@@ -83,6 +83,7 @@ Tudo roda no NAS, atrás do Traefik. Para entrar: `ssh ale@nas-ale`. Os apps fic
 | O quê | Onde no NAS | Como publicar |
 |---|---|---|
 | PocketBase (`https://dnf-db.developale.com`) | `/srv/apps/dnf-db` (container `dnf-db`) | Copiar `core/pb_hooks/*` (com a pasta `tts/`) para `pb_hooks/` (e `core/pb_migrations/*` para `pb_migrations/`, se mudou), depois `docker compose restart dnf-db` |
+| Cache do `/srd` (Redis, 64 MB, respostas por 1 dia) | Mesma stack do `dnf-db`: containers `dnf-redis` e `dnf-webdis` (ponte HTTP, porque os hooks não abrem TCP), só na rede interna da stack | Config do Webdis em `core/redis/webdis.json` (só `GET`/`SETEX`/`PING`) → `/srv/apps/dnf-db/webdis.json`. `CACHE_URL=http://dnf-webdis:7379` no `.env`; sem ele, ou com o Redis fora, o `/srd` repassa direto. Limpar: `docker exec dnf-redis redis-cli flushall` |
 | App web (`https://dnf.developale.com`) | `/srv/apps/dnf-web` (nginx, container `dnf-web`) | `sh apps/mobile/scripts/deploy.sh` (gera o build web e troca `dist/`) |
 
 ```sh
