@@ -9,7 +9,7 @@ import { ChipPicker, LoadState, SectionLabel, Stat } from '../../../components';
 import { useCharacterDraft } from '../functions/draft';
 import { abilityName, rangeLabel } from '../functions/labels';
 import { useCreation } from '../functions/useCreation';
-import { srd, tr, useSrd } from '../../srd/functions';
+import { tr, useSpells } from '../../srd/functions';
 
 type Tab = 'cantrips' | 'spells' | 'feat';
 
@@ -18,12 +18,8 @@ export default function SpellsPage() {
   const { draft, update } = useCharacterDraft();
   const { casting, spellCount, scores, magicInitiateClassKey, bg } = useCreation();
   const edition = draft.edition ?? undefined;
-  const classSpells = useSrd(casting && draft.classKey ? `spells:${draft.classKey}:${edition}` : null, () =>
-    srd.spells(draft.classKey!, 1, edition),
-  );
-  const featSpells = useSrd(magicInitiateClassKey && `spells:${magicInitiateClassKey}:${edition}`, () =>
-    srd.spells(magicInitiateClassKey!, 1, edition),
-  );
+  const classSpells = useSpells(casting && draft.classKey, 1, edition);
+  const featSpells = useSpells(magicInitiateClassKey, 1, edition);
   // Enquanto o jogador não escolhe, a aba segue a classe (que pode ainda estar carregando).
   const [chosenTab, setTab] = useState<Tab | null>(null);
   const tab: Tab = chosenTab ?? (casting?.cantrips ? 'cantrips' : casting ? 'spells' : 'feat');

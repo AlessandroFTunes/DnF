@@ -6,7 +6,7 @@ import { StepScreen } from '../components/StepScreen';
 import { Stat } from '../../../components';
 import { useCharacterDraft } from '../functions/draft';
 import { EDITION_INFO } from '../functions/labels';
-import { srd, useSrd } from '../../srd/functions';
+import { useBackgrounds, useClasses, useSpecies } from '../../srd/functions';
 
 /** Antes das etapas: escolher entre as regras de 2014 e de 2024. */
 export default function EditionPage() {
@@ -42,9 +42,9 @@ function EditionCard({
   const theme = useRpgTheme();
   const info = EDITION_INFO[edition];
   // Números ao vivo do compêndio (as listas ficam em cache para as próximas etapas).
-  const classes = useSrd(`classes:${edition}`, () => srd.classes(edition));
-  const species = useSrd(`species:${edition}`, () => srd.species(edition));
-  const backgrounds = useSrd(`backgrounds:${edition}`, () => srd.backgrounds(edition));
+  const classes = useClasses(edition);
+  const species = useSpecies(edition);
+  const backgrounds = useBackgrounds(edition);
   const count = (s: { status: string; data?: unknown[] }) => (s.status === 'ready' ? String(s.data?.length) : '–');
   // Edição ainda sem classes na API: não dá para criar personagem nela.
   const empty = classes.status === 'ready' && classes.data.length === 0;

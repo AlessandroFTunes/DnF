@@ -22,17 +22,25 @@ export namespace Cache {
     });
     const memory = new Map<string, Promise<unknown>>();
 
+    /**
+     * Lê do `store`; se não tiver, busca com `load` e guarda. Sem memória: para quem já tem o seu próprio
+     * cache em memória (ex.: o TanStack Query do app).
+     */
+    function stored<T>(key: string, load: () => Promise<T>): Promise<T> {
+      return ready.then(async () => {
+        const saved = await store.get<T>(key);
+        if (saved !== undefined) return saved;
+        const data = await load();
+        void store.set(key, data);
+        return data;
+      });
+    }
+
     /** Cada `key` é buscada uma vez só; o que vem de `load` é guardado no `store`. */
     function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
       let promise = memory.get(key) as Promise<T> | undefined;
       if (!promise) {
-        promise = ready.then(async () => {
-          const saved = await store.get<T>(key);
-          if (saved !== undefined) return saved;
-          const data = await load();
-          void store.set(key, data);
-          return data;
-        });
+        promise = stored(key, load);
         memory.set(key, promise);
         promise.catch(() => memory.delete(key)); // falhou: a próxima tentativa busca de novo
       }
@@ -52,6 +60,6 @@ export namespace Cache {
       await store.clear();
     }
 
-    return { cached, prefetch, clear };
+    return { cached, stored, prefetch, clear };
   }
 }

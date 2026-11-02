@@ -11,7 +11,7 @@ import {
   alignmentLabel,
   alignmentShort,
 } from '../functions/labels';
-import { srd, tr, useSrd } from '../../srd/functions';
+import { tr, useAlignments } from '../../srd/functions';
 import { useCreation } from '../functions/useCreation';
 
 const NAME_MAX = 64;
@@ -19,7 +19,7 @@ const NAME_MAX = 64;
 export default function DetailsPage() {
   const theme = useRpgTheme();
   const { draft, update } = useCharacterDraft();
-  const alignments = useSrd('alignments', () => srd.alignments());
+  const alignments = useAlignments();
   const { fixedLanguages, languagesNeeded, languageOptions, languages } = useCreation();
   const toggleLanguage = (key: string) =>
     update({

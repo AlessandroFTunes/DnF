@@ -12,7 +12,7 @@ import {
   type SrdSpecies,
   type SrdSpeciesGroup,
 } from '@dnf/sdk/srd';
-import { srd, useSrd } from '../../srd/functions';
+import { useBackgrounds, useClass, useClasses, useFeats, useItems, useLanguages, useSpecies, useSubclasses } from '../../srd/functions';
 import { useCharacterDraft, type CharacterDraft } from './draft';
 
 /** Atributos base (antes dos bônus), ou null se ainda não foram todos distribuídos. */
@@ -34,14 +34,14 @@ export function useCreation() {
   const { draft } = useCharacterDraft();
   const edition = draft.edition;
 
-  const classQ = useSrd(draft.classKey && `class:${draft.classKey}`, () => srd.classDetail(draft.classKey!));
-  const subclassesQ = useSrd(draft.classKey && `subclasses:${draft.classKey}`, () => srd.subclasses(draft.classKey!));
-  const speciesQ = useSrd(edition && `species:${edition}`, () => srd.species(edition!));
-  const backgroundsQ = useSrd(edition && `backgrounds:${edition}`, () => srd.backgrounds(edition!));
-  const languagesQ = useSrd('languages', () => srd.languages());
-  const featsQ = useSrd(edition && `feats:${edition}`, () => srd.feats(edition!));
-  const itemsQ = useSrd(edition && `items:${edition}`, () => srd.items(edition!));
-  const classesQ = useSrd(edition && `classes:${edition}`, () => srd.classes(edition!));
+  const classQ = useClass(draft.classKey);
+  const subclassesQ = useSubclasses(draft.classKey);
+  const speciesQ = useSpecies(edition);
+  const backgroundsQ = useBackgrounds(edition);
+  const languagesQ = useLanguages();
+  const featsQ = useFeats(edition);
+  const itemsQ = useItems(edition);
+  const classesQ = useClasses(edition);
 
   // Sem useMemo manual: o React Compiler memoiza estes cálculos.
   const skills = SKILLS;

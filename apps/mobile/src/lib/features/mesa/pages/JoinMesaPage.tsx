@@ -10,7 +10,7 @@ import { Button, DnfSpinner, fonts, OptionCard, radius, spacing, typography, use
 import { FooterBar, Header, HighlightCard, PageHeading, SectionLabel } from '../../../components';
 import { classIcon } from '../../character-create/functions/labels';
 import { formatCode } from '../functions/code';
-import { srd, useSrd } from '../../srd/functions';
+import { useClasses } from '../../srd/functions';
 
 /** Jogador entra numa mesa: digita o código, vê a mesa e escolhe o personagem da mesma edição. */
 export default function JoinMesaPage() {
@@ -25,7 +25,7 @@ export default function JoinMesaPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Nome das classes (em cache) para o ícone de cada personagem.
-  const classes = useSrd(mesa && `classes:${mesa.edition}`, () => srd.classes(mesa!.edition));
+  const classes = useClasses(mesa?.edition);
   const className = (key = '') => (classes.status === 'ready' ? classes.data.find((k) => k.key === key)?.name : undefined) ?? '';
 
   const clean = code.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 8);

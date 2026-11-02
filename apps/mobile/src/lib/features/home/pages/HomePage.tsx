@@ -9,7 +9,7 @@ import { Button, D20, DnfLogo, DnfSpinner, fonts, mixColor, radius, spacing, typ
 import { classIcon } from '../../character-create/functions/labels';
 import { HeroArt } from '../components/HeroArt';
 import { useSession } from '../../auth/functions/hook.session';
-import { srd, tr, useSrd } from '../../srd/functions';
+import { tr, useClasses } from '../../srd/functions';
 
 type Load = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Character.Info[] };
 
@@ -170,7 +170,7 @@ function CharacterTile({ character, onPress }: { character: Character.Info; onPr
   const { edition } = character;
   const classKey = character.classes[0]?.classKey;
   // Nome da classe vem da 5e-FastAPI (em cache; enquanto carrega, mostra só o nível).
-  const classes = useSrd(`classes:${edition}`, () => srd.classes(edition));
+  const classes = useClasses(edition);
   const found = classes.status === 'ready' ? classes.data.find((c) => c.key === classKey) : undefined;
   const className = found ? tr.name(found) : undefined;
   const color = tileColor(character.id);

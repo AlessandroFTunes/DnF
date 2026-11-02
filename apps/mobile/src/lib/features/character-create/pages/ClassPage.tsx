@@ -6,14 +6,14 @@ import { LoadState, SectionLabel } from '../../../components';
 import { useCharacterDraft } from '../functions/draft';
 import { abilityName, classIcon, skillLabel, subclassOrigin } from '../functions/labels';
 import { useCreation } from '../functions/useCreation';
-import { srd, tr, useSrd } from '../../srd/functions';
+import { tr, useClasses } from '../../srd/functions';
 
 export default function ClassPage() {
   const { draft, setClass, update } = useCharacterDraft();
   const { klass, skills, queries, subclasses, subclassAtLevel1 } = useCreation();
   const subclassesLoading = !!draft.classKey && queries.subclassesQ.status === 'loading';
   const edition = draft.edition;
-  const classes = useSrd(edition && `classes:${edition}`, () => srd.classes(edition!));
+  const classes = useClasses(edition);
   const chosen = classes.status === 'ready' ? classes.data.find((c) => c.key === draft.classKey) : undefined;
 
   return (

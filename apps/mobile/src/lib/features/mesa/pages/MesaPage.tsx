@@ -9,7 +9,7 @@ import { Badge, Header, HighlightCard, ListCard, PageHeading } from '../../../co
 import { classIcon } from '../../character-create/functions/labels';
 import { formatCode } from '../functions/code';
 import { useSession } from '../../auth/functions/hook.session';
-import { srd, tr, useSrd } from '../../srd/functions';
+import { tr, useClasses } from '../../srd/functions';
 
 export default function MesaPage() {
   const theme = useRpgTheme();
@@ -202,7 +202,7 @@ function MemberCard({
   const theme = useRpgTheme();
   const c = member.character;
   const classKey = c.classes[0]?.classKey ?? '';
-  const classes = useSrd(`classes:${c.edition}`, () => srd.classes(c.edition));
+  const classes = useClasses(c.edition);
   const found = classes.status === 'ready' ? classes.data.find((k) => k.key === classKey) : undefined;
   const className = found ? tr.name(found) : undefined;
   const ratio = c.combat.hpMax ? c.combat.hpCurrent / c.combat.hpMax : 0;

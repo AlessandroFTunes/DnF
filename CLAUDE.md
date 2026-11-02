@@ -78,7 +78,7 @@ Onde fica cada parte:
 | `packages/sdk/src/srd/rules.ts` | Regras lidas dos dados (perícias, conjuração, CA, equipamento…) |
 | `packages/sdk/src/srd/reference.ts` | Listas que a API ainda não serve: perícias, idiomas, alinhamentos |
 | `core/src/cache` | Cache em memória → disco → rede (`Cache.Store` é o port do armazenamento) |
-| `apps/mobile/src/lib/features/srd/functions` | Liga o catálogo ao cache do app, `useSrd` e `SRD_CACHE_VERSION` |
+| `apps/mobile/src/lib/features/srd/functions` | `client.ts`: catálogo, cache em disco e `SRD_CACHE_VERSION`. `queries.ts`: todas as consultas como hooks do TanStack Query (`useClasses(edition)`, `useSpells(…)`). As telas só chamam esses hooks, sem `srd.*` nem chave de cache |
 
 ### Quando a API for atualizada
 
@@ -89,7 +89,7 @@ edição sem equivalente nesta também entra (`adaptedFrom`, ex.: o Artífice do
 `srd.spells(classe, círculo, edição)` mostra uma vez só a magia que existe nos dois livros, ficando a da edição
 do personagem. O app guarda as consultas no aparelho por 30 dias (`MAX_AGE_MS` em
 `apps/mobile/src/lib/features/cache/functions/persistent-cache.ts`). Para todos verem os dados novos já, aumente `SRD_CACHE_VERSION`
-em `apps/mobile/src/lib/features/srd/functions/index.ts` e publique o app.
+em `apps/mobile/src/lib/features/srd/functions/client.ts` e publique o app.
 
 **Formato mudou** (endpoint ou campo novo, renomeado ou removido):
 

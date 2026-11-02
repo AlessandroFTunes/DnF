@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { plainText, type SrdSpell } from '@dnf/sdk/srd';
 import { Chip, formatBonus, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
-import { srd, tr, useSrd } from '../../../srd/functions';
+import { tr, useSpells } from '../../../srd/functions';
 import { abilityName, rangeLabel } from '../../../character-create/functions/labels';
 import { Panel, SmallButton, StatBox } from '../components';
 import type { Sheet } from '../../functions/useSheet';
@@ -20,9 +20,7 @@ export function Spells({ sheet }: { sheet: Sheet }) {
   const classKey = caster?.cls.key ?? null;
   const maxLevel = caster?.maxCircle ?? 0;
   const edition = character?.edition;
-  const available = useSrd(learning && classKey ? `spells:${classKey}:${maxLevel}:${edition}` : null, () =>
-    srd.spells(classKey!, maxLevel, edition),
-  );
+  const available = useSpells(learning && classKey, maxLevel, edition);
   if (!character || !derived) return null;
   const { castAbility, magic, slots, pact, casters, spells } = derived;
   const used = character.spellcasting.slotsUsed;

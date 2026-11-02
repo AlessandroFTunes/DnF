@@ -6,7 +6,7 @@ import { Chip, OptionCard, spacing, typography, useRpgTheme } from '@dnf/ui-reac
 import { InfoRow, StepScreen } from '../components/StepScreen';
 import { LoadState, SectionLabel } from '../../../components';
 import { useCharacterDraft } from '../functions/draft';
-import { srd, tr, useSrd } from '../../srd/functions';
+import { tr, useSpecies } from '../../srd/functions';
 import { useCreation } from '../functions/useCreation';
 import { abilityShort } from '../functions/labels';
 
@@ -15,7 +15,7 @@ export default function SpeciesPage() {
   const { draft, setSpecies } = useCharacterDraft();
   const { skills, languages } = useCreation();
   const edition = draft.edition;
-  const species = useSrd(edition && `species:${edition}`, () => srd.species(edition!));
+  const species = useSpecies(edition);
 
   const groups = species.status === 'ready' ? species.data : [];
   // A escolha pode ser a espécie base ou uma subespécie dela.

@@ -35,7 +35,7 @@ import { ABILITY_LABEL, subclassOrigin } from '../../../character-create/functio
 import { LevelUpCelebration, type LevelUpGain } from '../../animations/LevelUpCelebration';
 import { ThemeHold } from '../../animations/themeBlend';
 import type { Sheet, SheetData } from '../../functions/useSheet';
-import { srd, tr, useSrd } from '../../../srd/functions';
+import { tr, useClasses, useItems, useSubclasses } from '../../../srd/functions';
 
 /** A árvore é sempre noturna (céu estilo Skyrim), nos dois temas. */
 const SKY = {
@@ -212,11 +212,11 @@ function ProgressionView({ sheet, derived }: { sheet: Sheet; derived: SheetData 
   const [saving, setSaving] = useState(false);
 
   const canLevel = isOwner && character.level < MAX_LEVEL;
-  const allClassesQ = useSrd(canLevel ? `classes:${character.edition}` : null, () => srd.classes(character.edition));
+  const allClassesQ = useClasses(canLevel && character.edition);
   const allClasses = allClassesQ.status === 'ready' ? allClassesQ.data : [];
-  const newSubclassesQ = useSrd(newClassKey && `subclasses:${newClassKey}`, () => srd.subclasses(newClassKey!));
+  const newSubclassesQ = useSubclasses(newClassKey);
   const newClass = (newClassKey && allClasses.find((c) => c.key === newClassKey)) || null;
-  const itemsQ = useSrd(newClass ? `items:${character.edition}` : null, () => srd.items(character.edition));
+  const itemsQ = useItems(newClass && character.edition);
 
   const owned: ClassView[] = derived.classes.map((c, index) => ({ index, ...c }));
   const newView: ClassView | null = (() => {

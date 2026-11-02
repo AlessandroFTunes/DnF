@@ -28,7 +28,7 @@ import {
   type SrdSpecies,
 } from '@dnf/sdk/srd';
 import { useSession } from '../../auth/functions/hook.session';
-import { spellsByKey, srd, useSrd } from '../../srd/functions';
+import { useBackgrounds, useClassDetails, useFeats, useItems, useLanguages, useMulticlassSlots, useSpecies, useSpellsByKeys, useSubclassesOf } from '../../srd/functions';
 import { persistentCache } from '../../cache/functions/persistent-cache';
 
 type Patch = Omit<Parameters<typeof Character.update>[0], 'id'>;
@@ -99,27 +99,25 @@ export function useSheet(id: string) {
   const level = character?.level ?? 1;
 
   // Multiclasse: uma consulta para todas as classes do personagem (na ordem de `character.classes`).
-  const classQ = useSrd(classesID ? `classDetails:${classesID}` : null, () => Promise.all(classKeys.map((k) => srd.classDetail(k))));
-  const subclassesQ = useSrd(classesID ? `subclassesOf:${classesID}` : null, () => Promise.all(classKeys.map((k) => srd.subclasses(k))));
+  const classQ = useClassDetails(classKeys);
+  const subclassesQ = useSubclassesOf(classKeys);
   // Ao entrar numa classe nova, a consulta muda de chave e volta a carregar: até chegar, a ficha segue com as
   // classes já carregadas (a árvore não desmonta no meio da comemoração do nível).
   const [loadedClasses, setLoadedClasses] = useState<{ id: string; data: SrdClassDetail[] } | null>(null);
   if (classQ.status === 'ready' && loadedClasses?.id !== classesID) setLoadedClasses({ id: classesID, data: classQ.data });
   const classDetails = classQ.status === 'ready' ? classQ.data : (loadedClasses?.data ?? null);
-  const multiclassQ = useSrd(edition && classKeys.length > 1 ? `multiclassSlots:${edition}` : null, () => srd.multiclassSlots(edition!));
-  const speciesQ = useSrd(edition && `species:${edition}`, () => srd.species(edition!));
-  const backgroundsQ = useSrd(edition && `backgrounds:${edition}`, () => srd.backgrounds(edition!));
-  const languagesQ = useSrd('languages', () => srd.languages());
-  const featsQ = useSrd(edition && `feats:${edition}`, () => srd.feats(edition!));
+  const multiclassQ = useMulticlassSlots(classKeys.length > 1 && edition);
+  const speciesQ = useSpecies(edition);
+  const backgroundsQ = useBackgrounds(edition);
+  const languagesQ = useLanguages();
+  const featsQ = useFeats(edition);
   const itemKeys = character?.equipment.items.map((i) => i.key) ?? [];
   // Os itens saem da lista da edição (já baixada ao abrir o app): mudar o inventário não busca nada.
-  const itemsQ = useSrd(edition && itemKeys.length ? `items:${edition}` : null, () => srd.items(edition!));
+  const itemsQ = useItems(itemKeys.length > 0 && edition);
   // Nomes das ferramentas guardadas (ex.: as da multiclasse) vêm da lista da edição.
-  const toolsQ = useSrd(edition && character?.proficiencies.tools.length ? `items:${edition}` : null, () => srd.items(edition!));
+  const toolsQ = useItems(!!character?.proficiencies.tools.length && edition);
   const spellKeys = character?.spellcasting.spells.map((s) => s.key) ?? [];
-  const spellsQ = useSrd(spellKeys.length ? `spellsByKey:${[...spellKeys].sort().join(',')}` : null, () =>
-    spellsByKey(spellKeys),
-  );
+  const spellsQ = useSpellsByKeys(spellKeys);
 
   const derived = useMemo(() => {
     if (!character || !classDetails) return null;

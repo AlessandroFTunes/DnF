@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Cinzel_600SemiBold, Cinzel_700Bold, Cinzel_800ExtraBold } from '@expo-google-fonts/cinzel';
 import { fonts, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { useSession } from '../../auth/functions/hook.session';
+import { queryClient } from '../../../query-client';
 import { prefetchSrd } from '../../srd/functions';
 import { OpeningDie, SPLASH_IMAGE_WIDTH } from '../animations/OpeningDie';
 
@@ -44,7 +46,7 @@ export default function RootLayout() {
 
   const signedIn = status === 'signedIn';
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: theme.surface },
@@ -70,7 +72,7 @@ export default function RootLayout() {
         </Stack.Protected>
       </Stack>
       <StatusBar style="light" />
-    </>
+    </QueryClientProvider>
   );
 }
 
