@@ -3,7 +3,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Character } from '@dnf/core/character';
 import {
   Button,
   Chip,
@@ -30,6 +29,7 @@ import { Tables } from '../components/sections/Tables';
 import { ThemeHold, useBlend } from '../animations/themeBlend';
 import { useSheet, type Sheet } from '../functions/useSheet';
 import { tr } from '../../srd/functions';
+import { useRemoveCharacter } from '../functions/queries';
 
 type TabId = 'sheet' | 'progression' | 'story' | 'tables';
 
@@ -228,6 +228,7 @@ function SheetScreen({ sheet }: { sheet: Sheet }) {
 function Header({ sheet, onExit, onDeleted }: { sheet: Sheet; onExit: () => void; onDeleted: () => void }) {
   const theme = useRpgTheme();
   const { character, derived } = sheet;
+  const removeCharacter = useRemoveCharacter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteState, setDeleteState] = useState<'idle' | 'confirming' | 'deleting' | 'error'>('idle');
 
@@ -248,7 +249,7 @@ function Header({ sheet, onExit, onDeleted }: { sheet: Sheet; onExit: () => void
     }
     setDeleteState('deleting');
     try {
-      await Character.remove(character.id);
+      await removeCharacter(character.id);
       onDeleted();
     } catch {
       setDeleteState('error');

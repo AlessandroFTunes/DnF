@@ -3,11 +3,11 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Mesa } from '@dnf/core/mesa';
 import { DiferenteKey } from '@dnf/core/util';
 import { Button, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { FooterBar, Header, PageHeading, SectionLabel, TilePicker } from '../../../components';
 import { EDITION_INFO } from '../../character-create/functions/labels';
+import { useCreateMesa } from '../functions/queries';
 
 /** Mestre cria a mesa: nome, edição e um recado para os jogadores. */
 export default function NewMesaPage() {
@@ -16,6 +16,7 @@ export default function NewMesaPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [edition, setEdition] = useState<DiferenteKey.Edition | null>(null);
+  const createMesa = useCreateMesa();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +25,7 @@ export default function NewMesaPage() {
     setSaving(true);
     setError(null);
     try {
-      const mesa = await Mesa.create({ name: name.trim(), edition, description: description.trim() });
+      const mesa = await createMesa({ name: name.trim(), edition, description: description.trim() });
       router.replace(`/mesa/${mesa.id}`);
     } catch {
       setError('Não deu para criar a mesa. Tente de novo.');

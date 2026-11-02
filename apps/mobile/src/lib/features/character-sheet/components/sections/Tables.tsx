@@ -1,31 +1,19 @@
-import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Mesa } from '@dnf/core/mesa';
 import { Button, DnfSpinner, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { Panel } from '../components';
 import type { Sheet } from '../../functions/useSheet';
+import { useMesasOfCharacter } from '../../../mesa/functions/queries';
 
 /** Mesas em que o personagem está, e o atalho para entrar em outra. */
 export function Tables({ sheet }: { sheet: Sheet }) {
   const theme = useRpgTheme();
   const router = useRouter();
   const { character, isOwner } = sheet;
-  const [list, setList] = useState<{ memberID: string; mesa: Mesa.Info }[] | null>(null);
-
-  const characterID = character?.id;
-  useEffect(() => {
-    if (!characterID) return;
-    let active = true;
-    Mesa.ofCharacter(characterID).then(
-      (found) => active && setList(found),
-      () => active && setList([]),
-    );
-    return () => {
-      active = false;
-    };
-  }, [characterID]);
+  const tables = useMesasOfCharacter(character?.id);
+  // Carregando: spinner. Falhou (ex.: sem rede e nada guardado): mostra como "nenhuma mesa".
+  const list = tables.status === 'ready' ? tables.data : tables.status === 'error' ? [] : null;
 
   if (!character) return null;
 

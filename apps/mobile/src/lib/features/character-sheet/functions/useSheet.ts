@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { abilityModifier, Character, proficiencyBonus, type Ability } from '@dnf/core/character';
 import {
   abilityFromName,
@@ -29,69 +29,23 @@ import {
 } from '@dnf/sdk/srd';
 import { useSession } from '../../auth/functions/hook.session';
 import { useBackgrounds, useClassDetails, useFeats, useItems, useLanguages, useMulticlassSlots, useSpecies, useSpellsByKeys, useSubclassesOf } from '../../srd/functions';
-import { persistentCache } from '../../cache/functions/persistent-cache';
-
-type Patch = Omit<Parameters<typeof Character.update>[0], 'id'>;
-
-/** Chave do personagem no cache do aparelho (o mesmo do compêndio). */
-const cacheKey = (id: string) => `character:${id}`;
+import { useCharacter, useUpdateCharacter, type CharacterPatch } from './queries';
 
 /** Personagem + regras da 5e-FastAPI já aplicadas, e as ações da ficha (PV, espaços, itens…). */
 export function useSheet(id: string) {
   const session = useSession();
-  const [character, setCharacter] = useState<Character.Info | null>(null);
-  const [status, setStatus] = useState<'loading' | 'error' | 'missing' | 'ready'>('loading');
-  const [saving, setSaving] = useState(false);
-
-  const [attempt, setAttempt] = useState(0);
-  const load = useCallback(() => setAttempt((n) => n + 1), []);
-
-  useEffect(() => {
-    let active = true;
-    let fresh = false;
-    // Abre já com a última versão guardada no aparelho; a do servidor substitui quando chegar.
-    void persistentCache.get<Character.Info | null>(cacheKey(id)).then((saved) => {
-      if (!active || fresh || !saved) return;
-      setCharacter(saved);
-      setStatus('ready');
-    });
-    Character.fromID(id).then(
-      (found) => {
-        if (!active) return;
-        fresh = true;
-        setCharacter(found);
-        setStatus(found ? 'ready' : 'missing');
-        void persistentCache.set(cacheKey(id), found);
-      },
-      // Sem rede: se a versão guardada já está na tela, segue com ela.
-      () => active && setStatus((current) => (current === 'ready' ? current : 'error')),
-    );
-    return () => {
-      active = false;
-    };
-  }, [id, attempt]);
-
-  /** Salva uma mudança; a tela atualiza na hora e volta atrás se o servidor recusar. Diz se salvou. */
+  // Abre já com o último estado guardado no aparelho (ou o da Home); o do servidor substitui quando chegar.
+  const characterQ = useCharacter(id);
+  const character = characterQ.status === 'ready' ? characterQ.data : null;
+  const status = characterQ.status === 'ready' ? (characterQ.data ? 'ready' : 'missing') : characterQ.status;
+  // Salva com atualização otimista; a tela volta atrás se o servidor recusar. `save` diz se salvou.
+  const { save: saveCharacter, saving } = useUpdateCharacter(id);
   const save = useCallback(
-    async (patch: Patch, optimistic?: (c: Character.Info) => Character.Info): Promise<boolean> => {
-      if (!character) return false;
-      const previous = character;
-      if (optimistic) setCharacter(optimistic(character));
-      setSaving(true);
-      try {
-        const updated = await Character.update({ id: character.id, ...patch });
-        setCharacter(updated);
-        void persistentCache.set(cacheKey(updated.id), updated);
-        return true;
-      } catch {
-        setCharacter(previous);
-        return false;
-      } finally {
-        setSaving(false);
-      }
-    },
-    [character],
+    async (patch: CharacterPatch, optimistic?: (c: Character.Info) => Character.Info): Promise<boolean> =>
+      character ? saveCharacter(patch, optimistic) : false,
+    [character, saveCharacter],
   );
+  const load = characterQ.retry;
 
   const edition = character?.edition ?? null;
   const classKeys = character?.classes.map((c) => c.classKey) ?? [];

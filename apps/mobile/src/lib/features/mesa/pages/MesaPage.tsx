@@ -1,54 +1,39 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Mesa } from '@dnf/core/mesa';
+import type { Mesa } from '@dnf/core/mesa';
 import { Button, DnfSpinner, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { Badge, Header, HighlightCard, ListCard, PageHeading } from '../../../components';
 import { classIcon } from '../../character-create/functions/labels';
 import { formatCode } from '../functions/code';
 import { useSession } from '../../auth/functions/hook.session';
 import { tr, useClasses } from '../../srd/functions';
+import { useMesa, useMesaMembers, useMesaRealtime, useNewInviteCode, useRemoveMember, useRemoveMesa } from '../functions/queries';
+
+const NO_MEMBERS: Mesa.Member[] = [];
 
 export default function MesaPage() {
   const theme = useRpgTheme();
   const router = useRouter();
   const session = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [mesa, setMesa] = useState<Mesa.Info | null>(null);
-  const [members, setMembers] = useState<Mesa.Member[]>([]);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'missing'>('loading');
+  const mesaQ = useMesa(id);
+  const membersQ = useMesaMembers(id);
+  const newInviteCode = useNewInviteCode();
+  const removeMember = useRemoveMember();
+  const removeMesa = useRemoveMesa();
   const [refreshing, setRefreshing] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const [found, list] = await Promise.all([Mesa.fromID(id), Mesa.members(id)]);
-      setMesa(found);
-      setMembers(list);
-      setStatus(found ? 'ready' : 'missing');
-    } catch {
-      setStatus((s) => (s === 'ready' ? s : 'error'));
-    }
-  }, [id]);
+  // A mesa se atualiza sozinha pelo realtime (quem entra, sai ou muda o PV), enquanto a tela está aberta.
+  useMesaRealtime(id);
 
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-      // A mesa se atualiza sozinha pelo realtime (quem entra, sai ou muda o PV), enquanto a tela está aberta.
-      let stop: (() => Promise<void>) | undefined;
-      let closed = false;
-      Mesa.watch(id, () => void load()).then(
-        (unsubscribe) => (closed ? void unsubscribe() : (stop = unsubscribe)),
-        () => {}, // sem realtime: fica o que carregou e o "puxar para atualizar"
-      );
-      return () => {
-        closed = true;
-        void stop?.();
-      };
-    }, [id, load]),
-  );
+  const mesa = mesaQ.status === 'ready' ? mesaQ.data : null;
+  const members = membersQ.status === 'ready' ? membersQ.data : NO_MEMBERS;
+  const status: 'loading' | 'ready' | 'error' | 'missing' =
+    mesaQ.status !== 'ready' ? mesaQ.status : !mesa ? 'missing' : membersQ.status === 'ready' ? 'ready' : membersQ.status;
 
   const userID = session.status === 'signedIn' ? session.session.userID : null;
   const isGM = !!mesa && mesa.gmID === userID;
@@ -98,7 +83,7 @@ export default function MesaPage() {
             refreshing={refreshing}
             onRefresh={async () => {
               setRefreshing(true);
-              await load();
+              await Promise.all([mesaQ.refresh(), membersQ.refresh()]);
               setRefreshing(false);
             }}
             tintColor={theme.accent}
@@ -128,7 +113,7 @@ export default function MesaPage() {
               <Button
                 label={confirming === 'code' ? 'Confirmar' : 'Novo código'}
                 variant="secondary"
-                onPress={() => confirmThen('code', async () => setMesa(await Mesa.newInviteCode(mesa.id)))}
+                onPress={() => confirmThen('code', async () => void (await newInviteCode(mesa.id)))}
                 icon={(c) => <MaterialCommunityIcons name="refresh" size={18} color={c} />}
               />
             </View>
@@ -161,9 +146,8 @@ export default function MesaPage() {
               actionLabel={isGM ? (confirming === m.id ? 'Confirmar remoção' : 'Remover') : confirming === m.id ? 'Confirmar saída' : 'Sair da mesa'}
               onAction={() =>
                 confirmThen(m.id, async () => {
-                  await Mesa.removeMember(m.id);
-                  if (isGM) await load();
-                  else back();
+                  await removeMember(m.id);
+                  if (!isGM) back();
                 })
               }
             />
@@ -176,7 +160,7 @@ export default function MesaPage() {
             variant="ghost"
             onPress={() =>
               confirmThen('delete', async () => {
-                await Mesa.remove(mesa.id);
+                await removeMesa(mesa.id);
                 back();
               })
             }

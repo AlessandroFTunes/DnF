@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Character } from '@dnf/core/character';
-import { Mesa } from '@dnf/core/mesa';
+import type { Mesa } from '@dnf/core/mesa';
 import { ClientResponseError } from '@dnf/core/pocketbase';
 import { Button, DnfSpinner, fonts, OptionCard, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { FooterBar, Header, HighlightCard, PageHeading, SectionLabel } from '../../../components';
 import { classIcon } from '../../character-create/functions/labels';
 import { formatCode } from '../functions/code';
 import { useClasses } from '../../srd/functions';
+import { useCharacters } from '../../character-sheet/functions/queries';
+import { useFindMesa, useJoinMesa } from '../functions/queries';
 
 /** Jogador entra numa mesa: digita o código, vê a mesa e escolhe o personagem da mesma edição. */
 export default function JoinMesaPage() {
@@ -19,7 +20,10 @@ export default function JoinMesaPage() {
   const params = useLocalSearchParams<{ characterID?: string; code?: string }>();
   const [code, setCode] = useState(params.code ?? '');
   const [mesa, setMesa] = useState<Mesa.Info | null>(null);
-  const [characters, setCharacters] = useState<Character.Info[] | null>(null);
+  const charactersQ = useCharacters();
+  const characters = charactersQ.status === 'ready' ? charactersQ.data : charactersQ.status === 'error' ? [] : null;
+  const findMesa = useFindMesa();
+  const joinMesa = useJoinMesa();
   const [characterID, setCharacterID] = useState<string | null>(params.characterID ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,17 +34,11 @@ export default function JoinMesaPage() {
 
   const clean = code.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 8);
 
-  useEffect(() => {
-    Character.list({ pageSize: 100 })
-      .then((page) => setCharacters(page.data))
-      .catch(() => setCharacters([]));
-  }, []);
-
   async function find() {
     setBusy(true);
     setError(null);
     try {
-      const found = await Mesa.fromInviteCode(clean);
+      const found = await findMesa(clean);
       if (!found) setError('Nenhuma mesa com esse código. Confira com o mestre.');
       setMesa(found);
     } catch {
@@ -55,7 +53,7 @@ export default function JoinMesaPage() {
     setBusy(true);
     setError(null);
     try {
-      await Mesa.join({ inviteCode: clean, characterID });
+      await joinMesa({ inviteCode: clean, characterID });
       router.replace(`/mesa/${mesa.id}`);
     } catch (e) {
       setError(

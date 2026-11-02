@@ -1,6 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import type { SrdClassDetail, SrdEdition, SrdSpell } from '@dnf/sdk/srd';
 import { queryClient } from '../../../query-client';
+import { useQueryState, type QueryState } from '../../../query-state';
 import { cache, srd, srdKey } from './client';
 
 /**
@@ -9,10 +11,7 @@ import { cache, srd, srdKey } from './client';
  * deixam a consulta parada (ex.: edição ainda não escolhida). Consulta nova: crie a definição em `defs` e o hook.
  */
 
-export type SrdState<T> =
-  | { status: 'loading'; retry: () => void }
-  | { status: 'error'; retry: () => void }
-  | { status: 'ready'; data: T; retry: () => void };
+export type SrdState<T> = QueryState<T>;
 
 type Maybe<T> = T | null | undefined | false | '';
 
@@ -27,10 +26,36 @@ function useSrd<T>(key: string | null, load: () => Promise<T>): SrdState<T> {
     queryFn: () => cache.stored(key as string, load),
     enabled: !!key,
   });
-  const retry = () => void query.refetch();
-  if (!key || query.status === 'pending') return { status: 'loading', retry };
-  if (query.status === 'error') return { status: 'error', retry };
-  return { status: 'ready', data: query.data as T, retry };
+  return useQueryState(query);
+}
+
+/**
+ * Várias consultas de uma vez, cada uma com a sua chave (`useQueries`): o que já veio de outra tela não é
+ * buscado de novo, e uma nova (ex.: mais uma magia) não refaz as demais. Fica `loading` até todas chegarem.
+ */
+function useSrdMany<T>(items: { key: string; load: () => Promise<T> }[]): SrdState<T[]> {
+  const keys = items.map((i) => i.key);
+  const joined = keys.join('|');
+  const raw = useQueries({
+    queries: items.map(({ key, load }) => ({ queryKey: srdKey(key), queryFn: () => cache.stored(key, load) })),
+    combine: (results) => {
+      if (!results.length || results.some((r) => r.data === undefined)) {
+        return { failed: results.some((r) => r.isError && r.data === undefined), data: undefined as T[] | undefined };
+      }
+      return { failed: false, data: results.map((r) => r.data as T) };
+    },
+  });
+  return useMemo<SrdState<T[]>>(() => {
+    const refresh = () =>
+      queryClient.refetchQueries({
+        predicate: (q) => q.queryKey[0] === 'srd' && keys.includes(String(q.queryKey[1])) && q.state.status === 'error',
+      });
+    const retry = () => void refresh();
+    if (raw.data) return { status: 'ready', data: raw.data, retry, refresh };
+    return { status: raw.failed ? 'error' : 'loading', retry, refresh };
+    // As chaves identificam as consultas; `keys` é recriada a cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [raw, joined]);
 }
 
 /** Chave + busca de cada consulta, para os hooks e o `prefetchSrd` usarem as mesmas. */
@@ -66,16 +91,13 @@ export const useClass = (classKey: Maybe<string>) =>
 export const useSubclasses = (classKey: Maybe<string>) =>
   useSrd(classKey ? `subclasses:${classKey}` : null, () => srd.subclasses(classKey as string));
 
-/** Multiclasse: uma consulta para todas as classes (na ordem de `classKeys`). */
+/** Multiclasse: um detalhe por classe, na ordem de `classKeys` (compartilha o cache de `useClass`). */
 export const useClassDetails = (classKeys: string[]): SrdState<SrdClassDetail[]> =>
-  useSrd(classKeys.length ? `classDetails:${classKeys.join(',')}` : null, () =>
-    Promise.all(classKeys.map((k) => srd.classDetail(k))),
-  );
+  useSrdMany(classKeys.map((k) => ({ key: `class:${k}`, load: () => srd.classDetail(k) })));
 
+/** Subclasses de cada classe, na ordem de `classKeys` (compartilha o cache de `useSubclasses`). */
 export const useSubclassesOf = (classKeys: string[]): SrdState<SrdClassDetail[][]> =>
-  useSrd(classKeys.length ? `subclassesOf:${classKeys.join(',')}` : null, () =>
-    Promise.all(classKeys.map((k) => srd.subclasses(k))),
-  );
+  useSrdMany(classKeys.map((k) => ({ key: `subclasses:${k}`, load: () => srd.subclasses(k) })));
 
 export const useMulticlassSlots = (edition: Maybe<SrdEdition>) =>
   useSrd(edition ? `multiclassSlots:${edition}` : null, () => srd.multiclassSlots(edition as SrdEdition));
@@ -91,20 +113,19 @@ export const useSpells = (classKey: Maybe<string>, maxLevel: number, edition?: S
  * Magias por chave, cada uma guardada à parte: aprender uma magia nova não busca de novo as que já vieram.
  * Mesma ordem de `srd.spellsByKey` (círculo, depois nome).
  */
-async function spellsByKey(keys: string[]): Promise<SrdSpell[]> {
-  const found = await Promise.all(
-    [...new Set(keys)].map((key) =>
-      queryClient.fetchQuery({
-        queryKey: srdKey(`spell:${key}`),
-        queryFn: () => cache.stored(`spell:${key}`, async () => (await srd.spellsByKey([key]))[0] ?? null),
-      }),
-    ),
+export function useSpellsByKeys(keys: string[]): SrdState<SrdSpell[]> {
+  const state = useSrdMany(
+    [...new Set(keys)].map((key) => ({
+      key: `spell:${key}`,
+      load: async () => (await srd.spellsByKey([key]))[0] ?? null,
+    })),
   );
-  return found.filter((s): s is SrdSpell => !!s).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+  return useMemo<SrdState<SrdSpell[]>>(() => {
+    if (state.status !== 'ready') return state;
+    const spells = state.data.filter((s): s is SrdSpell => !!s).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+    return { ...state, data: spells };
+  }, [state]);
 }
-
-export const useSpellsByKeys = (keys: string[]) =>
-  useSrd(keys.length ? `spellsByKey:${[...keys].sort().join(',')}` : null, () => spellsByKey(keys));
 
 // ── Ciclo de vida ────────────────────────────────────────────────────────────────────────────────────────
 /**

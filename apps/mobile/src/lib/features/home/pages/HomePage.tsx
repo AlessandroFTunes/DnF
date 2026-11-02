@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Character } from '@dnf/core/character';
 import { Button, D20, DnfLogo, DnfSpinner, fonts, mixColor, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
@@ -10,8 +10,8 @@ import { classIcon } from '../../character-create/functions/labels';
 import { HeroArt } from '../components/HeroArt';
 import { useSession } from '../../auth/functions/hook.session';
 import { tr, useClasses } from '../../srd/functions';
-
-type Load = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Character.Info[] };
+import { characterKeys, useCharacters, usePrefetchCharacter } from '../../character-sheet/functions/queries';
+import { useRefetchOnFocus } from '../../../query-state';
 
 /** Lado dos blocos de personagem; a curva do painel passa na metade da primeira fileira. */
 const TILE = 104;
@@ -34,26 +34,16 @@ export default function Home() {
   const session = useSession();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const [characters, setCharacters] = useState<Load>({ status: 'loading' });
+  const characters = useCharacters();
+  const prefetchCharacter = usePrefetchCharacter();
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchCharacters = useCallback(async () => {
-    await Character.list({ pageSize: 100 }).then(
-      (page) => setCharacters({ status: 'ready', data: page.data }),
-      () => setCharacters((current) => (current.status === 'ready' ? current : { status: 'error' })),
-    );
-  }, []);
-
-  // Recarrega ao voltar para a tela (ex.: depois de criar um personagem).
-  useFocusEffect(
-    useCallback(() => {
-      void fetchCharacters();
-    }, [fetchCharacters]),
-  );
+  // Recarrega ao voltar para a tela (ex.: depois de criar um personagem) se os dados já passaram do prazo.
+  useRefetchOnFocus(characterKeys.list);
 
   async function refresh() {
     setRefreshing(true);
-    await fetchCharacters();
+    await characters.refresh();
     setRefreshing(false);
   }
 
@@ -115,7 +105,7 @@ export default function Home() {
             <View style={[styles.state, styles.stateBelowArc]}>
               <Text style={[typography.heading, styles.centered, { color: theme.text }]}>Não deu para carregar</Text>
               <Text style={[typography.body, styles.centered, { color: theme.textMuted }]}>Confira sua conexão e tente de novo.</Text>
-              <Button label="Tentar de novo" variant="secondary" onPress={fetchCharacters} />
+              <Button label="Tentar de novo" variant="secondary" onPress={characters.retry} />
             </View>
           )}
 
@@ -123,7 +113,12 @@ export default function Home() {
             <>
               <View style={styles.grid}>
                 {characters.data.map((c) => (
-                  <CharacterTile key={c.id} character={c} onPress={() => router.push(`/character/${c.id}`)} />
+                  <CharacterTile
+                    key={c.id}
+                    character={c}
+                    onPressIn={() => prefetchCharacter(c.id)}
+                    onPress={() => router.push(`/character/${c.id}`)}
+                  />
                 ))}
                 <NewTile onPress={() => router.push('/character/new')} />
               </View>
@@ -165,7 +160,15 @@ export default function Home() {
   );
 }
 
-function CharacterTile({ character, onPress }: { character: Character.Info; onPress: () => void }) {
+function CharacterTile({
+  character,
+  onPress,
+  onPressIn,
+}: {
+  character: Character.Info;
+  onPress: () => void;
+  onPressIn: () => void;
+}) {
   const theme = useRpgTheme();
   const { edition } = character;
   const classKey = character.classes[0]?.classKey;
@@ -179,6 +182,7 @@ function CharacterTile({ character, onPress }: { character: Character.Info; onPr
   return (
     <Pressable
       onPress={onPress}
+      onPressIn={onPressIn}
       accessibilityRole="button"
       accessibilityLabel={`Abrir ficha de ${character.name}${className ? `, ${className}` : ''}, nível ${character.level}`}
       style={({ pressed }) => [styles.tileSlot, { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}

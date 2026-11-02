@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ABILITIES, abilityModifier, Character, proficiencyBonus } from '@dnf/core/character';
+import { ABILITIES, abilityModifier, proficiencyBonus } from '@dnf/core/character';
 import { ClientResponseError } from '@dnf/core/pocketbase';
 import { isWeaponProficient, skillBonus, weaponAttack } from '@dnf/sdk/srd';
 import { fonts, formatBonus, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
@@ -10,6 +10,7 @@ import { StepScreen } from '../components/StepScreen';
 import { LoadState, SectionLabel } from '../../../components';
 import { buildCharacter, startingHitPoints } from '../functions/build';
 import { useCharacterDraft } from '../functions/draft';
+import { useCreateCharacter } from '../../character-sheet/functions/queries';
 import { buildInventory, inventoryArmorClass } from '../functions/inventory';
 import {
   ABILITY_LABEL,
@@ -31,6 +32,7 @@ export default function ReviewPage() {
   const { reset } = useCharacterDraft();
   const c = useCreation();
   const { draft, klass, scores, items, skills, cls, species, speciesChain, background, languages } = c;
+  const createCharacter = useCreateCharacter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const alignments = useAlignments();
@@ -61,7 +63,7 @@ export default function ReviewPage() {
     setSaving(true);
     setError(null);
     try {
-      const character = await Character.create(input);
+      const character = await createCharacter(input);
       router.dismissTo('/');
       router.push(`/character/${character.id}`);
       reset();

@@ -60,6 +60,26 @@ alcança. A ponte `core/piper-http/server.py` (só biblioteca padrão do Python)
 fala ao Piper e devolve o formato do `/tts`. O Piper não informa o tempo de cada letra: a ponte estima pela
 duração, com pausa maior na pontuação. No NAS ele gera mais ou menos em tempo real (frase curta ≈ 3 s).
 
+### Dados do app: TanStack Query
+
+Toda leitura e gravação passa por hooks do TanStack Query, em `features/<feature>/functions/queries.ts`. As telas
+só chamam os hooks (`useClasses(edition)`, `useCharacter(id)`, `useMesas()`…) e leem `loading`/`error`/`ready`
+(`QueryState` em `lib/query-state.ts`); nada de `useEffect` buscando, chave de cache ou `srd.*`/`Character.*` na tela.
+
+| Onde | O quê |
+|---|---|
+| `lib/query-client.ts` | `QueryClient` único, `PLAYER_STALE_TIME`, `PLAYER_CACHE_VERSION`, rede (NetInfo) e foco (AppState) no celular, `clearPlayerData()` |
+| `features/srd/functions/queries.ts` | Compêndio (`['srd', chave]`): fresco para sempre, cache em disco do `Cache` do core |
+| `features/character-sheet/functions/queries.ts` | Personagens (`['character', …]`): `useCharacters`, `useCharacter`, `useUpdateCharacter` (otimista), `useCreateCharacter`, `useRemoveCharacter` |
+| `features/mesa/functions/queries.ts` | Mesas (`['mesa', …]`): listas, ações e `useMesaRealtime(id)` (o evento do PocketBase invalida a mesa) |
+| `features/cache/functions/query-persister.ts` | Guarda só `character` e `mesa` no aparelho (7 dias): o app abre com o último estado |
+
+- Dados do jogador têm `staleTime` de 30 s e buscam de novo ao voltar à tela (`useRefetchOnFocus`), ao voltar o foco e ao reconectar.
+  Sem rede, uma gravação espera e segue sozinha quando a conexão volta (não sobrevive a fechar o app).
+- Mutations invalidam o que mudou (`invalidateQueries`); a ficha usa atualização otimista com volta atrás se o servidor recusar.
+- Mudou o formato de `Character.Info` ou `Mesa.Info`? Aumente `PLAYER_CACHE_VERSION`. Logout e token recusado chamam `clearPlayerData()`.
+- Devtools: `QueryDevtools.web.tsx` (só web, em desenvolvimento).
+
 ## API de regras (5e-FastAPI)
 
 As regras de D&D (classes, espécies, antecedentes, talentos, magias, equipamento) vêm da

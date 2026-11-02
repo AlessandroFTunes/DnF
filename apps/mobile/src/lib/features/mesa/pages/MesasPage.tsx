@@ -1,41 +1,29 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Mesa } from '@dnf/core/mesa';
 import { Button, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { FooterBar, Header, ListCard, LoadState } from '../../../components';
 import { useSession } from '../../auth/functions/hook.session';
-
-type Load = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: Mesa.Info[] };
+import { useRefetchOnFocus } from '../../../query-state';
+import { mesaKeys, useMesas } from '../functions/queries';
 
 /** Lista de mesas do jogador (aberta pelo nav da Home). */
 export default function MesasPage() {
   const theme = useRpgTheme();
   const router = useRouter();
   const session = useSession();
-  const [tables, setTables] = useState<Load>({ status: 'loading' });
+  const tables = useMesas();
   const [refreshing, setRefreshing] = useState(false);
   const userID = session.status === 'signedIn' ? session.session.userID : null;
 
-  const fetchTables = useCallback(async () => {
-    await Mesa.list({ pageSize: 100 }).then(
-      (page) => setTables({ status: 'ready', data: page.data }),
-      () => setTables((current) => (current.status === 'ready' ? current : { status: 'error' })),
-    );
-  }, []);
-
-  // Recarrega ao voltar para a tela (ex.: depois de criar ou entrar numa mesa).
-  useFocusEffect(
-    useCallback(() => {
-      void fetchTables();
-    }, [fetchTables]),
-  );
+  // Recarrega ao voltar para a tela (ex.: depois de criar ou entrar numa mesa) se os dados já passaram do prazo.
+  useRefetchOnFocus(mesaKeys.list);
 
   async function refresh() {
     setRefreshing(true);
-    await fetchTables();
+    await tables.refresh();
     setRefreshing(false);
   }
 
@@ -46,7 +34,7 @@ export default function MesasPage() {
       <Header action={{ kind: 'back', onPress: back }} title="Mesas" titleStyle="heading" />
 
       {tables.status !== 'ready' && (
-        <LoadState fill status={tables.status} onRetry={fetchTables} loadingText="" errorText="Não deu para carregar. Confira sua conexão." />
+        <LoadState fill status={tables.status} onRetry={tables.retry} loadingText="" errorText="Não deu para carregar. Confira sua conexão." />
       )}
 
       {tables.status === 'ready' && (

@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Cinzel_600SemiBold, Cinzel_700Bold, Cinzel_800ExtraBold } from '@expo-google-fonts/cinzel';
 import { fonts, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { useSession } from '../../auth/functions/hook.session';
-import { queryClient } from '../../../query-client';
+import { isPlayerQuery, PLAYER_CACHE_VERSION, PLAYER_MAX_AGE, queryClient } from '../../../query-client';
+import { QueryDevtools } from '../../cache/functions/QueryDevtools';
+import { queryPersister } from '../../cache/functions/query-persister';
 import { prefetchSrd } from '../../srd/functions';
 import { OpeningDie, SPLASH_IMAGE_WIDTH } from '../animations/OpeningDie';
 
@@ -46,7 +48,16 @@ export default function RootLayout() {
 
   const signedIn = status === 'signedIn';
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: queryPersister,
+        maxAge: PLAYER_MAX_AGE,
+        buster: PLAYER_CACHE_VERSION,
+        // Só os dados do jogador vão para o aparelho; o compêndio já tem o próprio cache em disco.
+        dehydrateOptions: { shouldDehydrateQuery: (q) => isPlayerQuery(q) && q.state.status === 'success', shouldDehydrateMutation: () => false },
+      }}
+    >
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: theme.surface },
@@ -72,7 +83,8 @@ export default function RootLayout() {
         </Stack.Protected>
       </Stack>
       <StatusBar style="light" />
-    </QueryClientProvider>
+      <QueryDevtools />
+    </PersistQueryClientProvider>
   );
 }
 

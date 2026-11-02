@@ -5,6 +5,8 @@ import { User } from '@dnf/core/user';
 import { PocketBase, ClientResponseError } from '@dnf/core/pocketbase';
 import { Assert, fn } from '@dnf/core/util';
 import { cookieSession } from '../../../pocketbase';
+import { clearPlayerData } from '../../../query-client';
+import { queryPersister } from '../../cache/functions/query-persister';
 
 type SessionState =
   | { status: 'loading' }
@@ -77,6 +79,11 @@ let started = false;
 function sync() {
   const session = User.session();
   state = session ? { status: 'signedIn', session } : { status: 'signedOut' };
+  // Saiu (ou o token foi recusado): personagens e mesas guardados são de quem saiu e não podem aparecer para o próximo.
+  if (!session) {
+    clearPlayerData();
+    void queryPersister.removeClient();
+  }
   listeners.forEach((listener) => listener());
 }
 
