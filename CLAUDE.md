@@ -134,3 +134,16 @@ ssh ale@nas-ale 'cd /srv/apps/dnf-db && docker compose restart dnf-db'
 - O `.env` do PocketBase (chaves dos provedores de voz, `TTS_PROVIDERS` e o token do Cloudflare Access) fica só no NAS, em `/srv/apps/dnf-db/.env`.
 - Depois de reiniciar, o Traefik só volta a rotear quando o container fica `healthy` (~30 s). Até lá,
   `dnf-db.developale.com` responde 404.
+
+### Segurança do NAS (aplicada em 2026-11-01)
+
+- O HTTPS termina na Cloudflare: o `cloudflared` (no host) fala com o Traefik por `[::1]:80`. A porta 80 só
+  escuta em `127.0.0.1` e `[::1]`; o Traefik só confia nos cabeçalhos `X-Forwarded-*` de IPs do próprio NAS.
+- O painel `/_/` e `/api/collections/_superusers` do `dnf-db` respondem 403 pelo domínio. Para administrar:
+  `ssh -L 8091:127.0.0.1:8091 ale@nas-ale` e abrir `http://localhost:8091/_/`.
+- Rate limit do Traefik (por `CF-Connecting-IP`), nos labels do `dnf-db`: geral 600/min, login e `email-exists`
+  20/min, `/tts` 10/min, busca de mesa por código 10/min.
+- `pb_hooks` e `pb_migrations` são montados somente leitura no container: mude o schema só pelas migrations do repo.
+- O `dnf-db` roda como uid 10001 (dono de `pb_data`). Dozzle, o outro PocketBase e o projects-www publicam a porta só em
+  loopback; o Directus (8056) continua na rede local porque o `PUBLIC_URL` dele usa o IP da LAN.
+- Cada arquivo alterado no NAS tem um `.bak-seguranca*`, `.bak-nonroot-*` ou `.bak-portas-*` ao lado.

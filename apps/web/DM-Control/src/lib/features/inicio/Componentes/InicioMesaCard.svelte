@@ -49,6 +49,7 @@
 		<p>{texto}</p>
 		<div class="acoes">
 			<a class="abrir" href={resolve('/mesa/[id]/grid', { id: mesa.id })}>Abrir mesa</a>
+			<a class="rastreio" href={resolve('/mesa/[id]/rastreio', { id: mesa.id })}>Testar rastreio</a>
 			<button type="button" onclick={copiar}>
 				{copiado ? 'Código copiado' : `Copiar código · ${mesa.inviteCode}`}
 			</button>
@@ -127,7 +128,8 @@
 		filter: brightness(1.08);
 	}
 
-	button {
+	button,
+	.rastreio {
 		padding: 0.5rem 1rem;
 		border: 1px solid rgb(255 255 255 / 0.25);
 		border-radius: 0.5rem;
@@ -138,12 +140,18 @@
 		cursor: pointer;
 	}
 
-	button:hover {
+	.rastreio {
+		text-decoration: none;
+	}
+
+	button:hover,
+	.rastreio:hover {
 		border-color: var(--gold);
 	}
 
 	button:focus-visible,
-	.abrir:focus-visible {
+	.abrir:focus-visible,
+	.rastreio:focus-visible {
 		outline: 2px solid var(--gold);
 		outline-offset: 2px;
 	}

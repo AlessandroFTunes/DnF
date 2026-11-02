@@ -49,3 +49,19 @@ describe('TrackingOpenCv', () => {
     detector.dispose();
   });
 });
+
+describe('TrackingOpenCv.renderMarker', () => {
+  test('a imagem gerada é detectada com o mesmo id', async () => {
+    const detector = await TrackingOpenCv.create();
+    const marker = await TrackingOpenCv.renderMarker(21, 240);
+    expect(marker.width).toBe(240);
+
+    // Cola o marcador num frame maior, como a câmera veria.
+    const frame: Tracking.Frame = { data: new Uint8ClampedArray(400 * 400 * 4).fill(255), width: 400, height: 400 };
+    for (let y = 0; y < 240; y++) {
+      frame.data.set(marker.data.subarray(y * 240 * 4, (y + 1) * 240 * 4), ((y + 80) * 400 + 80) * 4);
+    }
+    expect(detector.detect(frame).map((m) => m.id)).toEqual([21]);
+    detector.dispose();
+  });
+});

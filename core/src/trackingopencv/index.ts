@@ -28,8 +28,11 @@ export namespace TrackingOpenCv {
 
   // O pacote não tipa o módulo `aruco`; só o que usamos aqui.
   interface Mat {
+    data: Uint8Array;
     data32F: Float32Array;
     data32S: Int32Array;
+    roi(rect: unknown): Mat;
+    copyTo(dst: Mat): void;
     delete(): void;
   }
   interface MatVector {
@@ -41,14 +44,25 @@ export namespace TrackingOpenCv {
     detectMarkers(image: Mat, corners: MatVector, ids: Mat, rejected: MatVector): void;
     delete(): void;
   }
+  interface Dictionary_ {
+    generateImageMarker(id: number, size: number, image: Mat, borderBits: number): void;
+    delete(): void;
+  }
   interface Cv {
-    Mat: new () => Mat;
+    Mat: {
+      new (): Mat;
+      new (rows: number, cols: number, type: number, scalar: unknown): Mat;
+    };
+    Scalar: new (...values: number[]) => unknown;
+    Rect: new (x: number, y: number, width: number, height: number) => unknown;
+    CV_8UC1: number;
+    COLOR_GRAY2RGBA: number;
     MatVector: new () => MatVector;
     CV_8UC4: number;
     COLOR_RGBA2GRAY: number;
     matFromArray(rows: number, cols: number, type: number, data: ArrayLike<number>): Mat;
     cvtColor(src: Mat, dst: Mat, code: number): void;
-    getPredefinedDictionary(id: number): { delete(): void };
+    getPredefinedDictionary(id: number): Dictionary_;
     aruco_DetectorParameters: new () => { delete(): void };
     aruco_RefineParameters: new (min: number, rate: number, check: boolean) => { delete(): void };
     aruco_ArucoDetector: new (dictionary: unknown, params: unknown, refine: unknown) => Aruco;
@@ -63,6 +77,37 @@ export namespace TrackingOpenCv {
       (mod as unknown as { onRuntimeInitialized: () => void }).onRuntimeInitialized = resolve;
     });
     return mod;
+  }
+
+  /**
+   * Imagem de um marcador para exibir ou imprimir: quadrado de `size` px, RGBA, com margem branca ao redor
+   * (o detector precisa dela para achar a borda preta).
+   */
+  export async function renderMarker(
+    id: number,
+    size: number,
+    dictionaryName: Dictionary = 'DICT_4X4_50',
+  ): Promise<Tracking.Frame> {
+    const cv = await load();
+    const dictionary = cv.getPredefinedDictionary(cv[dictionaryName] as number);
+    const margem = Math.round(size / 6);
+    const lado = size - margem * 2;
+    const marker = new cv.Mat();
+    const gray = new cv.Mat(size, size, cv.CV_8UC1, new cv.Scalar(255));
+    const rgba = new cv.Mat();
+    try {
+      dictionary.generateImageMarker(id, lado, marker, 1);
+      const area = gray.roi(new cv.Rect(margem, margem, lado, lado));
+      marker.copyTo(area);
+      area.delete();
+      cv.cvtColor(gray, rgba, cv.COLOR_GRAY2RGBA);
+      return { data: new Uint8ClampedArray(rgba.data), width: size, height: size };
+    } finally {
+      marker.delete();
+      gray.delete();
+      rgba.delete();
+      dictionary.delete();
+    }
   }
 
   export async function create(options: Options = {}): Promise<Tracking.Detector> {

@@ -5,12 +5,16 @@
 // DND_API_URL troca o destino: no NAS é http://5e-fastapi:8000 (mesma rede Docker, sem Cloudflare nem token).
 // CACHE_URL (Webdis, a ponte HTTP do Redis) guarda as respostas por 1 dia para todos os jogadores. Sem ele, ou
 // se o Redis cair, repassa direto.
+// Só repassa os caminhos da API de regras ("api/v1/<recurso>/<id>…", letras minúsculas, números, "_" e "-"): o service
+// token não pode servir para chamar qualquer outra rota da API nem montar caminhos com "..".
 routerAdd(
   "GET",
   "/srd/{path...}",
   (e) => {
+    const route = e.request.pathValue("path");
+    if (!/^api\/v1\/[a-z0-9_-]+(\/[a-z0-9_-]+)*$/.test(route)) return e.json(404, { message: "Rota não encontrada." });
     const query = e.request.url.rawQuery;
-    const path = e.request.pathValue("path") + (query ? "?" + query : "");
+    const path = route + (query ? "?" + query : "");
     const cache = $os.getenv("CACHE_URL");
     const key = cache && cache + "/{cmd}/srd:" + $security.sha256(path);
 

@@ -6,6 +6,7 @@
 	import MesaPlayers from './MesaPlayers.svelte';
 	import MesaSobre from './MesaSobre.svelte';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import Camera from '@lucide/svelte/icons/camera';
 	import { resolve } from '$app/paths';
 	import MesaCard from './MesaCard.svelte';
 
@@ -34,6 +35,13 @@
 				texto="Grid com tokens, fog of war, iluminação dinâmica e desenhos, e a visão para mostrar aos jogadores."
 				href={resolve('/mesa/[id]/mapas', { id })}
 				acao="Abrir mapas"
+			/>
+			<MesaCard
+				titulo="Rastreio de tokens"
+				icone={Camera}
+				texto="Calibre a câmera na mesa e acompanhe os tokens reais, com marcadores ArUco."
+				href={resolve('/mesa/[id]/rastreio', { id })}
+				acao="Abrir rastreio"
 			/>
 			<MesaCard
 				titulo="Encontros rápidos"

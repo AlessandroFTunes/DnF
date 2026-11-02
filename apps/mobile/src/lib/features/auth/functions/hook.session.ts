@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { User } from '@dnf/core/user';
 import { PocketBase, ClientResponseError } from '@dnf/core/pocketbase';
 import { Assert, fn } from '@dnf/core/util';
-import '../../../pocketbase';
+import { cookieSession } from '../../../pocketbase';
 
 type SessionState =
   | { status: 'loading' }
@@ -57,7 +57,10 @@ export const signUp = fn(
 
 export function logout() {
   // eslint-disable-next-line react-hooks/rules-of-hooks -- PocketBase.use() devolve o cliente, não é hook do React.
-  PocketBase.use().authStore.clear();
+  const pb = PocketBase.use();
+  pb.authStore.clear();
+  // O cookie é httpOnly: só o servidor consegue apagá-lo.
+  if (cookieSession) void pb.send('/api/dnf/logout', { method: 'POST' }).catch(() => {});
 }
 
 /** Ao abrir o app: lê o token do Keychain e renova com o servidor. */
