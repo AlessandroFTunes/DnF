@@ -127,6 +127,20 @@ export function useSpellsByKeys(keys: string[]): SrdState<SrdSpell[]> {
   }, [state]);
 }
 
+/** Magias pelo nome (as sempre preparadas de domínios, patronos e círculos), uma consulta por nome. */
+export function useSpellsByNames(names: string[], edition: SrdEdition | null | undefined): SrdState<SrdSpell[]> {
+  const state = useSrdMany(
+    [...new Set(edition ? names : [])].map((name) => ({
+      key: `spellname:${edition}:${name}`,
+      load: async () => (await srd.spellsByName([name], edition ?? undefined))[0] ?? null,
+    })),
+  );
+  return useMemo<SrdState<SrdSpell[]>>(() => {
+    if (state.status !== 'ready') return state;
+    return { ...state, data: state.data.filter((s): s is SrdSpell => !!s) };
+  }, [state]);
+}
+
 // ── Ciclo de vida ────────────────────────────────────────────────────────────────────────────────────────
 /**
  * Abre o compêndio enquanto o app ainda está na splash: carrega (do disco ou da rede) as listas que as

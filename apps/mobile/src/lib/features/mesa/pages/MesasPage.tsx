@@ -7,6 +7,7 @@ import { Button, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { FooterBar, Header, ListCard, LoadState } from '../../../components';
 import { useSession } from '../../auth/functions/hook.session';
 import { useRefetchOnFocus } from '../../../query-state';
+import { mesaCover } from '../functions/cover';
 import { mesaKeys, useMesas } from '../functions/queries';
 
 /** Lista de mesas do jogador (aberta pelo nav da Home). */
@@ -27,11 +28,9 @@ export default function MesasPage() {
     setRefreshing(false);
   }
 
-  const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
-
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.surface }]} edges={['top', 'bottom']}>
-      <Header action={{ kind: 'back', onPress: back }} title="Mesas" titleStyle="heading" />
+    <SafeAreaView style={[styles.screen, { backgroundColor: theme.surface }]} edges={['top']}>
+      <Header title="Mesas" titleStyle="heading" />
 
       {tables.status !== 'ready' && (
         <LoadState fill status={tables.status} onRetry={tables.retry} loadingText="" errorText="Não deu para carregar. Confira sua conexão." />
@@ -62,6 +61,7 @@ export default function MesasPage() {
               title={item.name}
               subtitle={`${item.gmID === userID ? 'Você é o mestre' : 'Você é jogador'} · D&D ${item.edition}`}
               icon={item.gmID === userID ? 'crown-outline' : 'castle'}
+              image={mesaCover(item)}
               tone={item.gmID === userID ? 'gold' : 'default'}
               accessibilityLabel={`Abrir mesa ${item.name}`}
               onPress={() => router.push(`/mesa/${item.id}`)}

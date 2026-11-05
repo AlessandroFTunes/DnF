@@ -117,7 +117,17 @@ export function toSubclass(s: Schemas['Subclasse']): SrdClassDetail {
     source: sourceOf(s.fonte),
     hit_dice: '',
     features: features(`subclasse:${key}`, s.caracteristicas),
-    casting: s.conjuracao,
+    // Cavaleiro Místico e Trapaceiro Arcano: se a API não traz `conjuracao`, valem estes (conjuradores de um terço).
+    casting: s.conjuracao ?? (/cavaleiro m[íi]stico|eldritch knight/i.test(s.nome) || /trapaceiro arcano|arcane trickster/i.test(s.nome)
+      ? { tipo: 'terco' as const, atributo: 'Inteligência' }
+      : null),
+    alwaysPrepared: (s.magias_preparadas ?? []).map((m) => ({ level: m.nivel, spells: m.magias })),
+    // Tabelas da subclasse e das características dela (o Cavaleiro Místico traz "Conjuração de Cavaleiro Místico" na característica).
+    tables: [...(s.tabelas ?? []), ...(s.caracteristicas ?? []).flatMap((c) => c.tabelas ?? [])].map((t) => ({
+      title: t.titulo,
+      columns: t.colunas,
+      rows: t.linhas,
+    })),
   };
 }
 
@@ -498,6 +508,18 @@ export function createSrdCatalog(client: SrdClient) {
       return [...best.values()]
         .map(toSpell)
         .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+    },
+
+    /** Magias pelo nome (a API guarda as sempre preparadas de domínios e patronos por nome); a da `edition` vence. */
+    async spellsByName(names: string[], edition?: SrdEdition): Promise<SrdSpell[]> {
+      const found = await Promise.all(
+        [...new Set(names)].map(async (nome) => {
+          const list = await all('magias', (pagina) => client.GET('/api/v1/magias', { params: { query: { nome, pagina, limite: PAGE } } }));
+          const exact = list.filter((m) => slug(m.nome) === slug(nome));
+          return exact.find((m) => sourceOf(m.fonte).edition === edition) ?? exact[0] ?? null;
+        }),
+      );
+      return found.filter((m): m is Schemas['Magia'] => !!m).map(toSpell).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
     },
 
     async spellsByKey(keys: string[]): Promise<SrdSpell[]> {

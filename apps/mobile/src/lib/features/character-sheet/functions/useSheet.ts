@@ -18,7 +18,13 @@ import {
   skillBonus,
   SKILLS,
   speciesRules,
+  grantedSpellNames,
   spellcastingAbility,
+  spellModel,
+  subclassSchools,
+  spellCountsAt,
+  subclassSlots,
+  subclassSpellCounts,
   spellSlots,
   spellStats,
   subclassLevel,
@@ -28,7 +34,7 @@ import {
   type SrdSpecies,
 } from '@dnf/sdk/srd';
 import { useSession } from '../../auth/functions/hook.session';
-import { useBackgrounds, useClassDetails, useFeats, useItems, useLanguages, useMulticlassSlots, useSpecies, useSpellsByKeys, useSubclassesOf } from '../../srd/functions';
+import { useSpellsByNames, useBackgrounds, useClassDetails, useFeats, useItems, useLanguages, useMulticlassSlots, useSpecies, useSpellsByKeys, useSubclassesOf } from '../../srd/functions';
 import { useCharacter, useUpdateCharacter, type CharacterPatch } from './queries';
 
 /** Personagem + regras da 5e-FastAPI já aplicadas, e as ações da ficha (PV, espaços, itens…). */
@@ -60,7 +66,7 @@ export function useSheet(id: string) {
   const [loadedClasses, setLoadedClasses] = useState<{ id: string; data: SrdClassDetail[] } | null>(null);
   if (classQ.status === 'ready' && loadedClasses?.id !== classesID) setLoadedClasses({ id: classesID, data: classQ.data });
   const classDetails = classQ.status === 'ready' ? classQ.data : (loadedClasses?.data ?? null);
-  const multiclassQ = useMulticlassSlots(classKeys.length > 1 && edition);
+  const multiclassQ = useMulticlassSlots(edition);
   const speciesQ = useSpecies(edition);
   const backgroundsQ = useBackgrounds(edition);
   const languagesQ = useLanguages();
@@ -72,6 +78,13 @@ export function useSheet(id: string) {
   const toolsQ = useItems(!!character?.proficiencies.tools.length && edition);
   const spellKeys = character?.spellcasting.spells.map((s) => s.key) ?? [];
   const spellsQ = useSpellsByKeys(spellKeys);
+  // Magias sempre preparadas que a subclasse dá (domínio, patrono, círculo), pelo nome, até o nível na classe.
+  const subclassLists = subclassesQ.status === 'ready' ? subclassesQ.data : [];
+  const grantedNames = (character?.classes ?? []).flatMap((entry, i) => {
+    const sub = subclassLists.length === character!.classes.length ? subclassLists[i]?.find((s) => s.key === entry.subclassKey) : null;
+    return grantedSpellNames(sub ?? null, entry.level);
+  });
+  const grantedQ = useSpellsByNames(grantedNames, edition);
 
   const derived = useMemo(() => {
     if (!character || !classDetails) return null;
@@ -178,7 +191,21 @@ export function useSheet(id: string) {
       // Paladino/patrulheiro de 2014 só conjuram do 2º nível em diante: o atributo vem da feature.
       const ability = c.klass.spellcasting?.ability ?? (Object.keys(own).length ? spellcastingAbility(c.cls) : null) ?? fromSubclass;
       if (!ability) return [];
-      return [{ cls: c.cls, ability, magic: spellStats(ability, scores, pb), maxCircle: Math.max(0, ...Object.keys(own).map(Number)) }];
+      // Conjuração da subclasse (Cavaleiro Místico…): espaços pelo nível de conjurador e lista de magias do Mago.
+      const viaSubclass = Object.keys(own).length === 0 && !!c.subclass?.casting && c.level >= c.subclassLevel;
+      const slotsOf = viaSubclass ? subclassSlots({ cls: c.cls, subclass: c.subclass, level: c.level }, multiclassQ.status === 'ready' ? multiclassQ.data : []) : own;
+      const counts = viaSubclass ? subclassSpellCounts(c.subclass!, c.level, edition ?? '2024') : spellCountsAt(c.cls, c.level, scores);
+      return [{
+        cls: c.cls,
+        level: c.level,
+        ability,
+        magic: spellStats(ability, scores, pb),
+        maxCircle: Math.max(0, ...Object.keys(slotsOf).map(Number)),
+        viaSubclass,
+        counts,
+        model: spellModel(c.cls, viaSubclass, counts),
+        schools: viaSubclass ? subclassSchools(c.subclass) : [],
+      }];
     });
     const castAbility = casters[0]?.ability ?? null;
     const magic = casters[0]?.magic ?? null;
@@ -221,6 +248,8 @@ export function useSheet(id: string) {
       features,
       subclassFeatures,
       spells: spellsQ.status === 'ready' ? spellsQ.data : [],
+      /** Magias sempre preparadas que vêm da subclasse, fora dos limites. */
+      granted: grantedQ.status === 'ready' ? grantedQ.data : [],
       /** Magias/subclasses ainda chegando. */
       spellsLoading: character.spellcasting.spells.length > 0 && spellsQ.status === 'loading',
       subclassesLoading: subclassesQ.status === 'loading',
@@ -233,7 +262,7 @@ export function useSheet(id: string) {
           ? character.proficiencies.tools.map((k) => toolName(k, toolsQ.data)).filter((n): n is string => !!n)
           : [],
     };
-  }, [character, level, edition, classDetails, subclassesQ, multiclassQ, toolsQ, speciesQ, backgroundsQ, languagesQ, featsQ, itemsQ, spellsQ]);
+  }, [character, level, edition, classDetails, subclassesQ, multiclassQ, toolsQ, speciesQ, backgroundsQ, languagesQ, featsQ, itemsQ, spellsQ, grantedQ]);
 
   const viewerID = session.status === 'signedIn' ? session.session.userID : null;
   const isOwner = !!character && character.ownerID === viewerID;

@@ -42,8 +42,10 @@ export const tr = {
  *  6: talentos, equipamento e magias dos três livros carregados (o cache tinha as listas vazias); Artífice na criação 2024
  *  7: classes e subclasses com `casting` (conjuração para a multiclasse)
  *  8: ferramentas com `variants` (proficiência de ferramenta da multiclasse)
+ *  9: subclasses com `alwaysPrepared` e `tables`, e conjuração do Cavaleiro Místico/Trapaceiro Arcano
+ *  10: `tables` da subclasse inclui as tabelas das características (Conjuração do Cavaleiro Místico)
  */
-export const SRD_CACHE_VERSION = 8;
+export const SRD_CACHE_VERSION = 10;
 export const cache = Cache.create(persistentCache, SRD_CACHE_VERSION);
 
 /** Chave da consulta no TanStack Query. */

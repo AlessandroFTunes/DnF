@@ -29,7 +29,8 @@ export function buildCharacter(c: Creation, inventory: Inventory): CharacterInpu
   // Perícias da raça trocadas pela Origem Personalizada: a ficha não deve somá-las de novo.
   for (const key of c.swappedSpeciesSkills) if (!skills[key]) skills[key] = 'none';
 
-  const spells = [...draft.cantrips, ...draft.spells, ...draft.featCantrips, ...(draft.featSpell ? [draft.featSpell] : [])];
+  const classSpells = [...new Set([...draft.cantrips, ...draft.spells])];
+  const featSpells = [...draft.featCantrips, ...(draft.featSpell ? [draft.featSpell] : [])].filter((k) => !classSpells.includes(k));
 
   return {
     name: draft.name.trim(),
@@ -47,7 +48,13 @@ export function buildCharacter(c: Creation, inventory: Inventory): CharacterInpu
       custom: inventory.custom,
       coins: { cp: 0, sp: 0, ep: 0, gp: inventory.gp, pp: 0 },
     },
-    spellcasting: { spells: [...new Set(spells)].map((key) => ({ key, prepared: true })) },
+    spellcasting: {
+      swaps: draft.classKey ? { [draft.classKey]: 1 } : {},
+      spells: [
+        ...classSpells.map((key) => ({ key, prepared: true, classKey: draft.classKey ?? undefined })),
+        ...[...new Set(featSpells)].map((key) => ({ key, prepared: true, free: true })),
+      ],
+    },
     personality: draft.personality,
     details: { ...draft.details, allies: '', notes: '' },
   };

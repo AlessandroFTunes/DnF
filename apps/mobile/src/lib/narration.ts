@@ -4,6 +4,7 @@ import { PocketBase } from '@dnf/core/pocketbase';
 import { ttsCache } from './features/cache/functions/tts-cache';
 import { audioFromBase64 } from './audio-file';
 import './pocketbase';
+import { currentPreferences } from './features/profile/functions/queries';
 
 /**
  * Toca a narração no aparelho. Quem gera a fala é o port `Narration` do core (o provedor fica no servidor);
@@ -48,6 +49,8 @@ function whenLoaded(player: AudioPlayer): Promise<boolean> {
 
 /** Gera a fala de `text` e devolve pronta para tocar, com o momento em que cada trecho de `marks` é dito (na ordem). */
 export async function loadSpeech(text: string, marks: string[] = [], voice: Voice = 'narrator'): Promise<Speech | null> {
+  // O jogador desligou a narração no Perfil: sem voz (quem chama já trata a fala que não veio).
+  if (!currentPreferences().narration) return null;
   const res = await voices[voice].createVoice(text);
   if (!res) return null;
   void setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});

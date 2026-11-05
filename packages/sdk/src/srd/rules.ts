@@ -335,6 +335,31 @@ export function casterLevel(entries: ClassEntry[]): number {
   }, 0);
 }
 
+/** Espaços lidos da tabela da própria subclasse ("Nível de Guerreiro | Magias Preparadas | 1 | 2 | 3 | 4"). */
+function subclassTableSlots(sub: SrdClassDetail | null, level: number): SlotsByCircle | null {
+  const table = (sub?.tables ?? []).find((t) => /n[íi]vel/i.test(t.columns[0] ?? '') && t.columns.some((c) => /^[1-9]$/.test(c.trim())));
+  if (!table) return null;
+  const row = table.rows.filter((r) => (parseInt(r[0] ?? '', 10) || 0) <= level).at(-1);
+  if (!row) return {};
+  const slots: SlotsByCircle = {};
+  table.columns.forEach((c, i) => {
+    const n = parseInt(row[i] ?? '', 10);
+    if (/^[1-9]$/.test(c.trim()) && n > 0) slots[c.trim()] = n;
+  });
+  return slots;
+}
+
+/**
+ * Espaços de uma conjuração que vem da subclasse. Vale a tabela da própria subclasse (no Cavaleiro Místico o nível 4 já
+ * tem 3 espaços, que a conta de "um terço do nível" não dá); sem ela, a tabela do conjurador multiclasse.
+ */
+export function subclassSlots(entry: ClassEntry, multiclassTable: SrdMulticlassSlots[]): SlotsByCircle {
+  const own = subclassTableSlots(entry.subclass, entry.level);
+  if (own) return own;
+  const rows = multiclassTable.filter((r) => r.casterLevel <= casterLevel([entry]));
+  return byCircle(rows[rows.length - 1]?.slots ?? []);
+}
+
 /**
  * Espaços de magia do personagem. Com conjuração de mais de uma classe (fora a Magia de Pacto), vale a
  * tabela do conjurador multiclasse (`srd.multiclassSlots`); com uma só, a tabela da própria classe.
@@ -352,6 +377,8 @@ export function characterSpellSlots(
     slots = byCircle(rows[rows.length - 1]?.slots ?? []);
   } else if (casters[0]) {
     slots = byCircle(levelRow(casters[0].cls, casters[0].level)?.espacos_magia ?? []);
+    // Subclasse conjuradora (Cavaleiro Místico…): a classe não tem espaços na tabela, vale o nível de conjurador.
+    if (Object.keys(slots).length === 0 && casters[0].subclass?.casting) slots = subclassSlots(casters[0], multiclassTable);
   }
   const pact = entries.map((e) => pactSlots(e.cls, e.level)).find((p) => p !== null) ?? null;
   return { slots, pact };
@@ -841,4 +868,76 @@ export interface SuggestedCharacteristics {
 /** Os antecedentes da API (Livro do Jogador 2024) não têm tabelas de personalidade: a história fica livre. */
 export function suggestedCharacteristics(_bg: SrdBackground): SuggestedCharacteristics {
   return { traits: [], ideals: [], bonds: [], flaws: [] };
+}
+
+/**
+ * Truques e magias de uma subclasse conjuradora (Cavaleiro Místico, Trapaceiro Arcano). Lê a tabela da
+ * subclasse se a API a trouxer ("Truques" e "Magias conhecidas/preparadas" por nível da classe); sem ela, vale a
+ * tabela de conjurador de um terço do Livro do Jogador. Em 2014 conhece magias; em 2024 prepara.
+ */
+export function subclassSpellCounts(
+  sub: SrdClassDetail,
+  classLevel: number,
+  edition: string,
+): SpellCounts | null {
+  const casting = sub.casting;
+  const ability = casting ? abilityFromName(casting.atributo) : undefined;
+  if (!casting || !ability || classLevel < 3) return null;
+  // Tabela real ("Nível de Guerreiro | Magias Preparadas | 1 | 2 …"); os truques vêm de uma coluna, se houver, ou do texto (2, 3 no nível 10).
+  const table = (sub.tables ?? []).find((t) => t.columns.some((c) => /magias/i.test(c)) && /n[íi]vel/i.test(t.columns[0] ?? ''));
+  const cantripsFallback = classLevel >= 10 ? 3 : 2;
+  if (table) {
+    const spellCol = table.columns.findIndex((c) => /magias/i.test(c));
+    const cantripCol = table.columns.findIndex((c) => /truques/i.test(c));
+    const row = table.rows.filter((r) => (parseInt(r[0] ?? '', 10) || 0) <= classLevel).at(-1);
+    const spells = parseInt(row?.[spellCol] ?? '', 10);
+    const cantrips = cantripCol >= 0 ? parseInt(row?.[cantripCol] ?? '', 10) : cantripsFallback;
+    if (row && Number.isFinite(spells) && Number.isFinite(cantrips)) {
+      return { cantrips, spells, prepared: edition === '2024' || /preparadas/i.test(table.columns[spellCol] ?? '') };
+    }
+  }
+  // Conjurador de um terço: magias nos níveis 3, 4, 7, 8, 10, 11, 13, 14, 16, 19 e 20.
+  const steps = [3, 4, 7, 8, 10, 11, 13, 14, 16, 19, 20];
+  const spells = 3 + Math.max(0, steps.filter((l) => l <= classLevel).length - 1);
+  return { cantrips: classLevel >= 10 ? 3 : 2, spells, prepared: edition === '2024' };
+}
+
+/** Como a classe lida com as magias: troca depois de um descanso longo (lista inteira ou grimório) ou só ao subir de nível. */
+export type SpellModel = 'list' | 'book' | 'known';
+
+const BOOK_CLASS = /^(mago|wizard)$/;
+const LONG_REST_CLASS = /^(clerigo|cleric|druida|druid|paladino|paladin|artifice|artificer)$/;
+const LEVEL_UP_CLASS = /^(bardo|bard|feiticeiro|sorcerer|bruxo|warlock|guardiao|ranger)$/;
+
+/**
+ * Modelo de magias da classe. Vale o nome da classe, não o rótulo da coluna da tabela: no Livro do Jogador 2024 o
+ * Bardo, o Bruxo, o Feiticeiro e o Guardião também têm "Magias Preparadas", mas só trocam uma ao subir de nível.
+ * Subclasses conjuradoras (Cavaleiro Místico, Trapaceiro Arcano) também trocam ao subir de nível.
+ */
+export function spellModel(cls: SrdClassDetail, viaSubclass = false, counts?: SpellCounts | null): SpellModel {
+  if (viaSubclass) return 'known';
+  const name = normalize(cls.name);
+  if (BOOK_CLASS.test(name)) return 'book';
+  if (LEVEL_UP_CLASS.test(name)) return 'known';
+  if (LONG_REST_CLASS.test(name)) return 'list';
+  return counts && !counts.prepared ? 'known' : 'list';
+}
+
+const SCHOOLS = ['abjuracao', 'adivinhacao', 'conjuracao', 'encantamento', 'evocacao', 'ilusao', 'necromancia', 'transmutacao'];
+
+/** Escolas a que a subclasse conjuradora limita as magias ("escolhidas das escolas de abjuração e evocação"); vazio se não limita. */
+export function subclassSchools(sub: SrdClassDetail | null): string[] {
+  const text = sub?.features.find((f) => /^conjura/i.test(normalize(f.name)))?.desc ?? '';
+  const sentence = normalize(text).match(/escolas? de ([^.]*)\./)?.[1] ?? '';
+  return SCHOOLS.filter((school) => sentence.includes(school));
+}
+
+/** Nomes das magias sempre preparadas que a subclasse dá até o nível da classe (a API guarda nomes, por nível). */
+export function grantedSpellNames(sub: SrdClassDetail | null, classLevel: number): string[] {
+  // A carga traz nomes com prefixo solto ("º Toque Necrótico"); a busca compara sem acento e caixa.
+  return (sub?.alwaysPrepared ?? [])
+    .filter((g) => g.level <= classLevel)
+    .flatMap((g) => g.spells)
+    .map((name) => name.replace(/^[º°\s]+/, '').trim())
+    .filter(Boolean);
 }

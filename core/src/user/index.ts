@@ -17,6 +17,13 @@ export namespace User {
   // Mantenha em sincronia com o mínimo do campo `password` da collection users no PocketBase.
   export const PASSWORD_MIN_LENGTH = 8;
 
+  /** Ajustes do app, guardados no campo JSON `preferences`. Tudo liga por padrão; campo novo entra com padrão. */
+  export const Preferences = z.object({
+    narration: z.boolean().default(true).meta({ description: 'Spoken narration (narrator and Grande Sábio).' }),
+    sounds: z.boolean().default(true).meta({ description: 'Sound effects (level-up celebration).' }),
+  });
+  export type Preferences = z.infer<typeof Preferences>;
+
   export const Info = z
     .object({
       id: z.string().meta({ description: Common.IdDescription, example: Examples.User.id }),
@@ -24,7 +31,11 @@ export namespace User {
         description: 'Login email. Empty when not visible to the requester (emailVisibility).',
       }),
       name: z.string().trim().min(1).max(64).meta({ description: 'Display name.' }),
+      nickname: z.string().trim().max(32).meta({
+        description: 'Nickname shown to other players instead of the name. Empty for none.',
+      }),
       avatar: z.string().nullable().meta({ description: 'Avatar image URL, or null for none.' }),
+      preferences: Preferences.meta({ description: 'Per-user app settings (narration, sounds…).' }),
       verified: z.boolean().meta({ description: 'Whether the email was confirmed.' }),
       timeCreated: z.iso.datetime().meta({ description: 'When it was created.' }),
       timeUpdated: z.iso.datetime().meta({ description: 'When it was last updated.' }),
@@ -37,7 +48,9 @@ export namespace User {
   export type Info = z.infer<typeof Info>;
 
   // Email e senha têm fluxos próprios no PocketBase (confirmação / senha antiga).
-  const Patch = Info.pick({ name: true }).partial();
+  const Patch = Info.pick({ name: true, nickname: true })
+    .extend({ preferences: Preferences.partial() })
+    .partial();
 
   // Normaliza antes de validar: o autocompletar do teclado costuma deixar espaço no fim.
   export const Email = z.string().trim().toLowerCase().pipe(z.email());
@@ -131,11 +144,39 @@ export namespace User {
     Patch.extend({ id: Info.shape.id }),
     async ({ id, ...patch }) => {
       await assert.exists(fromID.force(id));
-      const record = await PocketBase.use().collection('users').update(id, patch);
+      const data: Record<string, unknown> = { ...patch };
+      // As preferências são um JSON só: junta com as atuais para mudar uma sem perder as outras.
+      if (patch.preferences) {
+        const current = await assert.exists(fromID.force(id));
+        data.preferences = Preferences.parse({ ...current.preferences, ...patch.preferences });
+      }
+      const record = await PocketBase.use().collection('users').update(id, data);
       return serialize(record);
     },
-    { title: 'Update user', description: "Update a user's name." },
+    { title: 'Update user', description: "Update a user's name, nickname or preferences (merged with the current)." },
   );
+
+  /** Imagem do avatar: um `Blob` (web) ou o arquivo escolhido no celular (`uri`, `name` e `type`). */
+  export type AvatarFile = Blob | { uri: string; name: string; type: string };
+  export const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+  export const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+
+  /** Troca o avatar: o arquivo fica no storage do próprio PocketBase (campo `avatar` da coleção users). */
+  export async function setAvatar(id: string, file: AvatarFile): Promise<Info> {
+    if (!(AVATAR_TYPES as readonly string[]).includes(file.type)) throw new Error('Use uma imagem JPEG, PNG ou WebP.');
+    if (file instanceof Blob && file.size > AVATAR_MAX_BYTES) throw new Error('A imagem passa de 5 MB.');
+    const form = new FormData();
+    // No React Native o FormData aceita o objeto { uri, name, type } no lugar de um Blob.
+    form.append('avatar', file as Blob);
+    return serialize(await PocketBase.use().collection('users').update(id, form));
+  }
+
+  export async function removeAvatar(id: string): Promise<Info> {
+    return serialize(await PocketBase.use().collection('users').update(id, { avatar: null }));
+  }
+
+  /** Como o jogador aparece para os outros: o apelido, ou o nome se não tiver. */
+  export const displayName = (user: Pick<Info, 'name' | 'nickname'>) => user.nickname || user.name;
 
   /** Apaga a conta de vez. Se for a do usuário logado, encerra a sessão. */
   export const remove = fn(
@@ -181,7 +222,9 @@ export namespace User {
       id: record.id,
       email: record.email ?? '',
       name: record.name,
-      avatar: record.avatar ? PocketBase.use().files.getURL(record, record.avatar) : null,
+      nickname: record.nickname ?? '',
+      avatar: record.avatar ? PocketBase.use().files.getURL(record, record.avatar, { thumb: '256x256' }) : null,
+      preferences: Preferences.catch(() => Preferences.parse({})).parse(record.preferences ?? {}),
       verified: record.verified,
       timeCreated: Common.toISO(record.created),
       timeUpdated: Common.toISO(record.updated),

@@ -62,10 +62,25 @@ export namespace Sheet {
   });
 
   export const Spellcasting = z.object({
-    spells: z.array(z.object({ key, prepared: z.boolean().default(false) })).default([]),
+    spells: z
+      .array(
+        z.object({
+          key,
+          prepared: z.boolean().default(false),
+          /** Classe que deu a magia (a lista dela e o limite dela valem); sem isso, vale a primeira classe conjuradora. */
+          classKey: key.optional(),
+          /** Vem de talento, espécie ou domínio: sempre preparada e fora dos limites da classe. */
+          free: z.boolean().optional(),
+        }),
+      )
+      .default([]),
     /** Espaços gastos por nível de magia ("1"…"9"); o máximo vem da tabela da classe. */
     slotsUsed: z.partialRecord(z.enum(['1', '2', '3', '4', '5', '6', '7', '8', '9']), count).default({}),
     pactSlotsUsed: count.default(0),
+    /** Janela de preparo aberta: o descanso longo abre, confirmar fecha. Trocar as preparadas só vale com ela aberta. */
+    prepareOpen: z.boolean().default(false),
+    /** Por classe, o nível nela em que já se trocou uma magia (uma troca por nível de classe). */
+    swaps: z.record(key, count).default({}),
   });
 
   export const Personality = z.object({

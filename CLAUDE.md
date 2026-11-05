@@ -60,6 +60,38 @@ alcança. A ponte `core/piper-http/server.py` (só biblioteca padrão do Python)
 fala ao Piper e devolve o formato do `/tts`. O Piper não informa o tempo de cada letra: a ponte estima pela
 duração, com pausa maior na pontuação. No NAS ele gera mais ou menos em tempo real (frase curta ≈ 3 s).
 
+### Navegação e perfil
+
+O app logado tem uma barra de abas (`routes/(tabs)/`: Início `/`, Mesas `/mesa`, Perfil `/perfil`; layout em
+`navigation/pages/TabsLayout.tsx`). Telas de detalhe (ficha, mesa, edição do perfil) ficam na pilha acima, em `routes/`.
+
+O perfil (`features/profile`) vive no registro do usuário no PocketBase, sem hook nem endpoint próprio:
+`avatar` (campo de arquivo, guardado no storage do PocketBase, 5 MB, JPEG/PNG/WebP), `nickname` e `preferences`
+(JSON: `narration`, `sounds`; campo novo entra em `User.Preferences` com padrão, sem migration). Campos criados pela
+migration `core/pb_migrations/1791500000_updated_users.js` (copiar para o NAS e reiniciar o `dnf-db`). A sessão
+(`useSession().session.user`) é a fonte de leitura; o PocketBase a atualiza a cada `update` do próprio usuário.
+Fora de componentes, `currentPreferences()` diz se a narração e os sons estão ligados.
+
+A capa da mesa é colocada pelo mestre no DM-Control (pasta do NAS, caminho em `mesas.cover`). O app a lê por
+`/nas/<caminho>` do PocketBase (`core/pb_hooks/nas.pb.js`, mesmas regras do DM-Control: mestre lê tudo da mesa, jogador só
+`imagens/`), com o token no `Authorization` (`mesa/functions/cover.ts`, `mesaCover(mesa)`). No NAS a pasta do storage é `/srv/apps/dnf-db/nas` (montada em
+`/nas:ro`; `NAS_DIR` troca) e o Traefik encaminha `/nas/` do `dnf.developale.com`. O DM-Control (hoje só local) precisa gravar nela: o arquivo
+de `mesas.cover` tem que existir em `nas/<mesaID>/imagens/`.
+
+### Magias do personagem
+
+Tela própria em `routes/character/[id]/spells.tsx` (`character-sheet/pages/SpellsPage.tsx`); a ficha só mostra o resumo
+(`SpellsSummary`). Em `Character.spellcasting.spells` cada magia leva `classKey` (classe que a deu; sem ela vale a primeira
+conjuradora) e `free` (talento/espécie: sempre preparada, fora dos limites). Limites por classe e nível: `spellCountsAt`
+(classes) e `subclassSpellCounts` (Cavaleiro Místico/Trapaceiro Arcano: tabela da subclasse na API ou a de um terço; lista do
+Mago). Três modelos: lista inteira (Clérigo, Druida, Paladino), grimório (Mago: 6 + 2 por nível) e conhecidas (Bardo,
+Feiticeiro, Bruxo, Patrulheiro). O modelo vem do nome da classe (`spellModel`), não do rótulo da tabela: no 2024 Bardo, Bruxo, Feiticeiro e Guardião também têm
+"Magias Preparadas", mas só trocam uma ao subir de nível (`spellcasting.swaps[classKey]` guarda o nível de classe da última troca).
+Clérigo, Druida, Paladino e Artífice preparam com `prepareOpen` (o descanso longo abre, "Confirmar preparo" fecha; vagas novas do
+nível podem ser preenchidas). "Liberar troca" é a saída para o mestre. Magias sempre preparadas de domínio/patrono/círculo vêm da
+subclasse (`alwaysPrepared`, por nome, resolvidas por `srd.spellsByName`) e aparecem fora dos limites. Se a API não mandar
+`conjuracao` no Cavaleiro Místico/Trapaceiro Arcano, `toSubclass` assume conjurador de um terço (Int).
+
 ### Dados do app: TanStack Query
 
 Toda leitura e gravação passa por hooks do TanStack Query, em `features/<feature>/functions/queries.ts`. As telas

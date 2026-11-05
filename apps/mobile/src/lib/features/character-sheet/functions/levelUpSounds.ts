@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import { currentPreferences } from '../../profile/functions/queries';
 
 /**
  * Efeitos da celebração de subir de nível: uma ambientação em loop e os golpes do dado, tocados nos mesmos
@@ -48,6 +49,8 @@ function fade(player: AudioPlayer, to: number, ms: number, then?: () => void) {
 
 /** Prepara os sons já (para tocarem sem atraso) e devolve os controles. */
 export function celebrationSounds(cues: SoundCue[]) {
+  // O jogador desligou os efeitos no Perfil: os mesmos controles, sem tocar nada.
+  if (!currentPreferences().sounds) return { start() {}, duck() {}, dispose() {} };
   void setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
   const ambience = fixedVolume ? null : createAudioPlayer(AMBIENCE);
   if (ambience) {

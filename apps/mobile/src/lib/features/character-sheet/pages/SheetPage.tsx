@@ -24,7 +24,7 @@ import { Attacks, Inventory } from '../components/sections/Inventory';
 import { Abilities, StatusPanel } from '../components/sections/Overview';
 import { Progression } from '../components/sections/Progression';
 import { Skills } from '../components/sections/Skills';
-import { Spells } from '../components/sections/Spells';
+import { SpellsSummary } from '../components/sections/Spells';
 import { Tables } from '../components/sections/Tables';
 import { ThemeHold, useBlend } from '../animations/themeBlend';
 import { useSheet, type Sheet } from '../functions/useSheet';
@@ -206,7 +206,7 @@ function SheetScreen({ sheet }: { sheet: Sheet }) {
             </View>,
             <View key="detail" style={styles.block}>
               {shownDetail === 'combat' && <Attacks sheet={sheet} />}
-              {shownDetail === 'spells' && <Spells sheet={sheet} />}
+              {shownDetail === 'spells' && <SpellsSummary sheet={sheet} onOpen={() => router.push(`/character/${sheet.character?.id}/spells`)} />}
               {shownDetail === 'skills' && <Skills data={derived} />}
               {shownDetail === 'features' && <Features data={derived} />}
               {shownDetail === 'inventory' && <Inventory sheet={sheet} />}

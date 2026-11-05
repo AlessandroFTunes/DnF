@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Character } from '@dnf/core/character';
 import { Button, D20, DnfLogo, DnfSpinner, fonts, mixColor, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
+import { tileColor } from '../functions/tile-color';
 import { classIcon } from '../../character-create/functions/labels';
 import { HeroArt } from '../components/HeroArt';
 import { useSession } from '../../auth/functions/hook.session';
@@ -18,16 +19,7 @@ const TILE = 104;
 /** Altura da curva no topo do painel. */
 const ARC = 32;
 
-/** Cor de cada personagem (estável pelo id), como os perfis coloridos de um app de streaming. */
-const TILE_COLORS = ['#C8191E', '#8F4BC9', '#3FA3B8', '#E8822E', '#4B7BE5', '#2F8F5B', '#C2477E', '#B8860B'];
-
-function tileColor(id: string): string {
-  let h = 0;
-  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return TILE_COLORS[h % TILE_COLORS.length] ?? TILE_COLORS[0]!;
-}
-
-/** Início: nav para as mesas em cima, a arte do grupo no meio e os personagens embaixo. */
+/** Início (aba): a arte do grupo em cima e os personagens embaixo. */
 export default function Home() {
   const theme = useRpgTheme();
   const router = useRouter();
@@ -135,26 +127,6 @@ export default function Home() {
       {/* Nav por cima da arte. */}
       <View style={[styles.nav, { paddingTop: insets.top + spacing.sm }]} pointerEvents="box-none">
         <DnfLogo size={84} animated={false} />
-        <View style={styles.navActions}>
-          <Pressable
-            onPress={() => router.push('/mesa')}
-            accessibilityRole="button"
-            accessibilityLabel="Mesas"
-            style={({ pressed }) => [styles.navPill, { borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}
-          >
-            <MaterialCommunityIcons name="castle" size={18} color={theme.gold} />
-            <Text style={[typography.bodyStrong, { color: theme.text }]}>Mesas</Text>
-          </Pressable>
-          <Pressable
-            onPress={session.logout}
-            accessibilityRole="button"
-            accessibilityLabel="Sair"
-            hitSlop={8}
-            style={({ pressed }) => [styles.navIcon, { borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}
-          >
-            <MaterialCommunityIcons name="logout" size={18} color={theme.textMuted} />
-          </Pressable>
-        </View>
       </View>
     </View>
   );
@@ -309,25 +281,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-  },
-  navActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  navPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    height: 40,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    backgroundColor: 'rgba(10, 7, 7, 0.6)',
-  },
-  navIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(10, 7, 7, 0.6)',
   },
 });

@@ -26,6 +26,7 @@
       ["expo-router", { "root": "./src/routes" }],
       "expo-status-bar",
       "expo-secure-store",
+      ["expo-image-picker", { "photosPermission": "O DnF usa suas fotos para você escolher o avatar do perfil." }],
       "expo-font",
       [
         "expo-splash-screen",

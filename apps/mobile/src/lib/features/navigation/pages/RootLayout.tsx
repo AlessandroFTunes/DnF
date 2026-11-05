@@ -73,13 +73,14 @@ export default function RootLayout() {
           <Stack.Screen name="login" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={signedIn}>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="character/new" options={{ headerShown: false }} />
           <Stack.Screen name="character/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="mesa/index" options={{ headerShown: false }} />
+          <Stack.Screen name="character/[id]/spells" options={{ headerShown: false }} />
           <Stack.Screen name="mesa/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="mesa/new" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="mesa/join" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="perfil/editar" options={{ headerShown: false, presentation: 'modal' }} />
         </Stack.Protected>
       </Stack>
       <StatusBar style="light" />

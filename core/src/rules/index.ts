@@ -43,6 +43,10 @@ export namespace Rules {
     features: ClassFeature[];
     /** Como entra na conta dos espaços de magia de multiclasse; null se não conjura (subclasses: Cavaleiro Místico…). */
     casting: Raw<R, 'casting'> | null;
+    /** Tabelas da descrição da subclasse (ex.: truques e magias do Cavaleiro Místico). */
+    /** Magias sempre preparadas por nível da classe (domínios, patronos, círculos). */
+    alwaysPrepared?: { level: number; spells: string[] }[];
+    tables?: { title: string; columns: string[]; rows: string[][] }[];
     /** Registro da classe na API (ausente nas subclasses). */
     api?: Raw<R, 'class'>;
     /** Subclasse feita para a outra edição (a API ainda não mistura edições; fica para o futuro). */
@@ -242,6 +246,8 @@ export namespace Rules {
     /** Magias da lista de uma classe até o círculo `maxLevel` (0 = truques). */
     spells(classKey: string, maxLevel: number, edition?: Edition): Promise<Spell[]>;
     spellsByKey(keys: string[]): Promise<Spell[]>;
+    /** Magias pelo nome (as sempre preparadas de domínios e patronos vêm por nome); a da edição vence. */
+    spellsByName(names: string[], edition?: Edition): Promise<Spell[]>;
     alignments(): Promise<Alignment[]>;
     languages(): Promise<Language[]>;
   }

@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Image, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { fonts, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import type { IconName } from './IconButton';
@@ -9,6 +9,8 @@ interface ListCardProps {
   subtitle?: string;
   /** Ícone no medalhão redondo da esquerda. */
   icon: IconName;
+  /** Imagem no lugar do ícone do medalhão (ex.: a capa da mesa); se não carregar, volta o ícone. */
+  image?: { uri: string; headers?: Record<string, string> };
   /** `accent` = medalhão vermelho; `gold` = dourado; padrão = rebaixado com ícone dourado. */
   tone?: 'accent' | 'gold' | 'default';
   onPress: () => void;
@@ -19,8 +21,9 @@ interface ListCardProps {
 }
 
 /** Card de lista: medalhão, título, subtítulo e seta. Toque abre o item. */
-export function ListCard({ title, subtitle, icon, tone = 'default', onPress, accessibilityLabel, children, style }: ListCardProps) {
+export function ListCard({ title, subtitle, icon, image, tone = 'default', onPress, accessibilityLabel, children, style }: ListCardProps) {
   const theme = useRpgTheme();
+  const [imageFailed, setImageFailed] = useState(false);
   const medal =
     tone === 'accent'
       ? { bg: theme.accent, fg: theme.accentText }
@@ -31,7 +34,11 @@ export function ListCard({ title, subtitle, icon, tone = 'default', onPress, acc
   const row = (
     <>
       <View style={[styles.medal, { backgroundColor: medal.bg }]}>
-        <MaterialCommunityIcons name={icon} size={24} color={medal.fg} />
+        {image && !imageFailed ? (
+          <Image source={image} onError={() => setImageFailed(true)} accessibilityIgnoresInvertColors style={styles.medalImage} />
+        ) : (
+          <MaterialCommunityIcons name={icon} size={24} color={medal.fg} />
+        )}
       </View>
       <View style={styles.body}>
         <Text style={[typography.subheading, { color: theme.text }]} numberOfLines={1}>
@@ -103,7 +110,8 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.md },
   stack: { gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  medal: { width: 44, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  medal: { width: 44, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  medalImage: { width: '100%', height: '100%' },
   body: { flex: 1, gap: 2 },
   highlight: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
   highlightCenter: { flexDirection: 'column', alignItems: 'center', gap: spacing.sm },

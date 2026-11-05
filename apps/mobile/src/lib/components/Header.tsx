@@ -5,8 +5,8 @@ import { spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { ICON_BUTTON_SIZE, IconButton, type IconName } from './IconButton';
 
 interface HeaderProps {
-  /** Botão da esquerda: `back` (seta) ou `close` (X). */
-  action: { kind: 'back' | 'close'; label?: string; onPress: () => void };
+  /** Botão da esquerda: `back` (seta) ou `close` (X). Sem ele (telas das abas), fica o espaço vazio. */
+  action?: { kind: 'back' | 'close'; label?: string; onPress: () => void };
   /** Texto no centro. `heading` = título grande; `overline` = rótulo pequeno (padrão). */
   title?: string;
   titleStyle?: 'heading' | 'overline';
@@ -19,10 +19,14 @@ interface HeaderProps {
 /** Barra do topo das telas: ação à esquerda, título no centro, extra à direita. */
 export function Header({ action, title, titleStyle = 'overline', center, right }: HeaderProps) {
   const theme = useRpgTheme();
-  const icon = action.kind === 'back' ? 'chevron-left' : 'close';
+  const icon = action?.kind === 'back' ? 'chevron-left' : 'close';
   return (
     <View style={styles.bar}>
-      <IconButton icon={icon} label={action.label ?? (action.kind === 'back' ? 'Voltar' : 'Cancelar')} onPress={action.onPress} />
+      {action ? (
+        <IconButton icon={icon} label={action.label ?? (action.kind === 'back' ? 'Voltar' : 'Cancelar')} onPress={action.onPress} />
+      ) : (
+        <View style={styles.spacer} />
+      )}
       <View style={styles.center}>
         {center ??
           (title ? (
