@@ -110,7 +110,7 @@ Fora de componentes, `currentPreferences()` diz se a narração e os sons estão
 A capa da mesa é colocada pelo mestre no DM-Control (pasta do NAS, caminho em `mesas.cover`). O app a lê por
 `/nas/<caminho>` da API (`core/src/api/nas.ts`, mesmas regras do DM-Control: mestre lê tudo da mesa, jogador só
 `imagens/`), com o token no `Authorization` (`mesa/functions/cover.ts`, `mesaCover(mesa)`). Na API a pasta do NAS é `NAS_DIR`
-(no container, `/data/nas`, somente leitura; no NAS, `/srv/apps/dnf-db/nas`) e o Traefik encaminha `/nas/` do `dnf.developale.com`.
+(no container, `/data/nas`, somente leitura; no NAS, `/srv/apps/dnf-api/nas`) e o Traefik encaminha `/nas/` do `dnf.developale.com`.
 O DM-Control (hoje só local) grava nela (`Nas.save`, mesmo `NAS_DIR` da API) e mostra as imagens pela rota `/nas/[...path]` dele, que repassa para a API com o login da pessoa. O arquivo de `mesas.cover` tem que existir em `nas/<mesaID>/imagens/`. O `/srd` devolve 502 (e não 401) quando a 5e-FastAPI recusa o token do servidor ou cai.
 
 ### Magias do personagem
@@ -214,10 +214,12 @@ Tudo roda no NAS, atrás do Traefik. Para entrar: `ssh ale@nas-ale`. Os apps fic
 
 - O `.env` da API (`POSTGRES_PASSWORD`, `AUTH_SECRET`, chaves dos provedores de voz, `TTS_PROVIDERS` e o token do Cloudflare Access) fica só no NAS, em `/srv/apps/dnf-api/.env`.
 - **Migração do PocketBase (feita em 2026-11-14):** os 13 usuários, 17 personagens, 2 mesas e 5 jogadores foram copiados, com os hashes de senha
-  e os 2 avatares. O stack antigo (`/srv/apps/dnf-db`: `dnf-db`, `dnf-redis`, `dnf-webdis`) está **parado, não removido**, com o roteiro de volta em
-  `/srv/apps/dnf-db/LEIA-ME-CORTE.txt` e os backups `pb_data.bak-cutover-*` e `dnf-web/dist.bak-cutover-*`. Depois de uns dias estáveis, dá para apagá-los.
+  e os 2 avatares (origem e destino conferidos). O stack antigo (`dnf-db`, `dnf-redis`, `dnf-webdis`, o diretório `/srv/apps/dnf-db` e os backups do
+  `pb_data`) foi **removido** no mesmo dia, a pedido: o Postgres é a única cópia dos dados.
   Os apps nativos já publicados (build do EAS com `EXPO_PUBLIC_PB_URL=https://dnf-db.developale.com`) falam o protocolo do PocketBase e **deixam de funcionar**:
   publique um build novo (o `eas.json` já aponta para `https://dnf.developale.com`). `dnf-db.developale.com` não tem mais rota.
+- **Backup:** `ssh ale@nas-ale 'cd /srv/apps/dnf-api && docker exec dnf-postgres pg_dump -U dnf -Fc dnf > backups/dnf-$(date +%Y%m%d%H%M).dump'` (restaurar com `pg_restore`)
+  e copie também `files/` (avatares). Há um dump de 2026-11-14 em `/srv/apps/dnf-api/backups/`; ainda não existe rotina automática.
 - Enviar uma versão nova da API: `docker build -f core/Dockerfile -t dnf-api:latest .`, `docker save dnf-api:latest | gzip | ssh ale@nas-ale 'gunzip | docker load'` e
   `ssh ale@nas-ale 'cd /srv/apps/dnf-api && docker compose up -d'` (use o `/usr/bin/ssh`; o do Nix não lê a configuração do Fedora).
 - Depois de subir, o Traefik só roteia quando o container fica `healthy` (~15 s).

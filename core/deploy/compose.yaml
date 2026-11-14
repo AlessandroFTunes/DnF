@@ -13,7 +13,7 @@ services:
     volumes:
       # Avatares (a API grava) e a pasta do NAS com capas e mapas (o DM-Control grava, a API só lê).
       - ./files:/data/files
-      - /srv/apps/dnf-db/nas:/data/nas:ro
+      - ./nas:/data/nas:ro
     networks: [proxy, default]
     depends_on:
       dnf-postgres:
