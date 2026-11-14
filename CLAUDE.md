@@ -210,12 +210,16 @@ Tudo roda no NAS, atrás do Traefik. Para entrar: `ssh ale@nas-ale`. Os apps fic
 |---|---|---|
 | API do DnF (`https://dnf.developale.com`, caminhos `/auth`, `/users`, `/characters`, `/mesas`, `/grids`, `/srd`, `/tts`, `/nas`, `/files`) + Postgres | `/srv/apps/dnf-api` (containers `dnf-api` e `dnf-postgres`; modelo em `core/deploy/compose.yaml`, `.env` a partir de `core/deploy/.env.example`) | Na raiz do repo: `docker build -f core/Dockerfile -t dnf-api:latest .`, enviar a imagem (`docker save dnf-api:latest \| ssh ale@nas-ale docker load`) e `ssh ale@nas-ale 'cd /srv/apps/dnf-api && docker compose up -d'`. As migrations rodam sozinhas ao subir |
 | Ponte do Piper (voz do Grande Sábio) | `/srv/apps/piper-http` (container `piper-http`, redes `proxy` e `rpg-piper_default`, sem porta exposta) | Copiar `core/piper-http/server.py` para lá e `docker compose restart piper-http` |
-| App web (`https://dnf.developale.com`) | `/srv/apps/dnf-web` (nginx, container `dnf-web`) | Gerar o build web (`EXPO_PUBLIC_API_URL` = o próprio domínio) e trocar o `dist/` |
+| App web (`https://dnf.developale.com`) | `/srv/apps/dnf-web` (nginx, container `dnf-web`) | `sh apps/mobile/scripts/deploy-web.sh` na pasta `apps/mobile` (gera o build com a URL da API, guarda o `dist` anterior e troca o conteúdo) |
 
 - O `.env` da API (`POSTGRES_PASSWORD`, `AUTH_SECRET`, chaves dos provedores de voz, `TTS_PROVIDERS` e o token do Cloudflare Access) fica só no NAS, em `/srv/apps/dnf-api/.env`.
-- **Migração do PocketBase (uma vez):** parar o `dnf-db`, copiar `pb_data/` para a máquina com o repo, rodar
-  `DATABASE_URL=… FILES_DIR=… PB_DATA=…/data.db bun run migrate:pocketbase` na pasta `core` (por um túnel `ssh -L 5432:…` ou no próprio NAS),
-  subir a API nova e só depois desligar o `dnf-db`, o Redis e o Webdis. A pasta do NAS (`/srv/apps/dnf-db/nas`) é a mesma que a API lê.
+- **Migração do PocketBase (feita em 2026-11-14):** os 13 usuários, 17 personagens, 2 mesas e 5 jogadores foram copiados, com os hashes de senha
+  e os 2 avatares. O stack antigo (`/srv/apps/dnf-db`: `dnf-db`, `dnf-redis`, `dnf-webdis`) está **parado, não removido**, com o roteiro de volta em
+  `/srv/apps/dnf-db/LEIA-ME-CORTE.txt` e os backups `pb_data.bak-cutover-*` e `dnf-web/dist.bak-cutover-*`. Depois de uns dias estáveis, dá para apagá-los.
+  Os apps nativos já publicados (build do EAS com `EXPO_PUBLIC_PB_URL=https://dnf-db.developale.com`) falam o protocolo do PocketBase e **deixam de funcionar**:
+  publique um build novo (o `eas.json` já aponta para `https://dnf.developale.com`). `dnf-db.developale.com` não tem mais rota.
+- Enviar uma versão nova da API: `docker build -f core/Dockerfile -t dnf-api:latest .`, `docker save dnf-api:latest | gzip | ssh ale@nas-ale 'gunzip | docker load'` e
+  `ssh ale@nas-ale 'cd /srv/apps/dnf-api && docker compose up -d'` (use o `/usr/bin/ssh`; o do Nix não lê a configuração do Fedora).
 - Depois de subir, o Traefik só roteia quando o container fica `healthy` (~15 s).
 
 ### Segurança do NAS (aplicada em 2026-11-01)

@@ -1,9 +1,11 @@
-# Modelo do compose da API no NAS (`/srv/apps/dnf-api/compose.yaml`), atrás do Traefik (rede externa "proxy").
-# Publicar: `docker build -f core/Dockerfile -t dnf-api:latest .` na raiz do repo (ou `docker save | ssh … docker load`),
-# copiar este arquivo + `.env.example` (como `.env`) para o NAS e `docker compose up -d`. Migrations rodam sozinhas ao subir.
+# Compose da API no NAS (`/srv/apps/dnf-api/compose.yaml`), atrás do Traefik (rede externa "proxy").
+# Publicar: `docker build -f core/Dockerfile -t dnf-api:latest .` na raiz do repo, enviar a imagem
+# (`docker save dnf-api:latest | gzip | ssh ale@nas-ale 'gunzip | docker load'`) e `docker compose up -d` aqui.
+# O `.env` (a partir de `.env.example`) fica só no NAS. As migrations rodam sozinhas ao subir.
 services:
   dnf-api:
     image: dnf-api:latest
+    container_name: dnf-api
     restart: unless-stopped
     env_file: .env
     environment:
@@ -12,41 +14,67 @@ services:
       # Avatares (a API grava) e a pasta do NAS com capas e mapas (o DM-Control grava, a API só lê).
       - ./files:/data/files
       - /srv/apps/dnf-db/nas:/data/nas:ro
-    networks: [proxy, internal]
+    networks: [proxy, default]
     depends_on:
       dnf-postgres:
         condition: service_healthy
     labels:
-      - traefik.enable=true
-      # A API vive no mesmo domínio do app web (cookie httpOnly de mesmo site): só estes caminhos vão para ela.
-      - traefik.http.routers.dnf-api.rule=Host(`dnf.developale.com`) && (PathPrefix(`/auth`) || PathPrefix(`/users`) || PathPrefix(`/characters`) || PathPrefix(`/mesas`) || PathPrefix(`/grids`) || PathPrefix(`/srd`) || PathPrefix(`/tts`) || PathPrefix(`/nas`) || PathPrefix(`/files`) || Path(`/health`))
-      - traefik.http.routers.dnf-api.entrypoints=web
-      - traefik.http.routers.dnf-api.middlewares=dnf-geral
-      - traefik.http.services.dnf-api.loadbalancer.server.port=3000
-      # Rate limit por IP real (Cloudflare): geral 600/min; entrar/cadastrar/consultar email 20/min; /tts 10/min; busca de mesa por código 10/min.
-      - traefik.http.middlewares.dnf-geral.ratelimit.average=600
-      - traefik.http.middlewares.dnf-geral.ratelimit.period=1m
-      - traefik.http.middlewares.dnf-geral.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP
-      - traefik.http.middlewares.dnf-login.ratelimit.average=20
-      - traefik.http.middlewares.dnf-login.ratelimit.period=1m
-      - traefik.http.middlewares.dnf-login.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP
-      - traefik.http.middlewares.dnf-tts.ratelimit.average=10
-      - traefik.http.middlewares.dnf-tts.ratelimit.period=1m
-      - traefik.http.middlewares.dnf-tts.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP
-      - traefik.http.routers.dnf-api-login.rule=Host(`dnf.developale.com`) && (Path(`/auth/login`) || Path(`/auth/signup`) || Path(`/auth/email-exists`))
-      - traefik.http.routers.dnf-api-login.entrypoints=web
-      # Prioridade explícita: sem ela a regra do roteador geral (a mais longa) ganharia dos específicos.
-      - traefik.http.routers.dnf-api-login.priority=100
-      - traefik.http.routers.dnf-api-login.middlewares=dnf-login
-      - traefik.http.routers.dnf-api-login.service=dnf-api
-      - traefik.http.routers.dnf-api-tts.rule=Host(`dnf.developale.com`) && (PathPrefix(`/tts`) || PathPrefix(`/mesas/by-code`))
-      - traefik.http.routers.dnf-api-tts.entrypoints=web
-      - traefik.http.routers.dnf-api-tts.priority=100
-      - traefik.http.routers.dnf-api-tts.middlewares=dnf-tts
-      - traefik.http.routers.dnf-api-tts.service=dnf-api
+      - "traefik.enable=true"
+      # A API vive no mesmo domínio do app web (cookie httpOnly de mesmo site): só estes caminhos vão para ela;
+      # o resto do domínio continua sendo o nginx do dnf-web. Prioridade 600 para ganhar da regra só de Host do dnf-web.
+      - "traefik.http.routers.dnf-api.rule=Host(`dnf.developale.com`) && (PathPrefix(`/auth`) || PathPrefix(`/users`) || PathPrefix(`/characters`) || PathPrefix(`/mesas`) || PathPrefix(`/grids`) || PathPrefix(`/srd`) || PathPrefix(`/tts`) || PathPrefix(`/nas`) || PathPrefix(`/files`) || Path(`/health`))"
+      - "traefik.http.routers.dnf-api.priority=600"
+      - "traefik.http.routers.dnf-api.entrypoints=web"
+      - "traefik.http.routers.dnf-api.middlewares=dnf-api-rl,security-headers@docker,compress@docker"
+      - "traefik.http.services.dnf-api.loadbalancer.server.port=3000"
 
+      # Rate limit por visitante (IP real que a Cloudflare manda em CF-Connecting-IP).
+      # Geral, folgado: uma mesa inteira pode estar atrás do mesmo IP.
+      - "traefik.http.middlewares.dnf-api-rl.ratelimit.average=600"
+      - "traefik.http.middlewares.dnf-api-rl.ratelimit.period=1m"
+      - "traefik.http.middlewares.dnf-api-rl.ratelimit.burst=200"
+      - "traefik.http.middlewares.dnf-api-rl.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP"
+      # Entrar, criar conta e "este e-mail tem conta?".
+      - "traefik.http.routers.dnf-api-auth.rule=Host(`dnf.developale.com`) && (Path(`/auth/login`) || Path(`/auth/signup`) || Path(`/auth/email-exists`))"
+      - "traefik.http.routers.dnf-api-auth.priority=700"
+      - "traefik.http.routers.dnf-api-auth.entrypoints=web"
+      - "traefik.http.routers.dnf-api-auth.service=dnf-api"
+      - "traefik.http.routers.dnf-api-auth.middlewares=dnf-api-rl-auth,security-headers@docker,compress@docker"
+      - "traefik.http.middlewares.dnf-api-rl-auth.ratelimit.average=20"
+      - "traefik.http.middlewares.dnf-api-rl-auth.ratelimit.period=1m"
+      - "traefik.http.middlewares.dnf-api-rl-auth.ratelimit.burst=10"
+      - "traefik.http.middlewares.dnf-api-rl-auth.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP"
+      # Narração (gasta créditos da ElevenLabs).
+      - "traefik.http.routers.dnf-api-tts.rule=Host(`dnf.developale.com`) && PathPrefix(`/tts`)"
+      - "traefik.http.routers.dnf-api-tts.priority=700"
+      - "traefik.http.routers.dnf-api-tts.entrypoints=web"
+      - "traefik.http.routers.dnf-api-tts.service=dnf-api"
+      - "traefik.http.routers.dnf-api-tts.middlewares=dnf-api-rl-tts,security-headers@docker,compress@docker"
+      - "traefik.http.middlewares.dnf-api-rl-tts.ratelimit.average=10"
+      - "traefik.http.middlewares.dnf-api-rl-tts.ratelimit.period=1m"
+      - "traefik.http.middlewares.dnf-api-rl-tts.ratelimit.burst=5"
+      - "traefik.http.middlewares.dnf-api-rl-tts.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP"
+      # Busca de mesa pelo código de convite (GET /mesas/by-code/<código>).
+      - "traefik.http.routers.dnf-api-invite.rule=Host(`dnf.developale.com`) && PathPrefix(`/mesas/by-code`)"
+      - "traefik.http.routers.dnf-api-invite.priority=700"
+      - "traefik.http.routers.dnf-api-invite.entrypoints=web"
+      - "traefik.http.routers.dnf-api-invite.service=dnf-api"
+      - "traefik.http.routers.dnf-api-invite.middlewares=dnf-api-rl-invite,security-headers@docker,compress@docker"
+      - "traefik.http.middlewares.dnf-api-rl-invite.ratelimit.average=10"
+      - "traefik.http.middlewares.dnf-api-rl-invite.ratelimit.period=1m"
+      - "traefik.http.middlewares.dnf-api-rl-invite.ratelimit.burst=5"
+      - "traefik.http.middlewares.dnf-api-rl-invite.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # Só na rede interna da stack: sem porta publicada e sem rota no Traefik.
   dnf-postgres:
     image: postgres:17-alpine
+    container_name: dnf-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: dnf
@@ -54,14 +82,12 @@ services:
       POSTGRES_DB: dnf
     volumes:
       - ./pg_data:/var/lib/postgresql/data
-    networks: [internal]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dnf"]
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 10
 
 networks:
   proxy:
     external: true
-  internal:
