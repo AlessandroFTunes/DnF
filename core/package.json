@@ -7,16 +7,25 @@
   },
   "scripts": {
     "typecheck": "tsc",
-    "seed:complement": "bun scripts/seed-complement.ts"
+    "seed:complement": "bun scripts/seed-complement.ts",
+    "api": "bun server.ts",
+    "api:dev": "bun --watch server.ts",
+    "db:generate": "drizzle-kit generate",
+    "migrate:pocketbase": "bun scripts/migrate-from-pocketbase.ts"
   },
   "devDependencies": {
-    "@dnf/tsconfig": "workspace:*"
+    "@dnf/tsconfig": "workspace:*",
+    "@types/bun": "^1.4.4",
+    "drizzle-kit": "^0.31.11"
   },
   "dependencies": {
     "@techstark/opencv-js": "^5.0.0-release.1",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.18",
     "openapi-fetch": "^0.17.0",
     "pixi.js": "^8.22.0",
     "pocketbase": "^0.28.1",
+    "postgres": "^4.1.1",
     "zod": "^4.6.5"
   }
 }

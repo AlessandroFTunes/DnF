@@ -1,4 +1,9 @@
 {
   "extends": "@dnf/tsconfig/base.json",
-  "include": ["src"]
+  "include": [
+    "src",
+    "server.ts",
+    "drizzle.config.ts",
+    "scripts/migrate-from-pocketbase.ts"
+  ]
 }

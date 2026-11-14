@@ -39,6 +39,24 @@ src/
   se já existe em um dos dois. Bloco usado por uma feature só fica em `components/` dela.
 - Não crie `src/app`, `src/pages`, `src/features` nem `src/hooks`.
 
+### API e banco (migração PocketBase → Postgres, em andamento)
+
+A API do DnF fica **toda no `core`** (nunca em `apps/`): rotas, regras de negócio e banco. O app e o DM-Control só
+chamam a URL. Hono + Drizzle + Postgres; só o servidor importa estes módulos.
+
+| Onde | O quê |
+|---|---|
+| `core/src/db` | `Db`: schema Drizzle (`schema.ts`, colunas em snake_case, ids em texto), `Db.create(url)`, `Db.migrateUp`. Migrations geradas em `core/drizzle/` (`bun run db:generate` na pasta `core`) |
+| `core/src/api` | `Api.create({ db, auth, env })`: `/srd/*` (proxy da 5e-FastAPI com cache de 1 dia em memória), `/tts` e `/tts/sage` (provedores em `tts.ts`, falas na tabela `tts_cache`), `/nas/*` (regra do `Nas.reader`). Tudo exige login, menos `/health` |
+| `core/src/api/auth.ts` | Port `Auth`: `authenticate(token)`. Hoje o adapter confere o token no PocketBase (`auth-refresh`); quando o login passar para o core, troca-se só o adapter |
+| `core/server.ts` | Entrada (`bun run api`): lê o ambiente, aplica as migrations e sobe o Hono. `DATABASE_URL` obrigatória, `POCKETBASE_URL`, `DND_API_*`, `ELEVENLABS_API_KEY`, `TTS_PROVIDERS`, `PIPER_URL`, `NAS_DIR` |
+| `core/scripts/migrate-from-pocketbase.ts` | Copia users, characters, mesas, mesa_members, grids e grid_scenes do `pb_data/data.db` para o Postgres, mantendo os ids e o hash bcrypt. `--replace` apaga e copia de novo; sem ele, recusa se o Postgres já tem usuários. Avatares (`pb_data/storage`) são arquivos: copie à parte |
+| `core/tests/api.test.ts` | Teste da API com PocketBase e 5e-FastAPI falsos. Precisa de `DATABASE_URL` (`docker compose up -d postgres`); sem ela é pulado |
+
+Local: `docker compose up -d postgres api` (API em `http://localhost:3000`). Ainda falta mover: auth/usuários (login, avatar,
+cookie do app web), personagens e mesas (com as regras de acesso e testes), realtime (SSE) e o DM-Control; só então o `dnf-db` sai.
+O app ainda fala com o PocketBase para tudo isso.
+
 ### Serviços externos
 
 Cada serviço externo expõe **um comando só**, com a configuração padrão fixa no adapter (sem parâmetros nem
