@@ -46,7 +46,7 @@ chamam a URL. Hono + Drizzle + Postgres; só o servidor importa estes módulos.
 
 | Onde | O quê |
 |---|---|
-| `core/src/db` | `Db`: schema Drizzle (`schema.ts`, colunas em snake_case, ids em texto), `Db.create(url)`, `Db.migrateUp`. Migrations geradas em `core/drizzle/` (`bun run db:generate` na pasta `core`) |
+| `core/src/db` + `core/src/<módulo>/<módulo>.sql.ts` | `Db`: junta as tabelas Drizzle, que ficam ao lado do módulo (`user/user.sql.ts`, `character/character.sql.ts`, `mesa/mesa.sql.ts` com `mesas` e `mesa_members`, `grid/grid.sql.ts`, `narration/narration.sql.ts`); colunas comuns em `db/columns.ts`. Tabela nova: crie o `<módulo>.sql.ts` e registre em `db/index.ts` (colunas em snake_case, ids em texto), `Db.create(url)`, `Db.migrateUp`. Migrations geradas em `core/drizzle/` (`bun run db:generate` na pasta `core`) |
 | `core/src/api` | `Api.create({ db, auth, env })`: `/srd/*` (proxy da 5e-FastAPI com cache de 1 dia em memória), `/tts` e `/tts/sage` (provedores em `tts.ts`, falas na tabela `tts_cache`), `/nas/*` (regra do `Nas.reader`). Tudo exige login, menos `/health` |
 | `core/src/api/auth.ts` | Port `Auth`: `authenticate(token)`. Hoje o adapter confere o token no PocketBase (`auth-refresh`); quando o login passar para o core, troca-se só o adapter |
 | `core/server.ts` | Entrada (`bun run api`): lê o ambiente, aplica as migrations e sobe o Hono. `DATABASE_URL` obrigatória, `POCKETBASE_URL`, `DND_API_*`, `ELEVENLABS_API_KEY`, `TTS_PROVIDERS`, `PIPER_URL`, `NAS_DIR` |
