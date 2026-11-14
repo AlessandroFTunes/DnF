@@ -10,10 +10,10 @@ import { Db } from './src/db';
 const env = process.env;
 if (!env.DATABASE_URL) throw new Error('Defina DATABASE_URL.');
 
-const db = Db.create(env.DATABASE_URL);
-await Db.migrateUp(db, new URL('./drizzle', import.meta.url).pathname);
+Db.use(env.DATABASE_URL);
+await Db.migrateUp();
 
 const auth = Api.pocketBaseAuth(env.POCKETBASE_URL ?? 'http://localhost:8090');
-const app = Api.create({ db, auth, env });
+const app = Api.create({ auth, env });
 
 export default { port: Number(env.PORT ?? 3000), fetch: app.fetch };

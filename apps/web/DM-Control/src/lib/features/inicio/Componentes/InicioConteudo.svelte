@@ -1,4 +1,5 @@
 <script lang="ts">
+	import EstadoCarga from '../../../components/EstadoCarga.svelte';
 	import { inicio } from '../api.remote';
 	import InicioCriarMesa from './InicioCriarMesa.svelte';
 	import InicioMesaCard from './InicioMesaCard.svelte';
@@ -6,35 +7,29 @@
 	const dados = inicio();
 </script>
 
-{#if dados.error}
-	<p class="aviso" role="alert">Não foi possível carregar suas mesas. Tente de novo.</p>
-{:else if !dados.current}
-	<p class="aviso">Carregando…</p>
-{:else if 'failure' in dados.current}
-	<p class="aviso" role="alert">{dados.current.failure}</p>
-{:else}
-	{@const { name, mesas } = dados.current}
+<EstadoCarga {dados} erro="Não foi possível carregar suas mesas. Tente de novo.">
+	{#snippet children({ name, mesas })}
+		<h1>Olá, {name}<span>O que vamos mestrar hoje?</span></h1>
 
-	<h1>Olá, {name}<span>O que vamos mestrar hoje?</span></h1>
-
-	{#if mesas.length === 0}
-		<div class="vazio">
-			<h2>Vamos explorar</h2>
-			<p>Crie sua primeira campanha</p>
-			<InicioCriarMesa />
-		</div>
-	{:else}
-		<div class="titulo">
-			<h2>Suas mesas</h2>
-			<InicioCriarMesa />
-		</div>
-		<ul>
-			{#each mesas as mesa (mesa.id)}
-				<li><InicioMesaCard {mesa} /></li>
-			{/each}
-		</ul>
-	{/if}
-{/if}
+		{#if mesas.length === 0}
+			<div class="vazio">
+				<h2>Vamos explorar</h2>
+				<p>Crie sua primeira campanha</p>
+				<InicioCriarMesa />
+			</div>
+		{:else}
+			<div class="titulo">
+				<h2>Suas mesas</h2>
+				<InicioCriarMesa />
+			</div>
+			<ul>
+				{#each mesas as mesa (mesa.id)}
+					<li><InicioMesaCard {mesa} /></li>
+				{/each}
+			</ul>
+		{/if}
+	{/snippet}
+</EstadoCarga>
 
 <style>
 	h1 {
@@ -95,13 +90,5 @@
 		margin: 0;
 		padding: 0;
 		list-style: none;
-	}
-
-	.aviso {
-		color: rgb(255 255 255 / 0.6);
-	}
-
-	.aviso[role='alert'] {
-		color: var(--danger);
 	}
 </style>

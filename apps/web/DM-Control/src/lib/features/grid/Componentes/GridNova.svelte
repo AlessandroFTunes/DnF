@@ -1,4 +1,5 @@
 <script lang="ts">
+	import FormAcoes from '../../../components/FormAcoes.svelte';
 	import { criarGrid, grids as buscarGrids } from '../api.remote';
 
 	let { mesaId }: { mesaId: string } = $props();
@@ -44,7 +45,12 @@
 		<h2 id="nova-grid-titulo">Nova grid</h2>
 		<input {...criarGrid.fields.mesaId.as('hidden', mesaId)} />
 
-		<button type="button" class="mapa" aria-label="Escolher o mapa" onclick={() => arquivo?.click()}>
+		<button
+			type="button"
+			class="mapa"
+			aria-label="Escolher o mapa"
+			onclick={() => arquivo?.click()}
+		>
 			{#if previa}
 				<img src={previa} alt="Prévia do mapa" />
 				<span class="trocar">Trocar imagem</span>
@@ -77,14 +83,12 @@
 			{/each}
 		</label>
 
-		{#if failure}<p class="falha" role="alert">{failure}</p>{/if}
-
-		<footer>
-			<button type="button" class="sec" onclick={() => dialog?.close()}>Cancelar</button>
-			<button type="submit" class="salvar" disabled={criarGrid.pending > 0}>
-				{criarGrid.pending > 0 ? 'Aguarde…' : 'Criar'}
-			</button>
-		</footer>
+		<FormAcoes
+			{failure}
+			pending={criarGrid.pending > 0}
+			label="Criar"
+			oncancel={() => dialog?.close()}
+		/>
 	</form>
 </dialog>
 
@@ -180,41 +184,10 @@
 		font: inherit;
 	}
 
-	em,
-	.falha {
+	em {
 		margin: 0;
 		color: var(--danger);
 		font-size: 0.85rem;
 		font-style: normal;
-	}
-
-	footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.6rem;
-	}
-
-	footer button {
-		padding: 0.7rem 1.4rem;
-		border: 0;
-		border-radius: 999px;
-		font: inherit;
-		font-weight: 700;
-		cursor: pointer;
-	}
-
-	.sec {
-		background: transparent;
-		color: #fff;
-		border: 1px solid rgb(255 255 255 / 0.3);
-	}
-
-	.salvar {
-		background: var(--gold);
-		color: var(--on-gold);
-	}
-
-	.salvar:disabled {
-		opacity: 0.6;
 	}
 </style>

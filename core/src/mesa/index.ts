@@ -3,7 +3,7 @@ import type { RecordModel } from 'pocketbase';
 import { Assert } from '../util/assert';
 import { DiferenteKey } from '../util/diferenteKey';
 import { fn } from '../util/fn';
-import { PocketBase, sortable } from '../pocketbase';
+import { PocketBase } from '../pocketbase';
 import { Common } from '../common';
 import { Examples } from '../examples';
 import { Character } from '../character';
@@ -58,15 +58,12 @@ export namespace Mesa {
     .transform((code) => code.replace(/[^a-z0-9]/gi, '').toUpperCase())
     .pipe(z.string().length(8));
 
-  /** Sortable keys mapped to what each orders by — also the allowlist. */
-  export const SortableColumns = sortable(
-    {
-      name: 'name',
-      timeCreated: 'created',
-      timeUpdated: 'updated',
-    } satisfies Partial<Record<keyof Info, string>>,
-    '-updated,id',
-  );
+  const listing = Common.listing({
+    collection: 'mesas',
+    serialize,
+    columns: { name: 'name', timeCreated: 'created', timeUpdated: 'updated' } satisfies Partial<Record<keyof Info, string>>,
+    fallback: '-updated,id',
+  });
 
   export const create = fn(
     Info.pick({ name: true, edition: true }).extend({ description: Info.shape.description.default('') }),
@@ -81,24 +78,8 @@ export namespace Mesa {
   );
 
   export const list = fn(
-    Common.Query({ sort: SortableColumns.schema.optional(), search: z.string().optional() }),
-    async (input): Promise<Common.Page<Info>> => {
-      const pb = PocketBase.use();
-      const result = await pb.collection('mesas').getList(input.page, input.pageSize, {
-        filter: input.search ? pb.filter('name ~ {:search}', { search: input.search }) : '',
-        sort: SortableColumns.orderBy(input.sort),
-      });
-      return {
-        data: result.items.map(serialize),
-        page: result.page,
-        pageSize: result.perPage,
-        total: result.totalItems,
-      };
-    },
-    {
-      title: 'List tables',
-      description: 'List tables the logged-in user runs or plays in. Paginated.',
-    },
+    listing.Query,
+    (input) => listing.page(input),
   );
 
   export const fromID = fn(

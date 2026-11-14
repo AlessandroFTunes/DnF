@@ -1,4 +1,5 @@
 <script lang="ts">
+	import EstadoCarga from '../../../components/EstadoCarga.svelte';
 	import { resolve } from '$app/paths';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Trash from '@lucide/svelte/icons/trash';
@@ -24,63 +25,58 @@
 	}
 </script>
 
-{#if dados.error}
-	<p class="aviso" role="alert">Não foi possível carregar os mapas. Tente de novo.</p>
-{:else if !dados.current}
-	<p class="aviso">Carregando…</p>
-{:else if 'failure' in dados.current}
-	<p class="aviso" role="alert">{dados.current.failure}</p>
-{:else}
-	{@const d = dados.current}
-	<header>
-		<div>
-			<h1>Mapas de combate</h1>
-			<p class="mesa">{d.mesa.name}</p>
-		</div>
-		{#if d.grids.length > 0}
-			<button type="button" class="novo" onclick={() => nova?.abrir()}>
-				<Plus size={18} aria-hidden="true" /> Nova grid
-			</button>
-		{/if}
-	</header>
+<EstadoCarga {dados} erro="Não foi possível carregar os mapas. Tente de novo.">
+	{#snippet children(d)}
+		<header>
+			<div>
+				<h1>Mapas de combate</h1>
+				<p class="mesa">{d.mesa.name}</p>
+			</div>
+			{#if d.grids.length > 0}
+				<button type="button" class="novo" onclick={() => nova?.abrir()}>
+					<Plus size={18} aria-hidden="true" /> Nova grid
+				</button>
+			{/if}
+		</header>
 
-	{#if falha}<p class="aviso" role="alert">{falha}</p>{/if}
+		{#if falha}<p class="aviso" role="alert">{falha}</p>{/if}
 
-	{#if d.grids.length === 0}
-		<div class="vazio">
-			<p>Esta mesa ainda não tem nenhum mapa de combate.</p>
-			<button type="button" class="novo" onclick={() => nova?.abrir()}>
-				<Plus size={18} aria-hidden="true" /> Crie seu primeiro grid
-			</button>
-		</div>
-	{:else}
-		<ul>
-			{#each d.grids as g (g.id)}
-				<li>
-					<a class="capa" href={resolve('/mesa/[id]/mapas/[gridId]', { id, gridId: g.id })}>
-						<img src={g.image} alt="" loading="lazy" />
-					</a>
-					<div class="info">
-						<strong>{g.name}</strong>
-						<div class="acoes">
-							<a href={resolve('/mesa/[id]/mapas/[gridId]', { id, gridId: g.id })}>Abrir</a>
-							<button
-								type="button"
-								class="lixo"
-								aria-label="Excluir {g.name}"
-								onclick={() => excluir(g.id, g.name)}
-							>
-								<Trash size={16} aria-hidden="true" />
-							</button>
+		{#if d.grids.length === 0}
+			<div class="vazio">
+				<p>Esta mesa ainda não tem nenhum mapa de combate.</p>
+				<button type="button" class="novo" onclick={() => nova?.abrir()}>
+					<Plus size={18} aria-hidden="true" /> Crie seu primeiro grid
+				</button>
+			</div>
+		{:else}
+			<ul>
+				{#each d.grids as g (g.id)}
+					<li>
+						<a class="capa" href={resolve('/mesa/[id]/mapas/[gridId]', { id, gridId: g.id })}>
+							<img src={g.image} alt="" loading="lazy" />
+						</a>
+						<div class="info">
+							<strong>{g.name}</strong>
+							<div class="acoes">
+								<a href={resolve('/mesa/[id]/mapas/[gridId]', { id, gridId: g.id })}>Abrir</a>
+								<button
+									type="button"
+									class="lixo"
+									aria-label="Excluir {g.name}"
+									onclick={() => excluir(g.id, g.name)}
+								>
+									<Trash size={16} aria-hidden="true" />
+								</button>
+							</div>
 						</div>
-					</div>
-				</li>
-			{/each}
-		</ul>
-	{/if}
+					</li>
+				{/each}
+			</ul>
+		{/if}
 
-	<GridNova bind:this={nova} mesaId={id} />
-{/if}
+		<GridNova bind:this={nova} mesaId={id} />
+	{/snippet}
+</EstadoCarga>
 
 <style>
 	header {
@@ -196,13 +192,5 @@
 
 	.vazio p {
 		margin: 0;
-	}
-
-	.aviso {
-		color: rgb(255 255 255 / 0.6);
-	}
-
-	.aviso[role='alert'] {
-		color: var(--danger);
 	}
 </style>

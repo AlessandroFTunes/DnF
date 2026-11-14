@@ -16,7 +16,7 @@ import { useBackgrounds, useClass, useClasses, useFeats, useItems, useLanguages,
 import { useCharacterDraft, type CharacterDraft } from './draft';
 
 /** Atributos base (antes dos bônus), ou null se ainda não foram todos distribuídos. */
-export function baseScores(draft: CharacterDraft): AbilityScores | null {
+function baseScores(draft: CharacterDraft): AbilityScores | null {
   if (draft.abilityMethod === 'pointBuy') return draft.pointBuy;
   if (draft.abilityMethod === 'manual')
     return ABILITIES.every((a) => draft.manualScores[a] !== undefined) ? (draft.manualScores as AbilityScores) : null;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import FormAcoes from '../../../components/FormAcoes.svelte';
 	import { editarMesa, mesa as buscarMesa } from '../api.remote';
 
 	let {
@@ -95,14 +96,12 @@
 			{/each}
 		</label>
 
-		{#if failure}<p class="falha" role="alert">{failure}</p>{/if}
-
-		<footer>
-			<button type="button" class="sec" onclick={() => dialog?.close()}>Cancelar</button>
-			<button type="submit" class="salvar" disabled={editarMesa.pending > 0}>
-				{editarMesa.pending > 0 ? 'Aguarde…' : 'Salvar'}
-			</button>
-		</footer>
+		<FormAcoes
+			{failure}
+			pending={editarMesa.pending > 0}
+			label="Salvar"
+			oncancel={() => dialog?.close()}
+		/>
 	</form>
 </dialog>
 
@@ -212,43 +211,10 @@
 		border-color: var(--danger);
 	}
 
-	em,
-	.falha {
+	em {
 		margin: 0;
+		color: var(--danger);
 		font-size: 0.85rem;
 		font-style: normal;
-		color: var(--danger);
-	}
-
-	footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.6rem;
-	}
-
-	.sec,
-	.salvar {
-		padding: 0.7rem 1.3rem;
-		border-radius: 999px;
-		font-weight: 700;
-		cursor: pointer;
-	}
-
-	.sec {
-		border: 1px solid rgb(255 255 255 / 0.25);
-		background: none;
-		color: #fff;
-	}
-
-	.salvar {
-		border: 0;
-		background: var(--gold);
-		color: var(--on-gold);
-		font-weight: 800;
-	}
-
-	.salvar:disabled {
-		opacity: 0.6;
-		cursor: wait;
 	}
 </style>

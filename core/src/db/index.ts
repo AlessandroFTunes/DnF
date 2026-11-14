@@ -9,22 +9,37 @@ import { users } from '../user/user.sql';
 
 const schema = { users, characters, mesas, mesaMembers, grids, gridScenes, ttsCache };
 
+function open(url: string) {
+  const sql = postgres(url, { onnotice: () => {} });
+  return { sql, db: drizzle(sql, { schema, casing: 'snake_case' }) };
+}
+
+let current: ReturnType<typeof open> | undefined;
+
 /**
- * Banco de dados (Postgres + Drizzle). Só o servidor importa: o app nunca fala com o banco, só com a API
- * (`core/src/api`). Cada tabela fica ao lado do módulo dela, num `<módulo>.sql.ts` (`mesa/mesa.sql.ts`, `user/user.sql.ts`…); as migrations ficam em `core/drizzle/` (`bun run db:generate`).
+ * Banco de dados (Postgres + Drizzle), uma conexão só por processo. Só o servidor importa: o app nunca fala com o
+ * banco, só com a API (`core/src/api`). Cada tabela fica ao lado do módulo dela, num `<módulo>.sql.ts`
+ * (`mesa/mesa.sql.ts`, `user/user.sql.ts`…); as migrations ficam em `core/drizzle/` (`bun run db:generate`).
  */
 export namespace Db {
   export const tables = schema;
 
-  export function create(url: string) {
-    const sql = postgres(url, { onnotice: () => {} });
-    const db = drizzle(sql, { schema, casing: 'snake_case' });
-    return Object.assign(db, { close: () => sql.end() });
+  /** O banco compartilhado. A primeira chamada abre a conexão (`url`, ou `DATABASE_URL`); as outras a reaproveitam. */
+  export function use(url = process.env.DATABASE_URL) {
+    if (current) return current.db;
+    if (!url) throw new Error('Defina DATABASE_URL ou chame Db.use(url).');
+    return (current = open(url)).db;
   }
-  export type Client = ReturnType<typeof create>;
 
-  /** Aplica as migrations que faltam (pasta gerada pelo drizzle-kit). */
-  export async function migrateUp(db: Client, folder: string) {
-    await migrate(db, { migrationsFolder: folder });
+  /** Aplica as migrations que faltam (pasta `core/drizzle/`). */
+  export async function migrateUp() {
+    await migrate(use(), { migrationsFolder: new URL('../../drizzle', import.meta.url).pathname });
+  }
+
+  /** Fecha a conexão; o próximo `use()` abre outra. */
+  export async function close() {
+    const open = current;
+    current = undefined;
+    await open?.sql.end();
   }
 }

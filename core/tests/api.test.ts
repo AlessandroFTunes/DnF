@@ -13,7 +13,7 @@ describe.skipIf(!url)('Api', () => {
   const run = crypto.randomUUID().slice(0, 8);
   const ids = { gm: `gm-${run}`, member: `member-${run}`, stranger: `stranger-${run}`, mesa: `mesa-${run}`, character: `char-${run}`, row: `row-${run}` };
   const tokens: Record<string, string> = { gm: ids.gm, member: ids.member, stranger: ids.stranger };
-  const db = Db.create(url!);
+  const db = Db.use(url);
   const { users, mesas, mesaMembers, characters, ttsCache } = Db.tables;
   let nasDir: string;
   let fakeSrd: ReturnType<typeof Bun.serve>;
@@ -25,7 +25,7 @@ describe.skipIf(!url)('Api', () => {
     app.request(path, { headers: as ? { Authorization: tokens[as]! } : {} });
 
   beforeAll(async () => {
-    await Db.migrateUp(db, new URL('../drizzle', import.meta.url).pathname);
+    await Db.migrateUp();
     nasDir = await mkdtemp(join(tmpdir(), 'dnf-nas-'));
     await mkdir(join(nasDir, ids.mesa, 'imagens'), { recursive: true });
     await mkdir(join(nasDir, ids.mesa, 'mapas'), { recursive: true });
@@ -55,7 +55,6 @@ describe.skipIf(!url)('Api', () => {
     await db.insert(mesaMembers).values({ id: ids.row, mesaId: ids.mesa, userId: ids.member, characterId: ids.character });
 
     app = Api.create({
-      db,
       // Aceita só os tokens do teste (o id do usuário é o próprio token).
       auth: { authenticate: async (token) => (Object.values(tokens).includes(token) ? { id: token } : null) },
       env: { DND_API_URL: `http://localhost:${fakeSrd.port}` },
@@ -67,7 +66,7 @@ describe.skipIf(!url)('Api', () => {
     await db.delete(ttsCache);
     fakeSrd?.stop(true);
     if (nasDir) await rm(nasDir, { recursive: true, force: true });
-    await db.close();
+    await Db.close();
   });
 
   test('/health é aberto; o resto exige login', async () => {

@@ -7,7 +7,7 @@ import { useSession } from '../../auth/functions/hook.session';
  * `update` do próprio usuário), então ler é só olhar a sessão; gravar são as ações abaixo.
  */
 
-export const DEFAULT_PREFERENCES: User.Preferences = User.Preferences.parse({});
+const DEFAULT_PREFERENCES: User.Preferences = User.Preferences.parse({});
 
 /** Preferências de fora de um componente (ex.: decidir se a narração toca). Sem sessão, os padrões. */
 export function currentPreferences(): User.Preferences {

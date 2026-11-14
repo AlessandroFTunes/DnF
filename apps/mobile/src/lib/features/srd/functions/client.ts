@@ -45,7 +45,7 @@ export const tr = {
  *  9: subclasses com `alwaysPrepared` e `tables`, e conjuração do Cavaleiro Místico/Trapaceiro Arcano
  *  10: `tables` da subclasse inclui as tabelas das características (Conjuração do Cavaleiro Místico)
  */
-export const SRD_CACHE_VERSION = 10;
+const SRD_CACHE_VERSION = 10;
 export const cache = Cache.create(persistentCache, SRD_CACHE_VERSION);
 
 /** Chave da consulta no TanStack Query. */

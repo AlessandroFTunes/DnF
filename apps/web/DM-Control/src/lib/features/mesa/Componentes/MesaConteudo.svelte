@@ -1,4 +1,5 @@
 <script lang="ts">
+	import EstadoCarga from '../../../components/EstadoCarga.svelte';
 	import { mesa } from '../api.remote';
 
 	let { id }: { id: string } = $props();
@@ -6,20 +7,14 @@
 	const dados = $derived(mesa(id));
 </script>
 
-{#if dados.error}
-	<p class="aviso" role="alert">Não foi possível carregar a mesa. Tente de novo.</p>
-{:else if !dados.current}
-	<p class="aviso">Carregando…</p>
-{:else if 'failure' in dados.current}
-	<p class="aviso" role="alert">{dados.current.failure}</p>
-{:else}
-	{@const m = dados.current}
-
-	{#if m.image}<img src={m.image} alt="" />{/if}
-	<h1>{m.name}</h1>
-	<p class="meta">D&amp;D {m.edition} · Código de convite <strong>{m.inviteCode}</strong></p>
-	{#if m.description}<p class="descricao">{m.description}</p>{/if}
-{/if}
+<EstadoCarga {dados} erro="Não foi possível carregar a mesa. Tente de novo.">
+	{#snippet children(m)}
+		{#if m.image}<img src={m.image} alt="" />{/if}
+		<h1>{m.name}</h1>
+		<p class="meta">D&amp;D {m.edition} · Código de convite <strong>{m.inviteCode}</strong></p>
+		{#if m.description}<p class="descricao">{m.description}</p>{/if}
+	{/snippet}
+</EstadoCarga>
 
 <style>
 	img {
@@ -54,13 +49,5 @@
 		margin: 0;
 		line-height: 1.55;
 		color: rgb(255 255 255 / 0.8);
-	}
-
-	.aviso {
-		color: rgb(255 255 255 / 0.6);
-	}
-
-	.aviso[role='alert'] {
-		color: var(--danger);
 	}
 </style>

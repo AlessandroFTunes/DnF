@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import type { Db } from '../db';
 import * as AuthPort from './auth';
 import { nasRoutes } from './nas';
 import { srdRoutes } from './srd';
@@ -18,12 +17,11 @@ export namespace Api {
   export const pocketBaseAuth = AuthPort.pocketBase;
 
   export interface Config {
-    db: Db.Client;
     auth: Auth;
     env: Env;
   }
 
-  export function create({ db, auth, env }: Config) {
+  export function create({ auth, env }: Config) {
     const app = new Hono<AppEnv>();
 
     app.get('/health', (c) => c.json({ ok: true }));
@@ -38,8 +36,8 @@ export namespace Api {
     });
 
     app.route('/srd', srdRoutes(env));
-    app.route('/', ttsRoutes(db, env));
-    app.route('/nas', nasRoutes(db));
+    app.route('/', ttsRoutes(env));
+    app.route('/nas', nasRoutes());
 
     app.onError((error, c) => {
       console.error(error);

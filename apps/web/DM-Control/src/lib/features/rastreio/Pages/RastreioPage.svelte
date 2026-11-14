@@ -1,8 +1,6 @@
 <script lang="ts">
 	import MesaApp from '../../mesa/Componentes/MesaApp.svelte';
 	import RastreioCalibracao from '../Componentes/RastreioCalibracao.svelte';
-
-	let { data }: { data: { id: string } } = $props();
 </script>
 
 <svelte:head>
@@ -10,5 +8,5 @@
 </svelte:head>
 
 <MesaApp ativo="grid">
-	<RastreioCalibracao id={data.id} />
+	<RastreioCalibracao />
 </MesaApp>

@@ -27,7 +27,7 @@ export function toErrors(error: unknown, mode: AuthMode): AuthErrors {
   return { form: 'Algo deu errado. Tente de novo.' };
 }
 
-export function fieldMessage(field: AuthField, code: string, mode: AuthMode): string {
+function fieldMessage(field: AuthField, code: string, mode: AuthMode): string {
   switch (field) {
     case 'name':
       return 'Informe seu nome.';

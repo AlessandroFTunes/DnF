@@ -8,7 +8,7 @@ const KEY = 'query-player';
  * compêndio (disco no celular, localStorage na web). O app abre já com o último estado e atualiza em segundo
  * plano. Grava no máximo uma vez por `throttleMs`, porque o cache muda a cada toque na ficha.
  */
-export function createQueryPersister(throttleMs = 1000): Persister {
+function createQueryPersister(throttleMs = 1000): Persister {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let pending: PersistedClient | null = null;
 

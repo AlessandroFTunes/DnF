@@ -3,8 +3,6 @@
 	import { Calibration, Tracking } from '@dnf/core/tracking';
 	import RastreioMarcadores from './RastreioMarcadores.svelte';
 
-	let { id }: { id: string } = $props();
-
 	/** Marcadores dos cantos da mesa: superior esq., superior dir., inferior dir., inferior esq. */
 	const CANTOS: Calibration.CornerIds = [0, 1, 2, 3];
 	const NOMES_CANTOS = ['Sup. esq.', 'Sup. dir.', 'Inf. dir.', 'Inf. esq.'];

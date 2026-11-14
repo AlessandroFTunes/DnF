@@ -3,7 +3,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Chip, fonts, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import type { IconName } from './IconButton';
 
-export interface PickerOption<T extends string> {
+interface PickerOption<T extends string> {
   value: T;
   label: string;
   icon?: IconName;

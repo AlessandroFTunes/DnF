@@ -1,4 +1,5 @@
 <script lang="ts">
+	import FormAcoes from '../../../components/FormAcoes.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { criarMesa, inicio } from '../api.remote';
@@ -164,21 +165,18 @@
 				{/each}
 			</section>
 
-			{#if failure}<p class="falha" role="alert">{failure}</p>{/if}
-
-			<footer>
-				<button type="button" class="sec" onclick={() => dialog?.close()}>Cancelar</button>
-				<button type="submit" class="criar" disabled={criarMesa.pending > 0}>
-					{criarMesa.pending > 0 ? 'Aguarde…' : 'Criar mesa'}
-				</button>
-			</footer>
+			<FormAcoes
+				{failure}
+				pending={criarMesa.pending > 0}
+				label="Criar mesa"
+				oncancel={() => dialog?.close()}
+			/>
 		</div>
 	</form>
 </dialog>
 
 <style>
-	.abrir,
-	.criar {
+	.abrir {
 		padding: 0.7rem 1.3rem;
 		border: 0;
 		border-radius: 999px;
@@ -189,14 +187,18 @@
 		cursor: pointer;
 	}
 
-	.abrir:hover,
-	.criar:hover:not(:disabled) {
+	.abrir:hover {
 		filter: brightness(1.08);
 	}
 
-	.criar:disabled {
-		opacity: 0.6;
-		cursor: wait;
+	form :global(.falha),
+	form :global(footer) {
+		margin-inline: 1.6rem;
+	}
+
+	form :global(footer) {
+		margin-top: auto;
+		margin-bottom: 1.6rem;
 	}
 
 	dialog {
@@ -272,18 +274,12 @@
 		gap: 1.2rem;
 	}
 
-	.conteudo > section,
-	.falha,
-	footer {
+	.conteudo > section {
 		margin-inline: 1.6rem;
 	}
 
 	.conteudo > section:first-of-type {
 		margin-top: 0.4rem;
-	}
-
-	footer {
-		margin-bottom: 1.6rem;
 	}
 
 	.fechar {
@@ -468,31 +464,12 @@
 		flex-direction: column;
 	}
 
-	em,
-	.falha {
+	em {
 		margin: 0;
+		color: var(--danger);
 		font-size: 0.85rem;
 		font-style: normal;
-		color: var(--danger);
 	}
-
-	footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.6rem;
-		margin-top: auto;
-	}
-
-	.sec {
-		padding: 0.7rem 1.3rem;
-		border: 1px solid rgb(255 255 255 / 0.25);
-		border-radius: 999px;
-		background: none;
-		color: #fff;
-		font-weight: 700;
-		cursor: pointer;
-	}
-
 	@media (min-width: 40rem) {
 		form {
 			grid-template-columns: 13rem 1fr;

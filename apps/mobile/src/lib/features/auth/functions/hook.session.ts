@@ -20,7 +20,7 @@ const REJECTED_TOKEN_STATUS = new Set([401, 403, 404]);
  * Renova o token no servidor. Só derruba a sessão quando o servidor rejeita o token;
  * sem rede (status 0), rate limit (429) ou erro no servidor (5xx) mantém o token local enquanto não expirar.
  */
-export async function refreshSession(): Promise<User.SessionInfo | null> {
+async function refreshSession(): Promise<User.SessionInfo | null> {
   // eslint-disable-next-line react-hooks/rules-of-hooks -- PocketBase.use() devolve o cliente, não é hook do React.
   const pb = PocketBase.use();
   if (!pb.authStore.isValid) {
@@ -39,7 +39,7 @@ export async function refreshSession(): Promise<User.SessionInfo | null> {
 
 const assert = Assert.create('Session');
 
-export const login = fn(
+const login = fn(
   z.object({ email: User.Email, password: z.string().min(1) }),
   async ({ email, password }) => {
     await PocketBase.use().collection('users').authWithPassword(email, password);
@@ -48,7 +48,7 @@ export const login = fn(
   { title: 'Login', description: 'Authenticate with email and password.' },
 );
 
-export const signUp = fn(
+const signUp = fn(
   User.create.schema,
   async (input) => {
     const user = await User.create.force(input);
@@ -57,7 +57,7 @@ export const signUp = fn(
   { title: 'Sign up', description: 'Create an account and log in.' },
 );
 
-export function logout() {
+function logout() {
   // eslint-disable-next-line react-hooks/rules-of-hooks -- PocketBase.use() devolve o cliente, não é hook do React.
   const pb = PocketBase.use();
   pb.authStore.clear();
@@ -66,7 +66,7 @@ export function logout() {
 }
 
 /** Ao abrir o app: lê o token do Keychain e renova com o servidor. */
-export async function restoreSession(): Promise<User.SessionInfo | null> {
+async function restoreSession(): Promise<User.SessionInfo | null> {
   await User.loadSession();
   return refreshSession();
 }

@@ -3,7 +3,7 @@ import type { RecordModel } from 'pocketbase';
 import { Assert } from '../util/assert';
 import { DiferenteKey } from '../util/diferenteKey';
 import { fn } from '../util/fn';
-import { PocketBase, sortable } from '../pocketbase';
+import { PocketBase } from '../pocketbase';
 import { Common } from '../common';
 import { Examples } from '../examples';
 import { abilityScoresSchema } from './abilities';
@@ -89,16 +89,17 @@ export namespace Character {
     details: patchOf(Sheet.Details),
   });
 
-  /** Sortable keys mapped to what each orders by — also the allowlist. */
-  export const SortableColumns = sortable(
-    {
+  const listing = Common.listing({
+    collection: 'characters',
+    serialize,
+    columns: {
       name: 'name',
       level: 'level',
       timeCreated: 'created',
       timeUpdated: 'updated',
     } satisfies Partial<Record<keyof Info, string>>,
-    '-updated,id',
-  );
+    fallback: '-updated,id',
+  });
 
   export const create = fn(
     Create,
@@ -114,23 +115,12 @@ export namespace Character {
   );
 
   export const list = fn(
-    Common.Query({ sort: SortableColumns.schema.optional(), search: z.string().optional() }),
-    async (input): Promise<Common.Page<Info>> => {
+    listing.Query,
+    async (input) => {
       const pb = PocketBase.use();
       const ownerID = await Assert.create('Session').exists(pb.authStore.record?.id);
       // O mestre também enxerga os personagens da mesa dele; aqui são só os do usuário.
-      const filter = [pb.filter('owner = {:ownerID}', { ownerID })];
-      if (input.search) filter.push(pb.filter('name ~ {:search}', { search: input.search }));
-      const result = await pb.collection('characters').getList(input.page, input.pageSize, {
-        filter: filter.join(' && '),
-        sort: SortableColumns.orderBy(input.sort),
-      });
-      return {
-        data: result.items.map(serialize),
-        page: result.page,
-        pageSize: result.perPage,
-        total: result.totalItems,
-      };
+      return listing.page(input, [pb.filter('owner = {:ownerID}', { ownerID })]);
     },
     {
       title: 'List characters',

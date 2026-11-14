@@ -7,7 +7,7 @@ import {
 } from 'pocketbase';
 import { Assert } from '../util/assert';
 import { fn } from '../util/fn';
-import { PocketBase, sortable } from '../pocketbase';
+import { PocketBase } from '../pocketbase';
 import { Common } from '../common';
 import { Examples } from '../examples';
 
@@ -56,14 +56,12 @@ export namespace User {
   export const Email = z.string().trim().toLowerCase().pipe(z.email());
   export const Password = z.string().min(PASSWORD_MIN_LENGTH).max(71); // 71 = limite do bcrypt no PocketBase
 
-  /** Sortable keys mapped to what each orders by — also the allowlist. */
-  export const SortableColumns = sortable(
-    {
-      name: 'name',
-      timeCreated: 'created',
-    } satisfies Partial<Record<keyof Info, string>>,
-    'name,id',
-  );
+  const listing = Common.listing({
+    collection: 'users',
+    serialize,
+    columns: { name: 'name', timeCreated: 'created' } satisfies Partial<Record<keyof Info, string>>,
+    fallback: 'name,id',
+  });
 
   export const create = fn(
     z
@@ -107,20 +105,8 @@ export namespace User {
   );
 
   export const list = fn(
-    Common.Query({ sort: SortableColumns.schema.optional(), search: z.string().optional() }),
-    async (input): Promise<Common.Page<Info>> => {
-      const pb = PocketBase.use();
-      const result = await pb.collection('users').getList(input.page, input.pageSize, {
-        filter: input.search ? pb.filter('name ~ {:search}', { search: input.search }) : '',
-        sort: SortableColumns.orderBy(input.sort),
-      });
-      return {
-        data: result.items.map(serialize),
-        page: result.page,
-        pageSize: result.perPage,
-        total: result.totalItems,
-      };
-    },
+    listing.Query,
+    (input) => listing.page(input),
     {
       title: 'List users',
       description: 'List users visible to the requester (by default, only themself). Paginated.',

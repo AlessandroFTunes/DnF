@@ -9,7 +9,8 @@ import type { AppEnv } from './index';
  * tudo da mesa dele; o jogador só a pasta "imagens" das mesas em que participa. Sem direito, 404 igual a "não
  * existe", para não revelar quais arquivos há.
  */
-export function nasRoutes(db: Db.Client) {
+export function nasRoutes() {
+  const db = Db.use();
   const app = new Hono<AppEnv>();
   const { mesas, mesaMembers } = Db.tables;
 

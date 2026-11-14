@@ -159,7 +159,7 @@ export function prefetchSrd(timeoutMs = 8000): Promise<void> {
 }
 
 /** Apaga o compêndio guardado (memória e disco): a próxima consulta busca tudo de novo na rede. */
-export async function refreshSrd() {
+async function refreshSrd() {
   queryClient.removeQueries({ queryKey: ['srd'] });
   await cache.clear();
 }

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    // Servidor da API e ferramentas do core: rodam por `bun`, ninguém as importa.
+    "core/server.ts",
+    "core/drizzle.config.ts",
+    "core/scripts/*.ts",
+    "core/tests/**/*.ts",
+    // O PocketBase carrega estes arquivos sozinho (hooks e migrations); nenhum import os chama.
+    "core/pb_hooks/**/*.js",
+    "core/pb_migrations/*.js",
+    "apps/mobile/scripts/*.ts",
+    "packages/*/src/**/*.test.ts",
+    "apps/mobile/src/**/*.test.ts",
+    "apps/web/DM-Control/e2e/*.ts",
+  ],
+  // Tipos gerados do spec OpenAPI da 5e-FastAPI (`bun run srd:gen`): não se edita nem se limpa.
+  "ignorePatterns": ["packages/sdk/src/srd/5e-fastapi.d.ts"],
+  // As migrations do PocketBase repetem o mesmo esqueleto de coleção por natureza (cada uma é um
+  // snapshot do schema), e não há o que extrair. Qualquer repetição menor que uma pasta se dispensa onde
+  // mora, com um comentário `fallow-ignore-next-line code-duplication` acima do bloco.
+  "duplicates": {
+    "ignore": ["core/pb_migrations/**"],
+    "minOccurrences": 3,
+  },
+  "health": {
+    "maxCrap": 69,
+    "thresholdOverrides": [
+      {
+        "files": ["**/*.svelte"],
+        "maxCrap": 110,
+        "maxUnitSize": 150,
+        "maxCognitive": 30,
+        "reason": "O <template> do Svelte conta cada {#if}/{#each}/ternário como ramo e carrega o <style> na contagem de linhas, e os componentes não têm teste de unidade, então CRAP e tamanho marcam markup comum, não complexidade real. maxCyclomatic (20) continua sendo a guarda de verdade.",
+      },
+      {
+        "files": ["core/scripts/**/*.ts", "apps/mobile/scripts/*.ts"],
+        "maxCrap": 420,
+        "reason": "Scripts de ferramenta (migração de dados, geração de sons) rodam de ponta a ponta, sem teste de unidade, então CRAP (ciclomática ao quadrado sem cobertura) infla em fluxo comum. 420 = o teto 20^2+20 da guarda maxCyclomatic.",
+      },
+    ],
+  },
+  // As rotas do DM-Control repassam tudo com `{...props}` para a página da feature, onde o `data` é lido:
+  // o fallow não enxerga esse uso e acha que as chaves do `load` sobram.
+  "rules": {
+    "unused-load-data-keys": "off",
+  },
+  // O Expo lê este plugin pelo app.json (não há import no código).
+  "ignoreDependencies": ["expo-system-ui"],
+  "boundaries": {
+    // Camadas do DnF (ver o CLAUDE.md): o core guarda regra e banco e não importa nada dos outros; o sdk
+    // depende só do core; o app e o DM-Control são ambientes externos que consomem os três.
+    "zones": [
+      { "name": "routes", "patterns": ["apps/mobile/src/routes/**"] },
+      // Uma feature pode importar de outra (ex.: `../../srd/functions`).
+      { "name": "features", "patterns": ["apps/mobile/src/lib/features/**"] },
+      {
+        "name": "shared",
+        "patterns": ["apps/mobile/src/lib/components/**", "apps/mobile/src/lib/*.{ts,tsx}"],
+      },
+      { "name": "dm-control", "patterns": ["apps/web/DM-Control/src/**"] },
+      { "name": "core", "root": "core/", "patterns": ["src/**"] },
+      { "name": "sdk", "root": "packages/sdk/", "patterns": ["src/**"] },
+      { "name": "ui-react-native", "root": "packages/ui/react-native/", "patterns": ["src/**"] },
+      { "name": "ui-svelte", "root": "packages/ui/svelte/", "patterns": ["src/**"] },
+    ],
+    "rules": [
+      { "from": "routes", "allow": ["features", "shared", "core", "sdk", "ui-react-native"] },
+      { "from": "features", "allow": ["features", "shared", "core", "sdk", "ui-react-native"] },
+      // `lib/narration.ts` junta o cache de falas e as preferências, que moram em features.
+      { "from": "shared", "allow": ["features", "core", "sdk", "ui-react-native"] },
+      { "from": "dm-control", "allow": ["core", "sdk", "ui-svelte"] },
+      { "from": "sdk", "allow": ["core"] },
+      { "from": "core", "allow": [] },
+      { "from": "ui-react-native", "allow": [] },
+      { "from": "ui-svelte", "allow": [] },
+    ],
+  },
+}

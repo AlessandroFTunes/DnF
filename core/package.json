@@ -7,7 +7,6 @@
   },
   "scripts": {
     "typecheck": "tsc",
-    "seed:complement": "bun scripts/seed-complement.ts",
     "api": "bun server.ts",
     "api:dev": "bun --watch server.ts",
     "db:generate": "drizzle-kit generate",

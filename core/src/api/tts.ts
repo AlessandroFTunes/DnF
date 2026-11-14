@@ -12,13 +12,13 @@ import type { Env } from './index';
  * Narrador: provedores de `TTS_PROVIDERS` (padrão `elevenlabs`), em ordem. Sábio: `elevenlabs-sage`, `piper` e
  * os do narrador. Se um cai, tenta o próximo. A fala do provedor principal fica na tabela `tts_cache`.
  */
-export interface Provider {
+interface Provider {
   available(): boolean;
   createVoice(text: string): Promise<Narration.Result>;
 }
 
 /** Aumente para descartar as falas guardadas (trocou a voz ou os ajustes de um adapter). */
-export const CACHE_VERSION = 1;
+const CACHE_VERSION = 1;
 const MAX_TEXT = 600;
 
 const VOICE_ID = 'pFZP5JQG7iQjIQuC4Bku'; // Lily
@@ -66,7 +66,7 @@ function piper(env: Env): Provider {
   };
 }
 
-export function providers(env: Env): Record<string, Provider> {
+function providers(env: Env): Record<string, Provider> {
   return {
     // Narrador: estabilidade alta e estilo zero, sem emoção, sempre igual.
     elevenlabs: elevenLabs(env, { stability: 0.9, similarity_boost: 0.8, style: 0, use_speaker_boost: true, speed: 0.92 }),
@@ -83,7 +83,8 @@ function narratorProviders(env: Env): string[] {
     .filter(Boolean);
 }
 
-export function ttsRoutes(db: Db.Client, env: Env) {
+export function ttsRoutes(env: Env) {
+  const db = Db.use();
   const all = providers(env);
   const app = new Hono();
 

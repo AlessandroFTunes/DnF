@@ -9,10 +9,6 @@
       "default": "./src/index.ts"
     }
   },
-  "dependencies": {
-    "@dnf/core": "workspace:*",
-    "@dnf/sdk": "workspace:*"
-  },
   "peerDependencies": {
     "svelte": "^5.0.0"
   },

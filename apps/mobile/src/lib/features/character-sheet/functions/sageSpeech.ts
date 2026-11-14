@@ -70,7 +70,7 @@ const CLOSINGS = ['Isso é tudo.', 'Fim da análise.', 'Use com sabedoria.', 'N�
 const SPEECH_MAX = 590;
 
 /** As primeiras frases da regra, até `max` letras, sem cortar no meio da frase (se der). */
-export function quickSummary(desc = '', max = 380): string {
+function quickSummary(desc = '', max = 380): string {
   const text = plainText(desc).replace(/\s+/g, ' ').trim();
   if (text.length <= max) return text;
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [];

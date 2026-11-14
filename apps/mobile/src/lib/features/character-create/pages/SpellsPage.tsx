@@ -157,7 +157,7 @@ const CASTING_TIME: Record<string, string> = {
 };
 
 /** Card de magia: marca ao tocar; selecionada mostra a descrição. */
-export function SpellCard({ spell, selected, onPress }: { spell: SrdSpell; selected: boolean; onPress?: () => void }) {
+function SpellCard({ spell, selected, onPress }: { spell: SrdSpell; selected: boolean; onPress?: () => void }) {
   const theme = useRpgTheme();
   const tags = [
     spell.school?.name && tr.text(spell.school.name),

@@ -4,6 +4,7 @@
     "src",
     "server.ts",
     "drizzle.config.ts",
-    "scripts/migrate-from-pocketbase.ts"
+    "scripts",
+    "tests"
   ]
 }

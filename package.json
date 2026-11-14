@@ -11,9 +11,15 @@
   "scripts": {
     "expo": "cd apps/mobile && bun expo",
     "dev": "cd apps/mobile && bun run dev",
-    "typecheck": "bun run --filter '*' typecheck"
+    "typecheck": "bun run --filter '*' typecheck",
+    "fallow": "bunx fallow health --hotspots --top 3 && bunx fallow dead-code && bunx fallow dupes",
+    "fallow:dead-code": "bunx fallow dead-code",
+    "fallow:dupes": "bunx fallow dupes",
+    "fallow:health": "bunx fallow health --hotspots --top 3",
+    "fallow:json": "bunx fallow health --hotspots --top 3 --format json --quiet && bunx fallow dead-code --format json --quiet && bunx fallow dupes --format json --quiet"
   },
   "devDependencies": {
+    "fallow": "^3.17.0",
     "typescript": "^5.9.0"
   }
 }

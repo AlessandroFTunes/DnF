@@ -22,7 +22,7 @@ export interface DicePalette {
 /** Subida de nível comum. As mesmas cores estão no dado (`D20Animation`). */
 export const GOLD_DIE: DicePalette = { edge: '#FFD9A0', glow: '#FFB45C', flash: '#FFF6DD' };
 /** Nível 20 (herói lendário). */
-export const PURPLE_DIE: DicePalette = { edge: '#D9C2FF', glow: '#9B5CFF', flash: '#F1E8FF' };
+const PURPLE_DIE: DicePalette = { edge: '#D9C2FF', glow: '#9B5CFF', flash: '#F1E8FF' };
 const TEXT = '#F3EBDD';
 const MUTED = '#9AA0BE';
 
@@ -62,7 +62,7 @@ function listPt(items: string[]) {
 const spoken = (gain: LevelUpGain) => gain.label.replace(/^\+(\d+)/, 'mais $1');
 
 /** O que a narração fala, no tom de aviso do "Grande Sábio": "Aviso. Novo nível alcançado: você adquiriu A, B e C." */
-export function levelUpSpeech(title: string, gains: LevelUpGain[]) {
+function levelUpSpeech(title: string, gains: LevelUpGain[]) {
   return gains.length ? `Aviso. ${title}: você adquiriu ${listPt(gains.map(spoken))}.` : `Aviso. ${title}.`;
 }
 

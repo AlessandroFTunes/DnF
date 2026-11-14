@@ -8,10 +8,6 @@
   "scripts": {
     "typecheck": "tsc"
   },
-  "dependencies": {
-    "@dnf/core": "workspace:*",
-    "@dnf/sdk": "workspace:*"
-  },
   "peerDependencies": {
     "react": "*",
     "react-native": "*",

@@ -16,3 +16,4 @@ nas/
 
 # direnv / nix
 .direnv/
+.fallow/

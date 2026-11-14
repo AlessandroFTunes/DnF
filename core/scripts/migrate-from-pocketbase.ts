@@ -20,9 +20,9 @@ if (!target) throw new Error('Defina DATABASE_URL.');
 const replace = process.argv.includes('--replace');
 
 const pb = new Database(source, { readonly: true });
-const db = Db.create(target);
+const db = Db.use(target);
 const t = Db.tables;
-await Db.migrateUp(db, new URL('../drizzle', import.meta.url).pathname);
+await Db.migrateUp();
 
 type Row = Record<string, unknown>;
 const all = (table: string): Row[] => pb.query(`SELECT * FROM ${table}`).all() as Row[];
@@ -152,5 +152,5 @@ await db.transaction(async (tx) => {
 const copied = { users, characters, mesas, mesa_members: members, grids, grid_scenes: scenes };
 for (const [name, rows] of Object.entries(copied)) console.log(`${name}: ${rows.length} copiados`);
 for (const [name, count] of Object.entries(skipped)) console.warn(`${name}: ${count} órfãos pulados`);
-await db.close();
+await Db.close();
 pb.close();
