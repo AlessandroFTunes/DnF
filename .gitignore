@@ -4,6 +4,7 @@ dist/
 *.log
 .env*
 !.env.example
+!.envrc
 
 # PocketBase
 core/pb_data/
@@ -12,3 +13,6 @@ core/pocketbase.exe
 
 # Arquivos enviados (storage local do NAS)
 nas/
+
+# direnv / nix
+.direnv/
