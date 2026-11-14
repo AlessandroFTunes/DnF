@@ -111,7 +111,7 @@ A capa da mesa é colocada pelo mestre no DM-Control (pasta do NAS, caminho em `
 `/nas/<caminho>` da API (`core/src/api/nas.ts`, mesmas regras do DM-Control: mestre lê tudo da mesa, jogador só
 `imagens/`), com o token no `Authorization` (`mesa/functions/cover.ts`, `mesaCover(mesa)`). Na API a pasta do NAS é `NAS_DIR`
 (no container, `/data/nas`, somente leitura; no NAS, `/srv/apps/dnf-db/nas`) e o Traefik encaminha `/nas/` do `dnf.developale.com`.
-O DM-Control (hoje só local) precisa gravar nela: o arquivo de `mesas.cover` tem que existir em `nas/<mesaID>/imagens/`.
+O DM-Control (hoje só local) grava nela (`Nas.save`, mesmo `NAS_DIR` da API) e mostra as imagens pela rota `/nas/[...path]` dele, que repassa para a API com o login da pessoa. O arquivo de `mesas.cover` tem que existir em `nas/<mesaID>/imagens/`. O `/srd` devolve 502 (e não 401) quando a 5e-FastAPI recusa o token do servidor ou cai.
 
 ### Magias do personagem
 

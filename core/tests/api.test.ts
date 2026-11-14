@@ -386,6 +386,22 @@ describe.skipIf(!url)('Api', () => {
       }
     });
 
+    test('/srd: recusa ou queda da API de regras vira 502, nunca 401', async () => {
+      const refusing = Bun.serve({ port: 0, fetch: () => new Response('<html>login do Access</html>', { status: 401 }) });
+      const down = Bun.serve({ port: 0, fetch: () => new Response('erro', { status: 503 }) });
+      const missing = Bun.serve({ port: 0, fetch: () => Response.json({ detail: 'não existe' }, { status: 404 }) });
+      try {
+        for (const [server, expected] of [[refusing, 502], [down, 502], [missing, 404]] as const) {
+          const other = Api.create({ env: { AUTH_SECRET: 'x'.repeat(40), DND_API_URL: `http://localhost:${server.port}` } });
+          const res = await other.request('/srd/api/v1/classes/9', { headers: { Authorization: `Bearer ${tokens.member}` } });
+          expect(res.status).toBe(expected);
+          if (expected === 502) expect(await res.json()).toEqual({ message: 'A API de regras está indisponível.' });
+        }
+      } finally {
+        for (const server of [refusing, down, missing]) server.stop(true);
+      }
+    });
+
     test('/tts: texto inválido e sem provedor configurado', async () => {
       expect((await call('/tts', { as: 'member' })).status).toBe(400);
       expect((await call(`/tts?text=${'a'.repeat(601)}`, { as: 'member' })).status).toBe(400);

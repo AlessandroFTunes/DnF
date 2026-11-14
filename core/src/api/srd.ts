@@ -32,6 +32,13 @@ export function srdRoutes(env: Env) {
     const res = await fetch(`${base}/${path}`, { headers, signal: AbortSignal.timeout(30_000) }).catch(() => null);
     if (!res) return c.json({ message: 'A API de regras não respondeu.' }, 502);
 
+    // O 401/403 é do Cloudflare Access recusando o token do servidor (e não do login do jogador), e 5xx é a API de
+    // regras fora do ar: nos dois casos o app recebe 502, que não se confunde com uma sessão recusada.
+    if (res.status === 401 || res.status === 403 || res.status >= 500) {
+      console.warn(`srd: a API de regras respondeu ${res.status} para ${route}`);
+      return c.json({ message: 'A API de regras está indisponível.' }, 502);
+    }
+
     const body = await res.text();
     if (res.status === 200) {
       if (cache.size >= MAX_ENTRIES) cache.clear();

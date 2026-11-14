@@ -33,17 +33,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 		event.locals.user = auth.record ?? undefined;
 
 		const response = await resolve(event);
-		if (auth.token && auth.isValid) {
-			event.cookies.set(COOKIE, auth.token, {
-				path: '/',
-				httpOnly: true,
-				secure: event.url.protocol === 'https:',
-				sameSite: 'lax',
-				maxAge: MAX_AGE_SECONDS
-			});
-		} else {
-			event.cookies.delete(COOKIE, { path: '/' });
-		}
+		// Depois do `resolve` o SvelteKit não deixa mais mexer em `event.cookies`: o cookie vai direto no cabeçalho.
+		const attrs = `Path=/; HttpOnly; SameSite=Lax${event.url.protocol === 'https:' ? '; Secure' : ''}`;
+		response.headers.append(
+			'set-cookie',
+			auth.token && auth.isValid
+				? `${COOKIE}=${auth.token}; ${attrs}; Max-Age=${MAX_AGE_SECONDS}`
+				: `${COOKIE}=; ${attrs}; Max-Age=0`
+		);
 		return response;
 	});
 };
