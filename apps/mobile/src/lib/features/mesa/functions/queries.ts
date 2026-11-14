@@ -6,7 +6,7 @@ import { PLAYER_MAX_AGE, PLAYER_STALE_TIME, queryClient } from '../../../query-c
 import { useQueryState, type QueryState } from '../../../query-state';
 
 /**
- * Consultas das mesas (PocketBase): `useMesas()`, `useMesa(id)`, `useMesaMembers(id)`, as ações (`useJoinMesa()`…) e o
+ * Consultas das mesas: `useMesas()`, `useMesa(id)`, `useMesaMembers(id)`, as ações (`useJoinMesa()`…) e o
  * realtime (`useMesaRealtime(id)`), que mantém o cache da mesa aberta atualizado.
  */
 
@@ -52,7 +52,7 @@ export function useMesasOfCharacter(characterID: string | undefined): QueryState
 }
 
 /**
- * Mantém a mesa aberta atualizada pelo realtime do PocketBase (quem entra, sai ou muda o PV) enquanto a tela está em
+ * Mantém a mesa aberta atualizada pelo realtime da API (quem entra, sai ou muda o PV) enquanto a tela está em
  * foco. Cada aviso invalida a mesa e a lista de jogadores; a busca em andamento é reaproveitada. Sem realtime, fica
  * o que carregou e o "puxar para atualizar".
  */

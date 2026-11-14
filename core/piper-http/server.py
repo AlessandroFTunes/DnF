@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Ponte HTTP para o Piper do NAS (`rpg-piper`, protocolo Wyoming via TCP), que o PocketBase não consegue chamar
-direto. É a voz do Grande Sábio: `core/pb_hooks/tts/piper.js` chama `GET /tts?text=...` e recebe o mesmo
+Ponte HTTP para o Piper do NAS (`rpg-piper`, protocolo Wyoming via TCP), que a API não consegue chamar
+direto. É a voz do Grande Sábio: `core/src/api/tts.ts` chama `GET /tts?text=...` e recebe o mesmo
 formato do `/tts` do app: { audio (wav em base64), format: "wav", starts (s), duration (s) }.
 
 Só biblioteca padrão. Ambiente: PIPER_HOST e PIPER_PORT (padrão rpg-piper:10200) e PORT (padrão 5100).

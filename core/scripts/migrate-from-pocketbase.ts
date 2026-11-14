@@ -2,7 +2,8 @@
  * Copia os dados do PocketBase para o Postgres, mantendo os ids (os tokens e as relações continuam valendo).
  * Lê o SQLite do PocketBase direto (`pb_data/data.db`, somente leitura): só assim sai o hash da senha, que a API
  * do PocketBase não entrega. Migra users, characters, mesas, mesa_members, grids e grid_scenes (as `srd_*` não:
- * o compêndio vem da 5e-FastAPI). Avatares e a pasta do NAS são arquivos: copie `pb_data/storage/` à parte.
+ * o compêndio vem da 5e-FastAPI). Os avatares (`pb_data/storage/_pb_users_auth_/<id>/<arquivo>`) vão para `FILES_DIR`
+ * (padrão `./files`, como na API). A pasta do NAS já é um diretório comum: a API a lê de `NAS_DIR`.
  *
  *   DATABASE_URL=postgres://dnf:dnf@localhost:5432/dnf bun run migrate:pocketbase
  *   PB_DATA=/caminho/pb_data/data.db  ...      # outro banco de origem
@@ -12,9 +13,11 @@
  * Linhas que apontam para um registro que não existe (órfãs) são puladas e contadas no fim.
  */
 import { Database } from 'bun:sqlite';
+import { cp, mkdir } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { Db } from '../src/db';
 
-const source = process.env.PB_DATA ?? new URL('../pb_data/data.db', import.meta.url).pathname;
+const source = process.env.PB_DATA ?? 'pb_data/data.db';
 const target = process.env.DATABASE_URL;
 if (!target) throw new Error('Defina DATABASE_URL.');
 const replace = process.argv.includes('--replace');
@@ -149,8 +152,25 @@ await db.transaction(async (tx) => {
   );
 });
 
+// Avatares: cada arquivo vai para <FILES_DIR>/avatars/<id>/<nome>, o caminho que a API serve.
+const storage = join(dirname(source), 'storage', '_pb_users_auth_');
+const filesRoot = resolve(process.env.FILES_DIR || './files');
+let avatars = 0;
+for (const user of users.filter((r) => r.avatar)) {
+  const from = join(storage, String(user.id), String(user.avatar));
+  const to = join(filesRoot, 'avatars', String(user.id), String(user.avatar));
+  try {
+    await mkdir(dirname(to), { recursive: true });
+    await cp(from, to);
+    avatars++;
+  } catch {
+    console.warn(`avatar de ${user.id} não encontrado em ${from}`);
+  }
+}
+
 const copied = { users, characters, mesas, mesa_members: members, grids, grid_scenes: scenes };
 for (const [name, rows] of Object.entries(copied)) console.log(`${name}: ${rows.length} copiados`);
+console.log(`avatares: ${avatars} copiados para ${filesRoot}`);
 for (const [name, count] of Object.entries(skipped)) console.warn(`${name}: ${count} órfãos pulados`);
 await Db.close();
 pb.close();

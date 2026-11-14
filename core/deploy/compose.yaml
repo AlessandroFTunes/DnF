@@ -1,0 +1,67 @@
+# Modelo do compose da API no NAS (`/srv/apps/dnf-api/compose.yaml`), atrás do Traefik (rede externa "proxy").
+# Publicar: `docker build -f core/Dockerfile -t dnf-api:latest .` na raiz do repo (ou `docker save | ssh … docker load`),
+# copiar este arquivo + `.env.example` (como `.env`) para o NAS e `docker compose up -d`. Migrations rodam sozinhas ao subir.
+services:
+  dnf-api:
+    image: dnf-api:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://dnf:${POSTGRES_PASSWORD}@dnf-postgres:5432/dnf
+    volumes:
+      # Avatares (a API grava) e a pasta do NAS com capas e mapas (o DM-Control grava, a API só lê).
+      - ./files:/data/files
+      - /srv/apps/dnf-db/nas:/data/nas:ro
+    networks: [proxy, internal]
+    depends_on:
+      dnf-postgres:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      # A API vive no mesmo domínio do app web (cookie httpOnly de mesmo site): só estes caminhos vão para ela.
+      - traefik.http.routers.dnf-api.rule=Host(`dnf.developale.com`) && (PathPrefix(`/auth`) || PathPrefix(`/users`) || PathPrefix(`/characters`) || PathPrefix(`/mesas`) || PathPrefix(`/grids`) || PathPrefix(`/srd`) || PathPrefix(`/tts`) || PathPrefix(`/nas`) || PathPrefix(`/files`) || Path(`/health`))
+      - traefik.http.routers.dnf-api.entrypoints=web
+      - traefik.http.routers.dnf-api.middlewares=dnf-geral
+      - traefik.http.services.dnf-api.loadbalancer.server.port=3000
+      # Rate limit por IP real (Cloudflare): geral 600/min; entrar/cadastrar/consultar email 20/min; /tts 10/min; busca de mesa por código 10/min.
+      - traefik.http.middlewares.dnf-geral.ratelimit.average=600
+      - traefik.http.middlewares.dnf-geral.ratelimit.period=1m
+      - traefik.http.middlewares.dnf-geral.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP
+      - traefik.http.middlewares.dnf-login.ratelimit.average=20
+      - traefik.http.middlewares.dnf-login.ratelimit.period=1m
+      - traefik.http.middlewares.dnf-login.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP
+      - traefik.http.middlewares.dnf-tts.ratelimit.average=10
+      - traefik.http.middlewares.dnf-tts.ratelimit.period=1m
+      - traefik.http.middlewares.dnf-tts.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP
+      - traefik.http.routers.dnf-api-login.rule=Host(`dnf.developale.com`) && (Path(`/auth/login`) || Path(`/auth/signup`) || Path(`/auth/email-exists`))
+      - traefik.http.routers.dnf-api-login.entrypoints=web
+      # Prioridade explícita: sem ela a regra do roteador geral (a mais longa) ganharia dos específicos.
+      - traefik.http.routers.dnf-api-login.priority=100
+      - traefik.http.routers.dnf-api-login.middlewares=dnf-login
+      - traefik.http.routers.dnf-api-login.service=dnf-api
+      - traefik.http.routers.dnf-api-tts.rule=Host(`dnf.developale.com`) && (PathPrefix(`/tts`) || PathPrefix(`/mesas/by-code`))
+      - traefik.http.routers.dnf-api-tts.entrypoints=web
+      - traefik.http.routers.dnf-api-tts.priority=100
+      - traefik.http.routers.dnf-api-tts.middlewares=dnf-tts
+      - traefik.http.routers.dnf-api-tts.service=dnf-api
+
+  dnf-postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dnf
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: dnf
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dnf"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+networks:
+  proxy:
+    external: true
+  internal:

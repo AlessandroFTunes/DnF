@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Mesa } from '@dnf/core/mesa';
-import { ClientResponseError } from '@dnf/core/pocketbase';
+import { Http } from '@dnf/core/http';
 import { Button, DnfSpinner, fonts, OptionCard, radius, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { FooterBar, Header, HighlightCard, PageHeading, SectionLabel } from '../../../components';
 import { classIcon } from '../../character-create/functions/labels';
@@ -57,7 +57,7 @@ export default function JoinMesaPage() {
       router.replace(`/mesa/${mesa.id}`);
     } catch (e) {
       setError(
-        e instanceof ClientResponseError && e.status === 400
+        e instanceof Http.ApiError && e.status === 400
           ? 'Esse personagem já está nesta mesa (ou não é da mesma edição).'
           : 'Não deu para entrar na mesa. Tente de novo.',
       );

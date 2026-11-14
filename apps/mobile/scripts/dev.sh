@@ -12,7 +12,7 @@ fi
 DND_ORIGENS_CORS='*' "$api_dir/dev" --host 0.0.0.0 --port "$api_port" &
 api_pid=$!
 
-(cd ../web/DM-Control && POCKETBASE_URL=${POCKETBASE_URL:-http://127.0.0.1:8090} exec bun run dev) &
+(cd ../web/DM-Control && API_URL=${API_URL:-http://127.0.0.1:3000} exec bun run dev) &
 web_pid=$!
 trap 'kill $api_pid $web_pid 2>/dev/null' EXIT INT TERM
 

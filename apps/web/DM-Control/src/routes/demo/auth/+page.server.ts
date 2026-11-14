@@ -1,4 +1,5 @@
 import { redirect } from '@sveltejs/kit';
+import { User } from '@dnf/core/user';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = (event) => {
@@ -10,7 +11,7 @@ export const load: PageServerLoad = (event) => {
 
 export const actions: Actions = {
 	signOut: async (event) => {
-		event.locals.pb.authStore.clear();
+		await User.logout();
 		return redirect(302, '/demo/auth/login');
 	}
 };

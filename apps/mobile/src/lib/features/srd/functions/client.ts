@@ -1,21 +1,21 @@
 import { createSrdCatalog, createSrdClient } from '@dnf/sdk/srd';
 import Constants from 'expo-constants';
 import { Cache } from '@dnf/core/cache';
-import { PocketBase } from '@dnf/core/pocketbase';
+import { Http } from '@dnf/core/http';
 import { persistentCache } from '../../cache/functions/persistent-cache';
-import '../../../pocketbase';
+import '../../../http';
 
 /**
  * Compêndio de regras: a 5e-FastAPI (dados em português). O app não fala direto com ela: passa pelo
- * PocketBase (`core/pb_hooks/srd.pb.js`), que guarda o token do Cloudflare Access e só atende logados.
+ * API do DnF (`core/src/api/srd.ts`), que guarda o token do Cloudflare Access e só atende logados.
  * `EXPO_PUBLIC_DND_API_URL` aponta para outra instância (ex.: uma API local, sem login).
  */
 // No celular (Expo Go), "localhost" é o próprio celular: troca pelo IP da máquina que roda o Metro.
 const devHost = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
-// Vazia conta como ausente (o `bun phone` zera para passar pelo PocketBase).
+// Vazia conta como ausente (o `bun phone` zera para passar pela API do DnF).
 const directUrl = process.env.EXPO_PUBLIC_DND_API_URL?.replace('//localhost', `//${devHost}`) || undefined;
 
-const client = createSrdClient(directUrl ? { baseUrl: directUrl } : { pocketbase: PocketBase.client() });
+const client = createSrdClient(directUrl ? { baseUrl: directUrl } : { http: Http.client() });
 
 export const srd = createSrdCatalog(client);
 

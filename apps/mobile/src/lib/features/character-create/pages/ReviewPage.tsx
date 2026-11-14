@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ABILITIES, abilityModifier, proficiencyBonus } from '@dnf/core/character';
-import { ClientResponseError } from '@dnf/core/pocketbase';
+import { Http } from '@dnf/core/http';
 import { isWeaponProficient, skillBonus, weaponAttack } from '@dnf/sdk/srd';
 import { fonts, formatBonus, radius, shadow, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { StepScreen } from '../components/StepScreen';
@@ -69,7 +69,7 @@ export default function ReviewPage() {
       reset();
     } catch (e) {
       setError(
-        e instanceof ClientResponseError && e.status === 0
+        e instanceof Http.ApiError && e.status === 0
           ? 'Sem conexão com o servidor. Tente de novo.'
           : 'Não deu para salvar o personagem. Tente de novo.',
       );

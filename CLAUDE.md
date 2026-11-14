@@ -16,7 +16,7 @@ src/
 │   ├── index.tsx                 export { default } from '../lib/features/home/pages/HomePage';
 │   └── mesa/[id].tsx …           uma linha cada, sempre reexportando uma página
 └── lib/
-    ├── pocketbase.ts, crypto.ts, secure-storage(.web).ts, audio-file(.web).ts, narration.ts
+    ├── http.ts, crypto.ts, secure-storage(.web).ts, audio-file(.web).ts, narration.ts
     ├── components/               blocos de tela usados por mais de uma feature
     └── features/
         └── <nome-da-feature>/    ex.: auth, cache, character-create, character-sheet, home, mesa,
@@ -30,7 +30,7 @@ src/
   A tela (e o `Stack` de navegação) fica na `pages/` da feature. Rota nova: crie a página na feature e a linha
   em `routes/`.
 - **`lib/` (raiz)**: as libs do app, limpas. Cada uma faz só o mínimo para funcionar no app (iniciar o
-  PocketBase, guardar o token, tocar o áudio), sem opções extras e sem regra de negócio.
+  cliente HTTP, guardar o token, tocar o áudio), sem opções extras e sem regra de negócio.
 - **`lib/features/<feature>/`**: só as subpastas que a feature usar. Uma feature pode importar de outra
   (ex.: `../../srd/functions`).
 - **`lib/components/`**: `Header`, `PageHeading`, `SectionLabel`, `IconButton`, `FooterBar`, `ListCard`,
@@ -39,51 +39,59 @@ src/
   se já existe em um dos dois. Bloco usado por uma feature só fica em `components/` dela.
 - Não crie `src/app`, `src/pages`, `src/features` nem `src/hooks`.
 
-### API e banco (migração PocketBase → Postgres, em andamento)
+### API e banco (Postgres + Drizzle)
 
 A API do DnF fica **toda no `core`** (nunca em `apps/`): rotas, regras de negócio e banco. O app e o DM-Control só
-chamam a URL. Hono + Drizzle + Postgres; só o servidor importa estes módulos.
+chamam a URL, pelos módulos do core (`User`, `Character`, `Mesa`, `Grid`), que falam com a API por `Http`. Hono + Drizzle +
+Postgres. O PocketBase não existe mais: as regras que viviam nas API rules (quem lê e escreve o quê) agora são código
+testado em `core/src/api`.
 
 | Onde | O quê |
 |---|---|
-| `core/src/db` + `core/src/<módulo>/<módulo>.sql.ts` | `Db`: junta as tabelas Drizzle e guarda a conexão única do processo (`Db.use(url?)` abre na primeira chamada e reaproveita nas outras; `Db.migrateUp()`, `Db.close()`), que ficam ao lado do módulo (`user/user.sql.ts`, `character/character.sql.ts`, `mesa/mesa.sql.ts` com `mesas` e `mesa_members`, `grid/grid.sql.ts`, `narration/narration.sql.ts`); colunas comuns em `db/columns.ts`. Tabela nova: crie o `<módulo>.sql.ts` e registre em `db/index.ts` (colunas em snake_case, ids em texto), `Db.create(url)`, `Db.migrateUp`. Migrations geradas em `core/drizzle/` (`bun run db:generate` na pasta `core`) |
-| `core/src/api` | `Api.create({ db, auth, env })`: `/srd/*` (proxy da 5e-FastAPI com cache de 1 dia em memória), `/tts` e `/tts/sage` (provedores em `tts.ts`, falas na tabela `tts_cache`), `/nas/*` (regra do `Nas.reader`). Tudo exige login, menos `/health` |
-| `core/src/api/auth.ts` | Port `Auth`: `authenticate(token)`. Hoje o adapter confere o token no PocketBase (`auth-refresh`); quando o login passar para o core, troca-se só o adapter |
-| `core/server.ts` | Entrada (`bun run api`): lê o ambiente, aplica as migrations e sobe o Hono. `DATABASE_URL` obrigatória, `POCKETBASE_URL`, `DND_API_*`, `ELEVENLABS_API_KEY`, `TTS_PROVIDERS`, `PIPER_URL`, `NAS_DIR` |
-| `core/scripts/migrate-from-pocketbase.ts` | Copia users, characters, mesas, mesa_members, grids e grid_scenes do `pb_data/data.db` para o Postgres, mantendo os ids e o hash bcrypt. `--replace` apaga e copia de novo; sem ele, recusa se o Postgres já tem usuários. Avatares (`pb_data/storage`) são arquivos: copie à parte |
-| `core/tests/api.test.ts` | Teste da API com PocketBase e 5e-FastAPI falsos. Precisa de `DATABASE_URL` (`docker compose up -d postgres`); sem ela é pulado |
+| `core/src/db` + `core/src/<módulo>/<módulo>.sql.ts` | `Db`: junta as tabelas Drizzle e guarda a conexão única do processo (`Db.use(url?)` abre na primeira chamada e reaproveita nas outras; `Db.migrateUp()`, `Db.close()`). Cada tabela fica ao lado do módulo (`user/user.sql.ts`, `character/character.sql.ts`, `mesa/mesa.sql.ts` com `mesas` e `mesa_members`, `grid/grid.sql.ts`, `narration/narration.sql.ts`); colunas comuns em `db/columns.ts`. Tabela nova: crie o `<módulo>.sql.ts` e registre em `db/index.ts` (colunas em snake_case, ids em texto). Migrations geradas em `core/drizzle/` (`bun run db:generate` na pasta `core`; rodam sozinhas ao subir a API) |
+| `core/src/http` | `Http`: o cliente da API, sem Node (o app usa). `Http.init({ url, auth, cookie? })`, `Http.client().request(caminho, { método, query, body })`, `Http.ApiError` (`status`, `fields`; status 0 = sem rede), `Http.AuthStore` (guarda só o token no Keychain; o perfil fica em memória). `Http.scope(client, fn)`: no servidor do DM-Control cada requisição tem o login dela, e `Http.client()` devolve o dela |
+| `core/src/<módulo>/index.ts` | Os schemas (Zod) e as chamadas do app (`Character.create`, `Mesa.join`, `Mesa.watch`…). Cada função valida e chama a API; nada de regra aqui que dependa do banco. Regras puras usadas dos dois lados ficam aqui (`Character.merge`) |
+| `core/src/api` | `Api.create({ env })` (Hono). `auth.ts` (login por JWT), `users.ts` (cadastro, login, perfil, avatar), `characters.ts`, `mesas.ts` (inclui o SSE `/mesas/:id/events`), `grids.ts`, `nas.ts`, `srd.ts` (proxy da 5e-FastAPI, cache de 1 dia em memória), `tts.ts` (provedores de voz, falas na tabela `tts_cache`), `realtime.ts`, `page.ts`. Tudo exige login, menos `/health`, `/auth/{signup,login,logout,email-exists}` e `/files/avatars/*`. Quem não tem direito recebe 404 (igual a "não existe") |
+| `core/server.ts` | Entrada (`bun run api`). Variáveis: `DATABASE_URL` e `AUTH_SECRET` (32+ caracteres) obrigatórias; `FILES_DIR` (avatares), `NAS_DIR`, `CORS_ORIGINS`, `DND_API_*`, `ELEVENLABS_API_KEY`, `TTS_PROVIDERS`, `PIPER_URL` |
+| `core/tests/` | `api.test.ts` (todas as rotas e regras de acesso, com a 5e-FastAPI falsa) e `client.test.ts` (os módulos do core falando com a API de verdade). Precisam de `DATABASE_URL` (`docker compose up -d postgres`); sem ela são pulados |
+| `core/scripts/migrate-from-pocketbase.ts` | Migração única: copia users (com o hash bcrypt, que continua valendo no login), characters, mesas, mesa_members, grids e grid_scenes do `pb_data/data.db` para o Postgres, mantendo os ids, e os avatares do `pb_data/storage` para `FILES_DIR`. `--replace` apaga e copia de novo; sem ele, recusa se o Postgres já tem usuários |
+
+Login: `POST /auth/login` e `/auth/signup` devolvem `{ token, user }` (JWT de 30 dias; `User.refresh()` renova ao abrir o app).
+O token vai em `Authorization: Bearer` (app) ou, na web do mesmo domínio, num cookie httpOnly `dnf_session` que a API define
+(cabeçalho `X-DNF-Cookie: 1`; o cliente guarda só um token "de mentira" com o `exp`). O `EventSource` não manda cabeçalhos:
+ele usa um bilhete de 60 s (`POST /auth/ticket`, `?ticket=`). Senhas: bcrypt (`Bun.password`). O DM-Control guarda o token
+no cookie `dnf_auth` e o hook `hooks.server.ts` o põe no cliente da requisição (`API_URL` é a URL da API).
+
+Local: `docker compose up -d --wait api` (API em `http://localhost:3000`, Postgres em `:5432`). O app acha a API em
+`http://<IP do Metro>:3000` (`EXPO_PUBLIC_API_URL` troca). Produção: imagem `core/Dockerfile` (contexto = raiz do repo),
+modelo do compose do NAS em `core/deploy/compose.yaml`.
 
 ### Código morto e duplicação (fallow)
 
 O projeto mantém **0 código morto e 0 duplicação**, com a mesma configuração do `erp` (`.fallowrc.jsonc`, `minOccurrences: 3`,
 fronteiras entre `routes`, `features`, `shared`, `core`, `sdk` e as libs de UI). Antes de commitar: `bun run fallow`
-(ou `fallow:dead-code`, `fallow:dupes`, `fallow:health`). Entradas que ninguém importa (hooks e migrations do PocketBase, scripts, testes)
+(ou `fallow:dead-code`, `fallow:dupes`, `fallow:health`). Entradas que ninguém importa (scripts, testes, o servidor)
 ficam em `entry`; repetição que não vale extrair se dispensa onde mora, com `fallow-ignore-next-line code-duplication`.
-Abstração nova recebe 1 parâmetro (até 3, se fizer sentido) e faz uma coisa só: `Common.listing(spec)` (listagem paginada do
-PocketBase), `Db.use(url?)` (banco único), `EstadoCarga` e `FormAcoes` (DM-Control).
-
-Local: `docker compose up -d postgres api` (API em `http://localhost:3000`). Ainda falta mover: auth/usuários (login, avatar,
-cookie do app web), personagens e mesas (com as regras de acesso e testes), realtime (SSE) e o DM-Control; só então o `dnf-db` sai.
-O app ainda fala com o PocketBase para tudo isso.
+Abstração nova recebe 1 parâmetro (até 3, se fizer sentido) e faz uma coisa só: `Db.use(url?)` (banco único),
+`listing(spec, input)` (listagem paginada da API), `EstadoCarga` e `FormAcoes` (DM-Control).
 
 ### Serviços externos
 
 Cada serviço externo expõe **um comando só**, com a configuração padrão fixa no adapter (sem parâmetros nem
 variáveis de ambiente para trocar voz, modelo ou ajustes; do ambiente vem só a chave). Ex.: a narração é
-`Narration.Port.createVoice(texto)` no core. No servidor, cada provedor é um arquivo
-`core/pb_hooks/tts/<provedor>.js` com `available()` e `createVoice(text)`. `TTS_PROVIDERS` (ex.:
+`Narration.Port.createVoice(texto)` no core. No servidor, cada provedor é um adapter em
+`core/src/api/tts.ts` com `available()` e `createVoice(text)`. `TTS_PROVIDERS` (ex.:
 `elevenlabs`) define a ordem, e se um provedor cair o `/tts` tenta o próximo. Trocar a voz padrão:
 edite o adapter e aumente `Narration.CACHE_VERSION`.
 
-Vozes do app (cada uma é uma rota e um adapter `Narration.createPocketBaseAdapter(pb, rota)`):
+Vozes do app (cada uma é uma rota e um adapter `Narration.createHttpAdapter(rota)`):
 
 | Voz | Rota | Provedor | Configuração no servidor |
 |---|---|---|---|
 | Narrador (subida de nível) | `/tts` | `TTS_PROVIDERS` (padrão `elevenlabs`) | `ELEVENLABS_API_KEY` |
-| Grande Sábio | `/tts/sage` | `tts/elevenlabs-sage.js` (mesma voz, mais entonação); se cair, `tts/piper.js` (Piper do NAS, grátis) e os do narrador | `ELEVENLABS_API_KEY`, `PIPER_URL` |
+| Grande Sábio | `/tts/sage` | `elevenlabs-sage` em `tts.ts` (mesma voz, mais entonação); se cair, `piper` (Piper do NAS, grátis) e os do narrador | `ELEVENLABS_API_KEY`, `PIPER_URL` |
 
-O Piper fica de reserva: a voz dele é plana, sem entonação nem ritmo. O Piper do NAS (`rpg-piper`, voz `pt_BR-cadu-medium`) só fala o protocolo Wyoming via TCP, que o PocketBase não
-alcança. A ponte `core/piper-http/server.py` (só biblioteca padrão do Python) recebe `GET /tts?text=...`, pede a
+O Piper fica de reserva: a voz dele é plana, sem entonação nem ritmo. O Piper do NAS (`rpg-piper`, voz `pt_BR-cadu-medium`) só fala o protocolo Wyoming via TCP, que a API não fala. A ponte `core/piper-http/server.py` (só biblioteca padrão do Python) recebe `GET /tts?text=...`, pede a
 fala ao Piper e devolve o formato do `/tts`. O Piper não informa o tempo de cada letra: a ponte estima pela
 duração, com pausa maior na pontuação. No NAS ele gera mais ou menos em tempo real (frase curta ≈ 3 s).
 
@@ -92,18 +100,18 @@ duração, com pausa maior na pontuação. No NAS ele gera mais ou menos em temp
 O app logado tem uma barra de abas (`routes/(tabs)/`: Início `/`, Mesas `/mesa`, Perfil `/perfil`; layout em
 `navigation/pages/TabsLayout.tsx`). Telas de detalhe (ficha, mesa, edição do perfil) ficam na pilha acima, em `routes/`.
 
-O perfil (`features/profile`) vive no registro do usuário no PocketBase, sem hook nem endpoint próprio:
-`avatar` (campo de arquivo, guardado no storage do PocketBase, 5 MB, JPEG/PNG/WebP), `nickname` e `preferences`
-(JSON: `narration`, `sounds`; campo novo entra em `User.Preferences` com padrão, sem migration). Campos criados pela
-migration `core/pb_migrations/1791500000_updated_users.js` (copiar para o NAS e reiniciar o `dnf-db`). A sessão
-(`useSession().session.user`) é a fonte de leitura; o PocketBase a atualiza a cada `update` do próprio usuário.
+O perfil (`features/profile`) vive no registro do usuário no Postgres (`users`), pelas rotas `/users/:id` da API:
+`avatar` (arquivo guardado em `FILES_DIR`, 5 MB, JPEG/PNG/WebP, validado pelo conteúdo; o servidor devolve o caminho
+`/files/avatars/<id>/<arquivo>` e o cliente monta o endereço completo), `nickname` e `preferences` (JSON: `narration`,
+`sounds`; campo novo entra em `User.Preferences` com padrão, sem migration). A sessão (`useSession().session.user`) é a fonte
+de leitura; `User.update`, `User.setAvatar` e `User.removeAvatar` a atualizam a cada gravação.
 Fora de componentes, `currentPreferences()` diz se a narração e os sons estão ligados.
 
 A capa da mesa é colocada pelo mestre no DM-Control (pasta do NAS, caminho em `mesas.cover`). O app a lê por
-`/nas/<caminho>` do PocketBase (`core/pb_hooks/nas.pb.js`, mesmas regras do DM-Control: mestre lê tudo da mesa, jogador só
-`imagens/`), com o token no `Authorization` (`mesa/functions/cover.ts`, `mesaCover(mesa)`). No NAS a pasta do storage é `/srv/apps/dnf-db/nas` (montada em
-`/nas:ro`; `NAS_DIR` troca) e o Traefik encaminha `/nas/` do `dnf.developale.com`. O DM-Control (hoje só local) precisa gravar nela: o arquivo
-de `mesas.cover` tem que existir em `nas/<mesaID>/imagens/`.
+`/nas/<caminho>` da API (`core/src/api/nas.ts`, mesmas regras do DM-Control: mestre lê tudo da mesa, jogador só
+`imagens/`), com o token no `Authorization` (`mesa/functions/cover.ts`, `mesaCover(mesa)`). Na API a pasta do NAS é `NAS_DIR`
+(no container, `/data/nas`, somente leitura; no NAS, `/srv/apps/dnf-db/nas`) e o Traefik encaminha `/nas/` do `dnf.developale.com`.
+O DM-Control (hoje só local) precisa gravar nela: o arquivo de `mesas.cover` tem que existir em `nas/<mesaID>/imagens/`.
 
 ### Magias do personagem
 
@@ -130,7 +138,7 @@ só chamam os hooks (`useClasses(edition)`, `useCharacter(id)`, `useMesas()`…)
 | `lib/query-client.ts` | `QueryClient` único, `PLAYER_STALE_TIME`, `PLAYER_CACHE_VERSION`, rede (NetInfo) e foco (AppState) no celular, `clearPlayerData()` |
 | `features/srd/functions/queries.ts` | Compêndio (`['srd', chave]`): fresco para sempre, cache em disco do `Cache` do core |
 | `features/character-sheet/functions/queries.ts` | Personagens (`['character', …]`): `useCharacters`, `useCharacter`, `useUpdateCharacter` (otimista), `useCreateCharacter`, `useRemoveCharacter` |
-| `features/mesa/functions/queries.ts` | Mesas (`['mesa', …]`): listas, ações e `useMesaRealtime(id)` (o evento do PocketBase invalida a mesa) |
+| `features/mesa/functions/queries.ts` | Mesas (`['mesa', …]`): listas, ações e `useMesaRealtime(id)` (o evento SSE da API invalida a mesa) |
 | `features/cache/functions/query-persister.ts` | Guarda só `character` e `mesa` no aparelho (7 dias): o app abre com o último estado |
 
 - Dados do jogador têm `staleTime` de 30 s e buscam de novo ao voltar à tela (`useRefetchOnFocus`), ao voltar o foco e ao reconectar.
@@ -143,9 +151,9 @@ só chamam os hooks (`useClasses(edition)`, `useCharacter(id)`, `useMesas()`…)
 
 As regras de D&D (classes, espécies, antecedentes, talentos, magias, equipamento) vêm da
 [5e-FastAPI](https://github.com/AlessandroFTunes/5e-FastAPI), em `https://5e-fastapi.developale.com`, atrás do
-Cloudflare Access. O app não tem o token: chama `/srd/*` no PocketBase (`core/pb_hooks/srd.pb.js`), que repassa
+Cloudflare Access. O app não tem o token: chama `/srd/*` na API (`core/src/api/srd.ts`), que repassa
 com o service token das variáveis `DND_API_ACCESS_ID`/`_SECRET` do servidor.
-O PocketBase só guarda as escolhas do jogador (ids da API como texto; itens como `"arma:3"`).
+O Postgres só guarda as escolhas do jogador (ids da API como texto; itens como `"arma:3"`).
 
 Onde fica cada parte:
 
@@ -200,29 +208,22 @@ Tudo roda no NAS, atrás do Traefik. Para entrar: `ssh ale@nas-ale`. Os apps fic
 
 | O quê | Onde no NAS | Como publicar |
 |---|---|---|
-| PocketBase (`https://dnf-db.developale.com`) | `/srv/apps/dnf-db` (container `dnf-db`) | Copiar `core/pb_hooks/*` (com a pasta `tts/`) para `pb_hooks/` (e `core/pb_migrations/*` para `pb_migrations/`, se mudou), depois `docker compose restart dnf-db` |
+| API do DnF (`https://dnf.developale.com`, caminhos `/auth`, `/users`, `/characters`, `/mesas`, `/grids`, `/srd`, `/tts`, `/nas`, `/files`) + Postgres | `/srv/apps/dnf-api` (containers `dnf-api` e `dnf-postgres`; modelo em `core/deploy/compose.yaml`, `.env` a partir de `core/deploy/.env.example`) | Na raiz do repo: `docker build -f core/Dockerfile -t dnf-api:latest .`, enviar a imagem (`docker save dnf-api:latest \| ssh ale@nas-ale docker load`) e `ssh ale@nas-ale 'cd /srv/apps/dnf-api && docker compose up -d'`. As migrations rodam sozinhas ao subir |
 | Ponte do Piper (voz do Grande Sábio) | `/srv/apps/piper-http` (container `piper-http`, redes `proxy` e `rpg-piper_default`, sem porta exposta) | Copiar `core/piper-http/server.py` para lá e `docker compose restart piper-http` |
-| Cache do `/srd` (Redis, 64 MB, respostas por 1 dia) | Mesma stack do `dnf-db`: containers `dnf-redis` e `dnf-webdis` (ponte HTTP, porque os hooks não abrem TCP), só na rede interna da stack | Config do Webdis em `core/redis/webdis.json` (só `GET`/`SETEX`/`PING`) → `/srv/apps/dnf-db/webdis.json`. `CACHE_URL=http://dnf-webdis:7379` no `.env`; sem ele, ou com o Redis fora, o `/srd` repassa direto. Limpar: `docker exec dnf-redis redis-cli flushall` |
-| App web (`https://dnf.developale.com`) | `/srv/apps/dnf-web` (nginx, container `dnf-web`) | `sh apps/mobile/scripts/deploy.sh` (gera o build web e troca `dist/`) |
+| App web (`https://dnf.developale.com`) | `/srv/apps/dnf-web` (nginx, container `dnf-web`) | Gerar o build web (`EXPO_PUBLIC_API_URL` = o próprio domínio) e trocar o `dist/` |
 
-```sh
-scp -r core/pb_hooks/tts.pb.js core/pb_hooks/tts ale@nas-ale:/srv/apps/dnf-db/pb_hooks/
-ssh ale@nas-ale 'cd /srv/apps/dnf-db && docker compose restart dnf-db'
-```
-
-- O `.env` do PocketBase (chaves dos provedores de voz, `TTS_PROVIDERS` e o token do Cloudflare Access) fica só no NAS, em `/srv/apps/dnf-db/.env`.
-- Depois de reiniciar, o Traefik só volta a rotear quando o container fica `healthy` (~30 s). Até lá,
-  `dnf-db.developale.com` responde 404.
+- O `.env` da API (`POSTGRES_PASSWORD`, `AUTH_SECRET`, chaves dos provedores de voz, `TTS_PROVIDERS` e o token do Cloudflare Access) fica só no NAS, em `/srv/apps/dnf-api/.env`.
+- **Migração do PocketBase (uma vez):** parar o `dnf-db`, copiar `pb_data/` para a máquina com o repo, rodar
+  `DATABASE_URL=… FILES_DIR=… PB_DATA=…/data.db bun run migrate:pocketbase` na pasta `core` (por um túnel `ssh -L 5432:…` ou no próprio NAS),
+  subir a API nova e só depois desligar o `dnf-db`, o Redis e o Webdis. A pasta do NAS (`/srv/apps/dnf-db/nas`) é a mesma que a API lê.
+- Depois de subir, o Traefik só roteia quando o container fica `healthy` (~15 s).
 
 ### Segurança do NAS (aplicada em 2026-11-01)
 
 - O HTTPS termina na Cloudflare: o `cloudflared` (no host) fala com o Traefik por `[::1]:80`. A porta 80 só
   escuta em `127.0.0.1` e `[::1]`; o Traefik só confia nos cabeçalhos `X-Forwarded-*` de IPs do próprio NAS.
-- O painel `/_/` e `/api/collections/_superusers` do `dnf-db` respondem 403 pelo domínio. Para administrar:
-  `ssh -L 8091:127.0.0.1:8091 ale@nas-ale` e abrir `http://localhost:8091/_/`.
-- Rate limit do Traefik (por `CF-Connecting-IP`), nos labels do `dnf-db`: geral 600/min, login e `email-exists`
-  20/min, `/tts` 10/min, busca de mesa por código 10/min.
-- `pb_hooks` e `pb_migrations` são montados somente leitura no container: mude o schema só pelas migrations do repo.
-- O `dnf-db` roda como uid 10001 (dono de `pb_data`). Dozzle, o outro PocketBase e o projects-www publicam a porta só em
-  loopback; o Directus (8056) continua na rede local porque o `PUBLIC_URL` dele usa o IP da LAN.
+- Rate limit do Traefik (por `CF-Connecting-IP`), nos labels do `dnf-api`: geral 600/min, login, cadastro e `email-exists`
+  20/min, `/tts` e busca de mesa por código 10/min.
+- O Postgres só escuta na rede interna da stack (sem porta publicada); o `dnf-api` roda como o usuário `bun` (sem root).
+- Dozzle, o outro PocketBase e o projects-www publicam a porta só em loopback; o Directus (8056) continua na rede local porque o `PUBLIC_URL` dele usa o IP da LAN.
 - Cada arquivo alterado no NAS tem um `.bak-seguranca*`, `.bak-nonroot-*` ou `.bak-portas-*` ao lado.

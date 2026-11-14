@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { deflateSync } from 'node:zlib';
-import PocketBase from 'pocketbase';
+import { Grid } from '@dnf/core/grid';
+import { Http } from '@dnf/core/http';
+import { Mesa } from '@dnf/core/mesa';
+import { User } from '@dnf/core/user';
 
-const PB_URL = process.env.POCKETBASE_URL ?? 'http://127.0.0.1:8090';
+const API_URL = process.env.API_URL ?? 'http://127.0.0.1:3000';
 const PASSWORD = 'e2e-password-123';
 const email = `e2e-grid-${Date.now()}@dnf.local`;
 
@@ -52,22 +55,20 @@ function mapaPng(): Buffer {
 }
 
 const erros: string[] = [];
-let pb: PocketBase;
 let mesaId: string;
 let userId: string;
 
 test.beforeAll(async () => {
-	pb = new PocketBase(PB_URL);
-	const user = await pb.collection('users').create({
+	Http.init({ url: API_URL });
+	// Cria a conta já logada (o token fica no cliente) e a mesa em que ela é mestra.
+	const user = await User.create.force({
 		email,
 		password: PASSWORD,
 		passwordConfirm: PASSWORD,
 		name: 'E2E Grid'
 	});
 	userId = user.id;
-	await pb.collection('users').authWithPassword(email, PASSWORD);
-	const mesa = await pb.collection('mesas').create({ name: 'Mesa E2E', edition: '2024', gm: userId });
-	mesaId = mesa.id;
+	mesaId = (await Mesa.create.force({ name: 'Mesa E2E', edition: '2024' })).id;
 });
 
 test.afterEach(({}, info) => {
@@ -76,17 +77,15 @@ test.afterEach(({}, info) => {
 
 test.afterAll(async () => {
 	// Apaga a mesa (e as grids/cenas em cascata) e o usuário de teste.
-	await pb.collection('mesas').delete(mesaId).catch(() => {});
-	await pb.collection('users').delete(userId).catch(() => {});
+	await Mesa.remove.force(mesaId).catch(() => {});
+	await User.remove.force(userId).catch(() => {});
 });
 
 test.setTimeout(90000);
 
 test('cria grid, edita a cena, salva e mostra a visão do jogador', async ({ browser, baseURL }) => {
 	const context = await browser.newContext();
-	const cookie = pb.authStore.exportToCookie({ httpOnly: false, secure: false }, 'pb_auth');
-	const value = cookie.slice('pb_auth='.length, cookie.indexOf(';'));
-	await context.addCookies([{ name: 'pb_auth', value, url: baseURL! }]);
+	await context.addCookies([{ name: 'dnf_auth', value: Http.client().auth.token, url: baseURL! }]);
 	const page = await context.newPage();
 	page.on('pageerror', (e) => erros.push(e.message));
 	page.on('console', (m) => m.type() === 'error' && erros.push(m.text()));
@@ -162,8 +161,8 @@ test('cria grid, edita a cena, salva e mostra a visão do jogador', async ({ bro
 	await page.screenshot({ path: 'test-results/editor.png' });
 
 	// Persistiu no JSON?
-	const cena = await pb.collection('grid_scenes').getFirstListItem('grid.mesa = "' + mesaId + '"');
-	const data = cena.data;
+	const [grid] = await Grid.list.force(mesaId);
+	const data = await Grid.scene.force(grid!.id);
 	expect(data.tokens).toHaveLength(1);
 	expect(data.tokens[0]).toMatchObject({ player: true, vision: 60 });
 	expect(data.tokens[0].x).toBeGreaterThan(0);

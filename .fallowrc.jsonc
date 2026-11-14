@@ -6,9 +6,6 @@
     "core/drizzle.config.ts",
     "core/scripts/*.ts",
     "core/tests/**/*.ts",
-    // O PocketBase carrega estes arquivos sozinho (hooks e migrations); nenhum import os chama.
-    "core/pb_hooks/**/*.js",
-    "core/pb_migrations/*.js",
     "apps/mobile/scripts/*.ts",
     "packages/*/src/**/*.test.ts",
     "apps/mobile/src/**/*.test.ts",
@@ -16,11 +13,9 @@
   ],
   // Tipos gerados do spec OpenAPI da 5e-FastAPI (`bun run srd:gen`): não se edita nem se limpa.
   "ignorePatterns": ["packages/sdk/src/srd/5e-fastapi.d.ts"],
-  // As migrations do PocketBase repetem o mesmo esqueleto de coleção por natureza (cada uma é um
-  // snapshot do schema), e não há o que extrair. Qualquer repetição menor que uma pasta se dispensa onde
-  // mora, com um comentário `fallow-ignore-next-line code-duplication` acima do bloco.
+  // Repetição menor que uma pasta se dispensa onde mora, com um comentário
+  // `fallow-ignore-next-line code-duplication` acima do bloco.
   "duplicates": {
-    "ignore": ["core/pb_migrations/**"],
     "minOccurrences": 3,
   },
   "health": {

@@ -47,7 +47,7 @@ Nada de markup, lógica ou estilo na rota.
 ### Dados
 
 - **Toda query passa por remote functions** (`api.remote.ts` da feature). Sem `fetch` solto, sem `load` que
-  busque dados, sem chamar o `core` (PocketBase / 5e-FastAPI) direto de componente.
+  busque dados, sem chamar o `core` (a API do DnF) direto de componente.
 - **Nenhum componente recebe dados diretamente do `core`**: os dados vêm das remote functions, já
   no formato que o componente usa.
 - Regras de D&D continuam vindo da API de regras; o banco guarda só as escolhas do jogador.

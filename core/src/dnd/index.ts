@@ -1,5 +1,5 @@
 import createFetchClient, { type Client } from 'openapi-fetch';
-import type PocketBaseClient from 'pocketbase';
+import type { Http } from '../http';
 
 /** API de regras de D&D em português (https://github.com/AlessandroFTunes/5e-FastAPI). */
 export const DND_URL = 'https://5e-fastapi.developale.com';
@@ -11,7 +11,7 @@ export interface DndAdapterOptions {
    * (`CF-Access-Client-Id` / `CF-Access-Client-Secret`). Sem ele, o Access responde 401/403.
    */
   accessToken?: { clientId: string; clientSecret: string } | null;
-  /** Token enviado em `Authorization` a cada requisição (ex.: o JWT do PocketBase, para o proxy `/srd`). */
+  /** Token enviado em `Authorization` a cada requisição (o da sessão, para o proxy `/srd` da API). */
   token?: () => string | undefined;
 }
 
@@ -34,7 +34,7 @@ export function createAdapter<Paths extends {}>({
     client.use({
       onRequest({ request }) {
         const value = token();
-        if (value) request.headers.set('Authorization', value);
+        if (value) request.headers.set('Authorization', `Bearer ${value}`);
         return request;
       },
     });
@@ -43,9 +43,9 @@ export function createAdapter<Paths extends {}>({
 }
 
 /**
- * Passa pelo PocketBase (`core/pb_hooks/srd.pb.js`), que guarda o token do Cloudflare Access e só
+ * Passa pela API do DnF (`core/src/api/srd.ts`), que guarda o token do Cloudflare Access e só
  * atende logados. É o caminho dos apps, que não têm o token.
  */
-export function createPocketBaseAdapter<Paths extends {}>(pb: PocketBaseClient): Client<Paths> {
-  return createAdapter<Paths>({ baseUrl: `${pb.baseURL}/srd`, token: () => pb.authStore.token });
+export function createApiAdapter<Paths extends {}>(http: Http.Client): Client<Paths> {
+  return createAdapter<Paths>({ baseUrl: `${http.baseURL}/srd`, token: () => http.auth.token });
 }

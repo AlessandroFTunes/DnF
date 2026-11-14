@@ -227,7 +227,7 @@ export namespace Rules {
 
   /**
    * Consultas de regras por edição (2014 ou 2024). Só traz dados de regra; o que o jogador escolheu fica
-   * no PocketBase. Chaves são texto estável (é o que fica guardado no personagem).
+   * no personagem. Chaves são texto estável (é o que fica guardado no personagem).
    */
   export interface Port<R extends RawShapes = RawShapes> extends CreaturePort {
     /** Livros cadastrados na fonte. */

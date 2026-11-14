@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { ClientResponseError } from '@dnf/core/pocketbase';
+import { Http } from '@dnf/core/http';
 import { User } from '@dnf/core/user';
 import type { AuthMode } from './flow';
 
 export type AuthField = 'name' | 'email' | 'password' | 'passwordConfirm';
 export type AuthErrors = Partial<Record<AuthField | 'form', string>>;
 
-/** Traduz erros de validação (Zod) e do servidor (PocketBase) para mensagens por campo. */
+/** Traduz erros de validação (Zod) e do servidor (API) para mensagens por campo. */
 export function toErrors(error: unknown, mode: AuthMode): AuthErrors {
   if (error instanceof z.ZodError) {
     const errors: AuthErrors = {};
@@ -16,10 +16,10 @@ export function toErrors(error: unknown, mode: AuthMode): AuthErrors {
     }
     return errors;
   }
-  if (error instanceof ClientResponseError) {
+  if (error instanceof Http.ApiError) {
     if (error.status === 0) return { form: 'Sem conexão com o servidor. Tente de novo.' };
     if (mode === 'login' && error.status === 400) return { form: 'Email ou senha incorretos.' };
-    if (error.response?.data?.email?.code === 'validation_not_unique') {
+    if (error.fields.email?.code === 'validation_not_unique') {
       return { email: 'Já existe uma conta com esse email.' };
     }
     if (error.status === 429) return { form: 'Muitas tentativas. Espere um pouco e tente de novo.' };

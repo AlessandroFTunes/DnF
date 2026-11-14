@@ -5,40 +5,35 @@ import { Nas } from '@dnf/core/storage';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** Uma mesa da pessoa logada (o PocketBase só devolve se ela é a mestra ou joga nela) e seus players. */
+/** Uma mesa da pessoa logada (a API só devolve se ela é a mestra ou joga nela) e seus players. */
 export const mesa = query('unchecked', async (id: string) => {
 	const { locals } = getRequestEvent();
 	if (!locals.user) return { failure: 'Entre para ver esta mesa.' } as const;
 
 	try {
-		const record = await locals.pb.collection('mesas').getOne(id);
-		// Mestre vê todos; jogador, só a própria entrada (regra do PocketBase).
-		const membros = await locals.pb.collection('mesa_members').getFullList({
-			filter: locals.pb.filter('mesa = {:id}', { id }),
-			expand: 'character,user',
-			sort: 'created,id'
-		});
+		const record = await Mesa.fromID.force(id);
+		// 404 também cobre "sem permissão": para quem pede, a mesa não existe.
+		if (!record) return { failure: 'Mesa não encontrada.' } as const;
+		// Mestre vê todos; jogador, só a própria entrada (regra da API).
+		const membros = await Mesa.members.force(id);
 		const players = membros.map((membro) => ({
 			id: membro.id,
-			jogador: (membro.expand?.user?.name as string | undefined) ?? 'Jogador',
-			personagem: (membro.expand?.character?.name as string | undefined) ?? 'Sem personagem',
-			nivel: (membro.expand?.character?.level as number | undefined) ?? null
+			jogador: membro.playerName,
+			personagem: membro.character.name,
+			nivel: membro.character.level
 		}));
 		return {
-			...Mesa.serialize(record),
+			...record,
 			image: record.cover ? `/nas/${record.cover}` : null,
 			players
 		} as const;
 	} catch (failure) {
-		// 404 do PocketBase também cobre "sem permissão": para quem pede, a mesa não existe.
-		if ((failure as { status?: number }).status === 404)
-			return { failure: 'Mesa não encontrada.' } as const;
 		console.error('[mesa]', failure);
 		return { failure: 'Não foi possível carregar a mesa. Tente de novo.' } as const;
 	}
 });
 
-/** Muda imagem, título e descrição. Só o mestre consegue (updateRule do PocketBase). */
+/** Muda imagem, título e descrição. Só o mestre consegue (a API confere). */
 export const editarMesa = form(
 	'unchecked',
 	async (data: { id: string; name: string; description?: string; image?: File }, issue) => {
@@ -61,12 +56,8 @@ export const editarMesa = form(
 		if (!locals.user) invalid(issue.name('Entre para editar a mesa.'));
 
 		const { id, ...patch } = parsed.data;
-		let atual: { cover?: string } | undefined;
-		try {
-			atual = await locals.pb.collection('mesas').getOne(id);
-		} catch {
-			invalid(issue.name('Mesa não encontrada.'));
-		}
+		const atual = await Mesa.fromID.force(id).catch(() => null);
+		if (!atual) invalid(issue.name('Mesa não encontrada.'));
 
 		// Nome novo a cada troca: o navegador guarda a imagem em cache pelo caminho.
 		let cover: string | undefined;
@@ -81,14 +72,14 @@ export const editarMesa = form(
 		}
 
 		try {
-			await locals.pb.collection('mesas').update(id, cover ? { ...patch, cover } : patch);
+			await Mesa.update.force({ id, ...patch, ...(cover ? { cover } : {}) });
 		} catch (failure) {
 			console.error('[mesa] editarMesa', failure);
 			if (cover) await Nas.remove(cover);
 			invalid(issue.name('Não foi possível salvar. Só o mestre pode editar a mesa.'));
 		}
 
-		if (cover && atual?.cover) await Nas.remove(atual.cover).catch(() => {});
+		if (cover && atual.cover) await Nas.remove(atual.cover).catch(() => {});
 		return { ok: true } as const;
 	}
 );

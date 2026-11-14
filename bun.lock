@@ -61,7 +61,6 @@
       "dependencies": {
         "@dnf/core": "workspace:*",
         "@lucide/svelte": "^1.61.0",
-        "pocketbase": "^0.28.1",
       },
       "devDependencies": {
         "@fontsource/fira-mono": "^5.2.7",
@@ -89,7 +88,6 @@
         "hono": "^4.13.18",
         "openapi-fetch": "^0.17.0",
         "pixi.js": "^8.22.0",
-        "pocketbase": "^0.28.1",
         "postgres": "^4.1.1",
         "zod": "^4.6.5",
       },
@@ -105,7 +103,6 @@
       "dependencies": {
         "@dnf/core": "workspace:*",
         "openapi-fetch": "^0.17.0",
-        "pocketbase": "^0.28.1",
       },
       "devDependencies": {
         "@dnf/tsconfig": "workspace:*",
@@ -1693,8 +1690,6 @@
     "pluralize": ["pluralize@8.0.0", "", {}, "sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA=="],
 
     "pngjs": ["pngjs@3.4.0", "", {}, "sha512-NCrCHhWmnQklfH4MtJMRjZ2a8c80qXeMlQMv2uVp9ISJMTt562SbGd6n2oq0PaPgKm7Z6pL9E2UlLIhC+SHL3w=="],
-
-    "pocketbase": ["pocketbase@0.28.1", "", {}, "sha512-/3ihkq+rvfcs0MQgrK4sEElOg6gfenHW9S/O+3BSO+V1yT+4B10+9aT22uTQUPqze9ItwNtwWyY5ZmdgVCTdVA=="],
 
     "possible-typed-array-names": ["possible-typed-array-names@1.1.0", "", {}, "sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg=="],
 

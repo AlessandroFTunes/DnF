@@ -1,4 +1,3 @@
-import type PocketBaseClient from 'pocketbase';
 import type { User } from '@dnf/core/user';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
@@ -6,7 +5,6 @@ import type { User } from '@dnf/core/user';
 declare global {
 	namespace App {
 		interface Locals {
-			pb: PocketBaseClient;
 			user?: User.Info;
 		}
 

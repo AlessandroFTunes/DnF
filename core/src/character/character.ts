@@ -1,17 +1,13 @@
 import { z } from 'zod';
-import type { RecordModel } from 'pocketbase';
-import { Assert } from '../util/assert';
 import { DiferenteKey } from '../util/diferenteKey';
 import { fn } from '../util/fn';
-import { PocketBase } from '../pocketbase';
+import { Http } from '../http';
 import { Common } from '../common';
 import { Examples } from '../examples';
 import { abilityScoresSchema } from './abilities';
 import { Sheet } from './sheet';
 
 export namespace Character {
-  export const assert = Assert.create('Character');
-
   // Seções guardadas como JSON. No update cada uma é mesclada com a atual (ver `update`).
   const Sections = {
     proficiencies: Sheet.Proficiencies,
@@ -62,7 +58,7 @@ export namespace Character {
   export type Info = z.infer<typeof Info>;
 
   // Criar exige só identidade, classe e atributos; o resto começa vazio.
-  const Create = Fields.extend({
+  export const Create = Fields.extend({
     speciesKey: Fields.shape.speciesKey.default(null),
     backgroundKey: Fields.shape.backgroundKey.default(null),
     alignmentKey: Fields.shape.alignmentKey.default(null),
@@ -89,39 +85,20 @@ export namespace Character {
     details: patchOf(Sheet.Details),
   });
 
-  const listing = Common.listing({
-    collection: 'characters',
-    serialize,
-    columns: {
-      name: 'name',
-      level: 'level',
-      timeCreated: 'created',
-      timeUpdated: 'updated',
-    } satisfies Partial<Record<keyof Info, string>>,
-    fallback: '-updated,id',
-  });
+  /** Colunas que a lista aceita para ordenar (`chave` crescente, `-chave` decrescente). */
+  export const Sort = z.enum(['name', '-name', 'level', '-level', 'timeCreated', '-timeCreated', 'timeUpdated', '-timeUpdated']);
+
+  export const ListQuery = Common.Query({ sort: Sort.optional(), search: z.string().optional() });
 
   export const create = fn(
     Create,
-    async (input) => {
-      const pb = PocketBase.use();
-      const ownerID = await Assert.create('Session').exists(pb.authStore.record?.id);
-      const record = await pb
-        .collection('characters')
-        .create({ ...input, level: levelOf(input.classes), owner: ownerID });
-      return serialize(record);
-    },
+    (input) => Http.client().request<Info>('/characters', { method: 'POST', body: input }),
     { title: 'Create character', description: 'Create a character owned by the logged-in user.' },
   );
 
   export const list = fn(
-    listing.Query,
-    async (input) => {
-      const pb = PocketBase.use();
-      const ownerID = await Assert.create('Session').exists(pb.authStore.record?.id);
-      // O mestre também enxerga os personagens da mesa dele; aqui são só os do usuário.
-      return listing.page(input, [pb.filter('owner = {:ownerID}', { ownerID })]);
-    },
+    ListQuery,
+    (input) => Http.client().request<Common.Page<Info>>('/characters', { query: input }),
     {
       title: 'List characters',
       description: "List the logged-in user's characters. Paginated.",
@@ -131,28 +108,21 @@ export namespace Character {
   export const fromID = fn(
     Info.shape.id,
     (id) =>
-      PocketBase.use()
-        .collection('characters')
-        .getOne(id)
-        .then(serialize, (error) => {
-          if (error?.status === 404) return null;
+      Http.client()
+        .request<Info>(`/characters/${id}`)
+        .catch((error: unknown) => {
+          if (error instanceof Http.ApiError && error.status === 404) return null;
           throw error;
         }),
     { title: 'Get character', description: 'Fetch a single character by id.' },
   );
 
+  /** O que o servidor recebe no update: o `Patch` sem o id (que vai na rota). */
+  export const PatchBody = Patch.omit({ id: true });
+
   export const update = fn(
     Patch,
-    async ({ id, ...patch }) => {
-      const current = await assert.exists(fromID.force(id));
-      const data: Record<string, unknown> = { ...patch };
-      for (const name of SECTION_NAMES) {
-        if (patch[name]) data[name] = Sections[name].parse({ ...current[name], ...stripUndefined(patch[name]) });
-      }
-      if (patch.classes) data.level = levelOf(patch.classes);
-      const record = await PocketBase.use().collection('characters').update(id, data);
-      return serialize(record);
-    },
+    ({ id, ...patch }) => Http.client().request<Info>(`/characters/${id}`, { method: 'PATCH', body: patch }),
     {
       title: 'Update character',
       description: 'Update a character sheet. Sections (combat, equipment…) merge with the current values.',
@@ -161,43 +131,24 @@ export namespace Character {
 
   export const remove = fn(
     Info.shape.id,
-    async (id) => {
-      await assert.exists(fromID.force(id));
-      await PocketBase.use().collection('characters').delete(id);
-    },
+    (id) => Http.client().request<void>(`/characters/${id}`, { method: 'DELETE' }),
     { title: 'Delete character', description: 'Permanently delete a character.' },
   );
 
-  /** Registros antigos podem não ter uma seção: completa com os defaults. */
-  export function serialize(record: RecordModel): Info {
-    return {
-      id: record.id,
-      ownerID: record.owner,
-      name: record.name,
-      edition: record.edition,
-      level: record.level,
-      classes: record.classes ?? [],
-      speciesKey: record.speciesKey || null,
-      backgroundKey: record.backgroundKey || null,
-      alignmentKey: record.alignmentKey || null,
-      featKeys: record.featKeys ?? [],
-      abilities: record.abilities,
-      xp: record.xp,
-      inspiration: record.inspiration,
-      featureUses: record.featureUses ?? {},
-      proficiencies: Sheet.Proficiencies.parse(record.proficiencies ?? {}),
-      combat: Sheet.Combat.parse(record.combat ?? {}),
-      equipment: Sheet.Equipment.parse(record.equipment ?? {}),
-      spellcasting: Sheet.Spellcasting.parse(record.spellcasting ?? {}),
-      personality: Sheet.Personality.parse(record.personality ?? {}),
-      details: Sheet.Details.parse(record.details ?? {}),
-      timeCreated: Common.toISO(record.created),
-      timeUpdated: Common.toISO(record.updated),
-    };
+  /**
+   * Aplica um `patch` ao personagem `current`: devolve só o que muda. Cada seção (combat, equipment…) é mesclada com
+   * a atual; mudar as classes recalcula o nível total (soma dos níveis de classe, guardado para ordenar a lista).
+   */
+  export function merge(current: Info, patch: z.output<typeof PatchBody>) {
+    const data: Record<string, unknown> = { ...patch };
+    for (const name of SECTION_NAMES) {
+      if (patch[name]) data[name] = Sections[name].parse({ ...current[name], ...stripUndefined(patch[name]) });
+    }
+    if (patch.classes) data.level = levelOf(patch.classes);
+    return data;
   }
 
-  /** Nível total = soma dos níveis de classe (guardado para ordenar a lista). */
-  function levelOf(classes: { level: number }[]): number {
+  export function levelOf(classes: { level: number }[]): number {
     return classes.reduce((sum, c) => sum + c.level, 0);
   }
 }

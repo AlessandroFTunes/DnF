@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ClientResponseError } from '@dnf/core/pocketbase';
+import { Http } from '@dnf/core/http';
 import { User } from '@dnf/core/user';
 import { Button, spacing, typography, useRpgTheme } from '@dnf/ui-react-native';
 import { Field } from '../components/Field';
@@ -35,9 +35,9 @@ export default function EmailStep() {
       router.push('/login/password');
     } catch (e) {
       setError(
-        e instanceof ClientResponseError && e.status === 429
+        e instanceof Http.ApiError && e.status === 429
           ? 'Muitas tentativas. Espere um pouco e tente de novo.'
-          : e instanceof ClientResponseError && e.status === 0
+          : e instanceof Http.ApiError && e.status === 0
             ? 'Sem conexão com o servidor. Tente de novo.'
             : 'Algo deu errado. Tente de novo.',
       );

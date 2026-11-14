@@ -1,48 +1,49 @@
-import { getTokenPayload } from 'pocketbase';
 import type { Handle } from '@sveltejs/kit/hooks';
-import { POCKETBASE_URL } from '$app/env/private';
-import { createAdapter, PocketBase } from '@dnf/core/pocketbase';
+import { API_URL } from '$app/env/private';
+import { Http } from '@dnf/core/http';
 import { User } from '@dnf/core/user';
 
-// User.serialize monta a URL do avatar com o cliente compartilhado (sem login: só gera a URL).
-PocketBase.init(POCKETBASE_URL);
+const COOKIE = 'dnf_auth';
 
-const COOKIE = 'pb_auth';
-
-// O token do PocketBase dura 15 min (users > Options > Token duration, no Dashboard).
-// Renova quando falta menos de 10 min, então quem navega nunca é deslogado e o
-// PocketBase só é consultado a cada ~5 min. Token vencido não renova: pede login.
-const REFRESH_WHEN_LEFT_MS = 10 * 60 * 1000;
-
-function msLeft(token: string): number {
-	return getTokenPayload(token).exp * 1000 - Date.now();
-}
+// O token da API dura 30 dias. Renova quando faltam menos de 15, então quem usa o DM-Control de vez em quando nunca
+// é deslogado. Token vencido não renova: pede login.
+const REFRESH_WHEN_LEFT_MS = 15 * 24 * 60 * 60 * 1000;
+const MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 export const handle: Handle = async ({ event, resolve }) => {
-	// Um cliente por requisição: o authStore é o do usuário que fez o pedido.
-	const pb = createAdapter(POCKETBASE_URL);
-	pb.authStore.loadFromCookie(event.request.headers.get('cookie') ?? '', COOKIE);
+	// Um cliente por requisição, com o token do cookie: dentro do `Http.scope`, o `Http.client()` dos módulos do core
+	// (`Mesa`, `Grid`, `User`…) é o desta pessoa, mesmo com várias requisições ao mesmo tempo.
+	const auth = new Http.AuthStore<User.Info>();
+	const client = Http.createClient({ url: API_URL, auth });
+	const token = event.cookies.get(COOKIE);
+	if (token) auth.save(token);
 
-	if (pb.authStore.isValid) {
-		try {
-			if (msLeft(pb.authStore.token) < REFRESH_WHEN_LEFT_MS) {
-				await pb.collection('users').authRefresh();
+	return Http.scope(client, async () => {
+		if (auth.isValid) {
+			try {
+				const { id, exp } = Http.tokenPayload(auth.token)!;
+				if (exp * 1000 - Date.now() < REFRESH_WHEN_LEFT_MS) await User.refresh();
+				else auth.save(auth.token, await client.request<User.Info>(`/users/${id}`));
+			} catch {
+				auth.clear();
 			}
-		} catch {
-			pb.authStore.clear();
+		} else {
+			auth.clear();
 		}
-	}
+		event.locals.user = auth.record ?? undefined;
 
-	event.locals.pb = pb;
-	event.locals.user = pb.authStore.record ? User.serialize(pb.authStore.record) : undefined;
-
-	const response = await resolve(event);
-	response.headers.append(
-		'set-cookie',
-		pb.authStore.exportToCookie(
-			{ httpOnly: true, secure: event.url.protocol === 'https:', sameSite: 'Lax' },
-			COOKIE
-		)
-	);
-	return response;
+		const response = await resolve(event);
+		if (auth.token && auth.isValid) {
+			event.cookies.set(COOKIE, auth.token, {
+				path: '/',
+				httpOnly: true,
+				secure: event.url.protocol === 'https:',
+				sameSite: 'lax',
+				maxAge: MAX_AGE_SECONDS
+			});
+		} else {
+			event.cookies.delete(COOKIE, { path: '/' });
+		}
+		return response;
+	});
 };

@@ -1,5 +1,5 @@
-import { createAdapter, createPocketBaseAdapter, type DndAdapterOptions } from '@dnf/core/dnd';
-import type PocketBaseClient from 'pocketbase';
+import { createAdapter, createApiAdapter, type DndAdapterOptions } from '@dnf/core/dnd';
+import type { Http } from '@dnf/core/http';
 import type { components, paths } from './5e-fastapi';
 
 // Tipos gerados de openapi/5e-fastapi.json (`bun run srd:spec && bun run srd:gen`).
@@ -9,12 +9,12 @@ export type SrdSchemas = components['schemas'];
 export { DND_URL as SRD_URL } from '@dnf/core/dnd';
 
 export interface SrdClientOptions extends DndAdapterOptions {
-  /** Passa pelo proxy `/srd` deste PocketBase (com o JWT do login) em vez de falar direto com a API. */
-  pocketbase?: PocketBaseClient;
+  /** Passa pelo proxy `/srd` da API do DnF (com o token do login) em vez de falar direto com a API de regras. */
+  http?: Http.Client;
 }
 
-export function createSrdClient({ pocketbase, ...options }: SrdClientOptions = {}) {
-  return pocketbase ? createPocketBaseAdapter<paths>(pocketbase) : createAdapter<paths>(options);
+export function createSrdClient({ http, ...options }: SrdClientOptions = {}) {
+  return http ? createApiAdapter<paths>(http) : createAdapter<paths>(options);
 }
 
 export type SrdClient = ReturnType<typeof createSrdClient>;

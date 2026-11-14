@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    ".": "./src/index.ts",
     "./srd": "./src/srd/index.ts"
   },
   "scripts": {
@@ -13,8 +12,7 @@
   },
   "dependencies": {
     "@dnf/core": "workspace:*",
-    "openapi-fetch": "^0.17.0",
-    "pocketbase": "^0.28.1"
+    "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
     "@dnf/tsconfig": "workspace:*",

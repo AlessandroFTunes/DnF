@@ -3,8 +3,8 @@ import { User } from '@dnf/core/user';
 import { useSession } from '../../auth/functions/hook.session';
 
 /**
- * Perfil do jogador logado. O registro do usuário já mora na sessão (o PocketBase o atualiza sozinho a cada
- * `update` do próprio usuário), então ler é só olhar a sessão; gravar são as ações abaixo.
+ * Perfil do jogador logado. O registro do usuário já mora na sessão (`User.update` e `User.setAvatar` a
+ * atualizam a cada gravação), então ler é só olhar a sessão; gravar são as ações abaixo.
  */
 
 const DEFAULT_PREFERENCES: User.Preferences = User.Preferences.parse({});

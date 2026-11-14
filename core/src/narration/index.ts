@@ -1,10 +1,9 @@
-import type PocketBaseClient from 'pocketbase';
+import { Http } from '../http';
 
 /**
  * Narração (texto → fala). O app só conhece o port `Narration.Port`; cada provedor é um adapter. O provedor de
- * verdade (ElevenLabs, Piper…) roda no servidor, que guarda as chaves: `core/pb_hooks/tts.pb.js` tenta os
- * provedores de `TTS_PROVIDERS` em ordem, e cada um mora em `core/pb_hooks/tts/<nome>.js`. Trocar ou adicionar
- * provedor não muda nada aqui nem no app.
+ * verdade (ElevenLabs, Piper…) roda no servidor, que guarda as chaves: `core/src/api/tts.ts` tenta os
+ * provedores de `TTS_PROVIDERS` em ordem. Trocar ou adicionar provedor não muda nada aqui nem no app.
  */
 export namespace Narration {
   /** Fala gerada: áudio em base64, início de cada letra do texto (s) e duração (s). */
@@ -34,14 +33,14 @@ export namespace Narration {
   export const CACHE_VERSION = 2;
 
   /**
-   * Adapter: pede a fala ao PocketBase, que escolhe o provedor. Cada voz é uma rota: `/tts` (narrador) e
+   * Adapter: pede a fala à API, que escolhe o provedor. Cada voz é uma rota: `/tts` (narrador) e
    * `/tts/sage` (Grande Sábio). Só atende logados.
    */
-  export function createPocketBaseAdapter(pocketbase: PocketBaseClient, route: '/tts' | '/tts/sage' = '/tts'): Port {
+  export function createHttpAdapter(route: '/tts' | '/tts/sage' = '/tts'): Port {
     return {
       async createVoice(text) {
         try {
-          return await pocketbase.send<Result>(route, { query: { text }, requestKey: null });
+          return await Http.client().request<Result>(route, { query: { text } });
         } catch {
           return null;
         }

@@ -6,7 +6,7 @@ import { useQueryState, type QueryState } from '../../../query-state';
 import { mesaKeys } from '../../mesa/functions/queries';
 
 /**
- * Consultas dos personagens (PocketBase). As telas só chamam estes hooks: `useCharacters()`, `useCharacter(id)`,
+ * Consultas dos personagens. As telas só chamam estes hooks: `useCharacters()`, `useCharacter(id)`,
  * `useUpdateCharacter(id)`… Os dados são do jogador, então voltam a buscar depois de `PLAYER_STALE_TIME` e ficam
  * guardados no aparelho (ver `features/cache/functions/query-persister.ts`).
  */

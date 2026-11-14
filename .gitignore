@@ -6,10 +6,8 @@ dist/
 !.env.example
 !.envrc
 
-# PocketBase
-core/pb_data/
-core/pocketbase
-core/pocketbase.exe
+# Avatares enviados pelos usuários (FILES_DIR da API)
+core/files/
 
 # Arquivos enviados (storage local do NAS)
 nas/

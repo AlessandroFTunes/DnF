@@ -1,16 +1,16 @@
-import { command, form, getRequestEvent } from '$app/server';
+import { command, form } from '$app/server';
 import { invalid, redirect } from '@sveltejs/kit';
-import { ClientResponseError } from '@dnf/core/pocketbase';
+import { Http } from '@dnf/core/http';
 import { User } from '@dnf/core/user';
 
 const HOME = '/inicio';
 
 /**
- * Texto para a pessoa a partir do que o PocketBase devolveu. Erro que não é do PocketBase é bug nosso:
+ * Texto para a pessoa a partir do que a API devolveu. Erro que não é da API é bug nosso:
  * vai para o log do servidor e a pessoa vê só o texto genérico.
  */
 function reason(failure: unknown, fallback: string): { status: number; text: string } {
-	if (!(failure instanceof ClientResponseError)) {
+	if (!(failure instanceof Http.ApiError)) {
 		console.error('[login]', failure);
 		return { status: 500, text: fallback };
 	}
@@ -47,12 +47,11 @@ export const signIn = form(
 		if (!email.success) invalid(issue.email('Informe um email válido.'));
 		if (!data.password) invalid(issue.password('Informe a senha.'));
 
-		const { locals } = getRequestEvent();
 		try {
-			await locals.pb.collection('users').authWithPassword(email.data, data.password);
+			await User.login.force({ email: email.data, password: data.password });
 		} catch (failure) {
 			const { status, text } = reason(failure, 'Não foi possível entrar.');
-			// 400 do PocketBase = email ou senha que não conferem
+			// 400 da API = email ou senha que não conferem
 			invalid(issue.password(status === 400 ? 'Email ou senha incorretos.' : text));
 		}
 
@@ -63,7 +62,7 @@ export const signIn = form(
 export const signUp = form(
 	'unchecked',
 	async (data: { email: string; name: string; password: string }, issue) => {
-		const parsed = User.create.schema.safeParse({
+		const parsed = User.SignUp.safeParse({
 			name: data.name,
 			email: data.email,
 			password: data.password,
@@ -85,27 +84,15 @@ export const signUp = form(
 			);
 		}
 
-		const { locals } = getRequestEvent();
-
 		try {
-			await locals.pb.collection('users').create(parsed.data);
+			// Cria a conta e já entra: o token fica no cliente desta requisição, e o hook o põe no cookie.
+			await User.create.force(parsed.data);
 		} catch (failure) {
 			const { text } = reason(failure, 'Não foi possível criar a conta.');
-			const emailTaken =
-				failure instanceof ClientResponseError && Boolean(failure.response?.data?.email);
+			const emailTaken = failure instanceof Http.ApiError && Boolean(failure.fields.email);
 			invalid(
 				emailTaken ? issue.email('Já existe uma conta com esse email.') : issue.password(text)
 			);
-		}
-
-		try {
-			await locals.pb
-				.collection('users')
-				.authWithPassword(parsed.data.email, parsed.data.password);
-		} catch (failure) {
-			// A conta já foi criada: não adianta pedir o cadastro de novo, só a entrada.
-			reason(failure, '');
-			redirect(303, `/login?email=${encodeURIComponent(parsed.data.email)}`);
 		}
 
 		redirect(303, HOME);

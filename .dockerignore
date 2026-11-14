@@ -1,0 +1,14 @@
+.git
+.direnv
+.env*
+**/node_modules
+**/.svelte-kit
+**/.expo
+**/dist
+# Só os package.json dos apps entram (o bun resolve os workspaces); o código deles não.
+apps/**
+!apps/mobile/package.json
+!apps/web/DM-Control/package.json
+**/nas
+**/files
+core/tests

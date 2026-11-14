@@ -1,20 +1,15 @@
 import { z } from 'zod';
-import type { RecordModel } from 'pocketbase';
-import { Assert } from '../util/assert';
 import { fn } from '../util/fn';
-import { PocketBase } from '../pocketbase';
+import { Http } from '../http';
 import { Common } from '../common';
-import { Mesa } from '../mesa';
 
 /**
  * Grid de combate: a imagem de um mapa (no NAS) + a cena em cima dela.
  * A tabela `grids` guarda só nome, url e mesa; posições, desenhos, paredes, luzes e fog ficam num JSON
  * (`grid_scenes.data`, o `Scene` abaixo). Todas as medidas são em pixels da imagem do mapa, para o
- * desenho não depender do renderer nem do zoom. Só o mestre lê e escreve (regras do PocketBase).
+ * desenho não depender do renderer nem do zoom. Só o mestre lê e escreve.
  */
 export namespace Grid {
-  export const assert = Assert.create('Grid');
-
   /** Imagem do mapa: PNG, JPG, WebP ou GIF. */
   export const MAP_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif'] as const;
 
@@ -147,61 +142,44 @@ export namespace Grid {
   }
 
   //-----------------------------------------------------------------------------------
-  // CRUD
+  // CRUD (só o mestre da mesa lê e escreve; o servidor decide: `core/src/api/grids.ts`)
+
+  /** `null` quando a grid não existe ou o usuário não é o mestre da mesa dela. */
+  const orNull = (error: unknown) => {
+    if (error instanceof Http.ApiError && error.status === 404) return null;
+    throw error;
+  };
+
+  export const Create = Info.pick({ name: true, url: true });
+  export const Patch = Create.partial();
 
   export const create = fn(
-    Info.pick({ mesaID: true, name: true, url: true }),
-    async ({ mesaID, name, url }) => {
-      // O PocketBase só devolve a mesa ao mestre; senão a criação nem chega ao banco.
-      await assert.exists(Mesa.fromID.force(mesaID));
-      const record = await PocketBase.use().collection('grids').create({ mesa: mesaID, name, url });
-      return serialize(record);
-    },
+    Create.extend({ mesaID: Info.shape.mesaID }),
+    ({ mesaID, ...body }) => Http.client().request<Info>(`/mesas/${mesaID}/grids`, { method: 'POST', body }),
     { title: 'Create grid', description: 'Create a battle map with an image already stored in the NAS.' },
   );
 
   export const list = fn(
     Info.shape.mesaID,
-    async (mesaID): Promise<Info[]> => {
-      const pb = PocketBase.use();
-      const records = await pb.collection('grids').getFullList({
-        filter: pb.filter('mesa = {:mesaID}', { mesaID }),
-        sort: '-updated,id',
-      });
-      return records.map(serialize);
-    },
+    (mesaID) => Http.client().request<Info[]>(`/mesas/${mesaID}/grids`),
     { title: 'List grids', description: 'Battle maps of a table, most recently changed first.' },
   );
 
   export const fromID = fn(
     Info.shape.id,
-    (id) =>
-      PocketBase.use()
-        .collection('grids')
-        .getOne(id)
-        .then(serialize, (error) => {
-          if (error?.status === 404) return null;
-          throw error;
-        }),
+    (id) => Http.client().request<Info>(`/grids/${id}`).catch(orNull),
     { title: 'Get grid', description: 'Fetch a single grid by id.' },
   );
 
   export const update = fn(
-    Info.pick({ name: true, url: true }).partial().extend({ id: Info.shape.id }),
-    async ({ id, ...patch }) => {
-      await assert.exists(fromID.force(id));
-      const record = await PocketBase.use().collection('grids').update(id, patch);
-      return serialize(record);
-    },
+    Patch.extend({ id: Info.shape.id }),
+    ({ id, ...body }) => Http.client().request<Info>(`/grids/${id}`, { method: 'PATCH', body }),
     { title: 'Update grid', description: "Rename a grid or swap its map image." },
   );
 
   export const remove = fn(
     Info.shape.id,
-    async (id) => {
-      await assert.exists(fromID.force(id));
-      await PocketBase.use().collection('grids').delete(id);
-    },
+    (id) => Http.client().request<void>(`/grids/${id}`, { method: 'DELETE' }),
     { title: 'Delete grid', description: 'Delete a grid and its scene.' },
   );
 
@@ -212,49 +190,23 @@ export namespace Grid {
   export const scene = fn(
     Info.shape.id,
     async (gridID): Promise<Scene> => {
-      const pb = PocketBase.use();
-      const record = await pb
-        .collection('grid_scenes')
-        .getFirstListItem(pb.filter('grid = {:gridID}', { gridID }))
-        .catch((error) => {
-          if (error?.status === 404) return null;
-          throw error;
-        });
-      return parseScene(record?.data);
+      const { scene } = await Http.client().request<{ scene: unknown }>(`/grids/${gridID}/scene`);
+      return parseScene(scene);
     },
     { title: 'Get scene', description: 'Tokens, walls, lights, drawings and fog of a grid.' },
   );
 
+  export const SceneBody = z.object({ scene: Scene });
+
   /** Troca a cena inteira (valida antes de gravar). */
   export const saveScene = fn(
-    z.object({ gridID: Info.shape.id, scene: Scene }),
+    SceneBody.extend({ gridID: Info.shape.id }),
     async ({ gridID, scene }) => {
-      await assert.exists(fromID.force(gridID));
-      const pb = PocketBase.use();
-      const atual = await pb
-        .collection('grid_scenes')
-        .getFirstListItem(pb.filter('grid = {:gridID}', { gridID }))
-        .catch((error) => {
-          if (error?.status === 404) return null;
-          throw error;
-        });
-      if (atual) await pb.collection('grid_scenes').update(atual.id, { data: scene });
-      else await pb.collection('grid_scenes').create({ grid: gridID, data: scene });
+      await Http.client().request<void>(`/grids/${gridID}/scene`, { method: 'PUT', body: { scene } });
       return scene;
     },
     { title: 'Save scene', description: 'Replace the whole scene of a grid.' },
   );
-
-  export function serialize(record: RecordModel): Info {
-    return {
-      id: record.id,
-      mesaID: record.mesa,
-      name: record.name,
-      url: record.url,
-      timeCreated: Common.toISO(record.created),
-      timeUpdated: Common.toISO(record.updated),
-    };
-  }
 }
 
 export * from './visibility';

@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { ClientResponseError } from '@dnf/core/pocketbase';
+import { Http } from '@dnf/core/http';
 import { User } from '@dnf/core/user';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -11,7 +11,7 @@ export const load: PageServerLoad = (event) => {
 };
 
 function message(error: unknown, fallback: string) {
-	if (error instanceof ClientResponseError) return error.message || fallback;
+	if (error instanceof Http.ApiError) return error.message || fallback;
 	return fallback;
 }
 
@@ -23,7 +23,7 @@ export const actions: Actions = {
 		if (!email.success) return fail(400, { message: 'Email inválido' });
 
 		try {
-			await event.locals.pb.collection('users').authWithPassword(email.data, password);
+			await User.login.force({ email: email.data, password });
 		} catch (error) {
 			return fail(400, { message: message(error, 'Email ou senha incorretos') });
 		}
@@ -33,7 +33,7 @@ export const actions: Actions = {
 	signUpEmail: async (event) => {
 		const formData = await event.request.formData();
 		const password = formData.get('password')?.toString() ?? '';
-		const parsed = User.create.schema.safeParse({
+		const parsed = User.SignUp.safeParse({
 			name: formData.get('name')?.toString() ?? '',
 			email: formData.get('email'),
 			password,
@@ -43,10 +43,7 @@ export const actions: Actions = {
 			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos' });
 
 		try {
-			await event.locals.pb.collection('users').create(parsed.data);
-			await event.locals.pb
-				.collection('users')
-				.authWithPassword(parsed.data.email, parsed.data.password);
+			await User.create.force(parsed.data);
 		} catch (error) {
 			return fail(400, { message: message(error, 'Não foi possível criar a conta') });
 		}

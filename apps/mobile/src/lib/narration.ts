@@ -1,9 +1,8 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import { Narration } from '@dnf/core/narration';
-import { PocketBase } from '@dnf/core/pocketbase';
 import { ttsCache } from './features/cache/functions/tts-cache';
 import { audioFromBase64 } from './audio-file';
-import './pocketbase';
+import './http';
 import { currentPreferences } from './features/profile/functions/queries';
 
 /**
@@ -12,8 +11,8 @@ import { currentPreferences } from './features/profile/functions/queries';
  * Duas vozes: o narrador (avisos da subida de nível) e o Grande Sábio (`/tts/sage`).
  */
 const voices = {
-  narrator: Narration.withCache(Narration.createPocketBaseAdapter(PocketBase.client()), ttsCache),
-  sage: Narration.withCache(Narration.createPocketBaseAdapter(PocketBase.client(), '/tts/sage'), ttsCache, 'sage|'),
+  narrator: Narration.withCache(Narration.createHttpAdapter(), ttsCache),
+  sage: Narration.withCache(Narration.createHttpAdapter('/tts/sage'), ttsCache, 'sage|'),
 };
 export type Voice = keyof typeof voices;
 

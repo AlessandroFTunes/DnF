@@ -1,5 +1,5 @@
 {
-  description = "DnF: ambiente de desenvolvimento (app Expo, core PocketBase, deploy no NAS)";
+  description = "DnF: ambiente de desenvolvimento (app Expo, core com API e Postgres, deploy no NAS)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

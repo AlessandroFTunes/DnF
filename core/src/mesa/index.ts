@@ -1,9 +1,7 @@
 import { z } from 'zod';
-import type { RecordModel } from 'pocketbase';
-import { Assert } from '../util/assert';
 import { DiferenteKey } from '../util/diferenteKey';
 import { fn } from '../util/fn';
-import { PocketBase } from '../pocketbase';
+import { Http } from '../http';
 import { Common } from '../common';
 import { Examples } from '../examples';
 import { Character } from '../character';
@@ -11,13 +9,10 @@ import { Nas } from '../storage';
 
 /**
  * Mesa de jogo: por enquanto serve para o mestre acompanhar os personagens (PV) dos jogadores.
- * Quem pode o quê fica nas API rules do PocketBase (mestre lê os personagens da mesa dele;
- * para entrar o jogador precisa do código e de um personagem seu da mesma edição).
+ * Quem pode o quê o servidor decide (`core/src/api/mesas.ts`): o mestre lê os personagens da mesa dele; para entrar,
+ * o jogador precisa do código e de um personagem seu da mesma edição.
  */
 export namespace Mesa {
-  export const assert = Assert.create('Mesa');
-  const assertSession = Assert.create('Session');
-
   export const Info = z
     .object({
       id: z.string().meta({ description: Common.IdDescription, example: Examples.Mesa.id }),
@@ -42,6 +37,7 @@ export namespace Mesa {
       id: z.string().meta({ description: Common.IdDescription, example: Examples.MesaMember.id }),
       mesaID: z.string().meta({ description: 'Id of the table.' }),
       userID: z.string().meta({ description: 'Id of the player.' }),
+      playerName: z.string().meta({ description: 'How the player appears to others: nickname, or name.' }),
       character: Character.Info.meta({ description: 'Character the player brought to the table.' }),
       timeJoined: z.iso.datetime().meta({ description: 'When the player joined.' }),
     })
@@ -58,125 +54,78 @@ export namespace Mesa {
     .transform((code) => code.replace(/[^a-z0-9]/gi, '').toUpperCase())
     .pipe(z.string().length(8));
 
-  const listing = Common.listing({
-    collection: 'mesas',
-    serialize,
-    columns: { name: 'name', timeCreated: 'created', timeUpdated: 'updated' } satisfies Partial<Record<keyof Info, string>>,
-    fallback: '-updated,id',
-  });
+  export const Sort = z.enum(['name', '-name', 'timeCreated', '-timeCreated', 'timeUpdated', '-timeUpdated']);
+
+  export const ListQuery = Common.Query({ sort: Sort.optional(), search: z.string().optional() });
+
+  export const Create = Info.pick({ name: true, edition: true }).extend({ description: Info.shape.description.default('') });
+
+  // A edição não muda: os personagens que já entraram são daquela edição.
+  export const Patch = Info.pick({ name: true, description: true, cover: true }).partial();
 
   export const create = fn(
-    Info.pick({ name: true, edition: true }).extend({ description: Info.shape.description.default('') }),
-    async (input) => {
-      const pb = PocketBase.use();
-      const gmID = await assertSession.exists(pb.authStore.record?.id);
-      // O código é gerado pelo PocketBase (autogeneratePattern do campo).
-      const record = await pb.collection('mesas').create({ ...input, gm: gmID });
-      return serialize(record);
-    },
+    Create,
+    (input) => Http.client().request<Info>('/mesas', { method: 'POST', body: input }),
     { title: 'Create table', description: 'Create a table with the logged-in user as game master.' },
   );
 
   export const list = fn(
-    listing.Query,
-    (input) => listing.page(input),
+    ListQuery,
+    (input) => Http.client().request<Common.Page<Info>>('/mesas', { query: input }),
+    { title: 'List tables', description: 'List tables the logged-in user runs or plays in. Paginated.' },
   );
+
+  /** `null` quando a mesa não existe ou o usuário não pode vê-la. */
+  const orNull = (error: unknown) => {
+    if (error instanceof Http.ApiError && error.status === 404) return null;
+    throw error;
+  };
 
   export const fromID = fn(
     Info.shape.id,
-    (id) =>
-      PocketBase.use()
-        .collection('mesas')
-        .getOne(id)
-        .then(serialize, (error) => {
-          if (error?.status === 404) return null;
-          throw error;
-        }),
+    (id) => Http.client().request<Info>(`/mesas/${id}`).catch(orNull),
     { title: 'Get table', description: 'Fetch a single table by id.' },
   );
 
-  // A edição não muda: os personagens que já entraram são daquela edição.
   export const update = fn(
-    Info.pick({ name: true, description: true }).partial().extend({ id: Info.shape.id }),
-    async ({ id, ...patch }) => {
-      await assert.exists(fromID.force(id));
-      const record = await PocketBase.use().collection('mesas').update(id, patch);
-      return serialize(record);
-    },
-    { title: 'Update table', description: "Update a table's name or description." },
+    Patch.extend({ id: Info.shape.id }),
+    ({ id, ...patch }) => Http.client().request<Info>(`/mesas/${id}`, { method: 'PATCH', body: patch }),
+    { title: 'Update table', description: "Update a table's name, description or cover." },
   );
 
   export const remove = fn(
     Info.shape.id,
-    async (id) => {
-      await assert.exists(fromID.force(id));
-      await PocketBase.use().collection('mesas').delete(id);
-    },
+    (id) => Http.client().request<void>(`/mesas/${id}`, { method: 'DELETE' }),
     { title: 'Delete table', description: 'Permanently delete a table (characters are kept).' },
   );
 
   /** Troca o código de convite; o antigo para de funcionar. Quem já entrou continua. */
   export const newInviteCode = fn(
     Info.shape.id,
-    async (id) => {
-      await assert.exists(fromID.force(id));
-      const record = await PocketBase.use().collection('mesas').update(id, { inviteCode: randomCode() });
-      return serialize(record);
-    },
+    (id) => Http.client().request<Info>(`/mesas/${id}/invite-code`, { method: 'POST' }),
     { title: 'New invite code', description: 'Replace the invite code; the old one stops working.' },
   );
 
   /** Mesa pelo código de convite (para mostrar nome e edição antes de entrar). */
   export const fromInviteCode = fn(
     InviteCode,
-    async (inviteCode) => {
-      const pb = PocketBase.use();
-      // A regra de listagem só mostra a mesa a quem manda o código certo em `?code=`.
-      const result = await pb
-        .collection('mesas')
-        .getList(1, 1, { filter: pb.filter('inviteCode = {:inviteCode}', { inviteCode }), code: inviteCode });
-      return result.items[0] ? serialize(result.items[0]) : null;
-    },
+    (inviteCode) => Http.client().request<Info>(`/mesas/by-code/${inviteCode}`).catch(orNull),
     { title: 'Find table by code', description: 'Look up a table by its invite code.' },
   );
 
   /** Mesas em que um personagem do usuário está. */
   export const ofCharacter = fn(
     Character.Info.shape.id,
-    async (characterID): Promise<{ memberID: string; mesa: Info }[]> => {
-      const pb = PocketBase.use();
-      const records = await pb.collection('mesa_members').getFullList({
-        filter: pb.filter('character = {:characterID}', { characterID }),
-        expand: 'mesa',
-        sort: 'created,id',
-      });
-      return records
-        .filter((r) => r.expand?.mesa)
-        .map((r) => ({ memberID: r.id, mesa: serialize(r.expand!.mesa) }));
-    },
+    (characterID) =>
+      Http.client().request<{ memberID: string; mesa: Info }[]>(`/mesas/of-character/${characterID}`),
     { title: 'Tables of a character', description: 'Tables where one of your characters is seated.' },
   );
 
+  export const JoinInput = z.object({ inviteCode: InviteCode, characterID: Character.Info.shape.id });
+
   export const join = fn(
-    z.object({ inviteCode: InviteCode, characterID: Character.Info.shape.id }),
-    async ({ inviteCode, characterID }) => {
-      const pb = PocketBase.use();
-      const userID = await assertSession.exists(pb.authStore.record?.id);
-      // A regra de listagem só mostra a mesa a quem manda o código certo em `?code=`.
-      const mesa = await assert.exists(
-        pb
-          .collection('mesas')
-          .getList(1, 1, { filter: pb.filter('inviteCode = {:inviteCode}', { inviteCode }), code: inviteCode })
-          .then((result) => result.items[0]),
-      );
-      const record = await pb
-        .collection('mesa_members')
-        .create(
-          { mesa: mesa.id, user: userID, character: characterID, inviteCode },
-          { expand: 'character' },
-        );
-      return serializeMember(record);
-    },
+    JoinInput,
+    (input) => Http.client().request<Member>('/mesas/join', { method: 'POST', body: input }),
     {
       title: 'Join table',
       description: 'Join a table with an invite code, bringing one of your characters of the same edition.',
@@ -186,50 +135,50 @@ export namespace Mesa {
   /** Mestre: todos os jogadores e personagens. Jogador: só a própria entrada. */
   export const members = fn(
     Info.shape.id,
-    async (mesaID): Promise<Member[]> => {
-      const pb = PocketBase.use();
-      const records = await pb.collection('mesa_members').getFullList({
-        filter: pb.filter('mesa = {:mesaID}', { mesaID }),
-        expand: 'character',
-        sort: 'created,id',
-      });
-      return records.map(serializeMember);
-    },
+    (mesaID) => Http.client().request<Member[]>(`/mesas/${mesaID}/members`),
     { title: 'List table members', description: 'Players at a table with their characters (HP etc.).' },
   );
 
   /**
-   * Avisa (`onChange`) quando a mesa, a lista de membros ou um personagem dela muda, pelo realtime do
-   * PocketBase. Cada um só recebe o que as API rules deixam ver. Também avisa a cada (re)conexão, para quem
-   * ficou sem rede buscar o que perdeu. Devolve a função que para de ouvir.
+   * Avisa (`onChange`) quando a mesa, a lista de membros ou um personagem dela muda (SSE, `GET /mesas/:id/events`).
+   * Cada um só recebe aviso das mesas que pode ver. Também avisa a cada (re)conexão, para quem ficou sem rede buscar
+   * o que perdeu. Devolve a função que para de ouvir.
    */
   export async function watch(mesaID: string, onChange: () => void): Promise<() => Promise<void>> {
-    const pb = PocketBase.use();
-    const stops = await Promise.all([
-      pb.realtime.subscribe('PB_CONNECT', onChange),
-      pb.collection('mesas').subscribe(mesaID, onChange),
-      pb.collection('mesa_members').subscribe('*', onChange, { filter: pb.filter('mesa = {:mesaID}', { mesaID }) }),
-      pb
-        .collection('characters')
-        .subscribe('*', onChange, { filter: pb.filter('mesa_members_via_character.mesa ?= {:mesaID}', { mesaID }) }),
-    ]);
+    const http = Http.client();
+    let source: EventSource | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+
+    // O bilhete vale 60 s e o `EventSource` não manda cabeçalhos: a cada conexão pede um novo.
+    const connect = async () => {
+      try {
+        const { ticket } = await http.request<{ ticket: string }>('/auth/ticket', { method: 'POST' });
+        if (stopped) return;
+        source = new EventSource(http.url(`/mesas/${mesaID}/events`, { ticket }));
+        source.addEventListener('open', onChange);
+        source.addEventListener('change', onChange);
+        source.addEventListener('error', () => {
+          source?.close();
+          if (!stopped) timer = setTimeout(connect, 3_000);
+        });
+      } catch {
+        if (!stopped) timer = setTimeout(connect, 5_000);
+      }
+    };
+    await connect();
+
     return async () => {
-      await Promise.all(stops.map((stop) => stop()));
+      stopped = true;
+      clearTimeout(timer);
+      source?.close();
     };
   }
 
   /** O próprio jogador sai, ou o mestre remove alguém. */
   export const removeMember = fn(
     Member.shape.id,
-    async (memberID) => {
-      await PocketBase.use()
-        .collection('mesa_members')
-        .delete(memberID)
-        .catch((error) => {
-          if (error?.status === 404) throw new Assert.NotFoundError('MesaMember');
-          throw error;
-        });
-    },
+    (memberID) => Http.client().request<void>(`/mesas/members/${memberID}`, { method: 'DELETE' }),
     { title: 'Remove table member', description: 'Leave a table, or (game master) remove a player.' },
   );
 
@@ -237,37 +186,5 @@ export namespace Mesa {
   export async function adicionarCapa(url: string, arquivo: Blob) {
     const data = await Nas.save({ url, file: arquivo });
     return data;
-  }
-
-  export function serialize(record: RecordModel): Info {
-    return {
-      id: record.id,
-      gmID: record.gm,
-      name: record.name,
-      description: record.description,
-      edition: record.edition,
-      inviteCode: record.inviteCode,
-      cover: record.cover || null,
-      timeCreated: Common.toISO(record.created),
-      timeUpdated: Common.toISO(record.updated),
-    };
-  }
-
-  export function serializeMember(record: RecordModel): Member {
-    return {
-      id: record.id,
-      mesaID: record.mesa,
-      userID: record.user,
-      character: Character.serialize(record.expand!.character),
-      timeJoined: Common.toISO(record.created),
-    };
-  }
-
-  // Mesmo alfabeto do autogeneratePattern do campo: sem 0/O e 1/I, que confundem ao digitar.
-  const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-  function randomCode(): string {
-    const bytes = crypto.getRandomValues(new Uint8Array(8));
-    return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
   }
 }

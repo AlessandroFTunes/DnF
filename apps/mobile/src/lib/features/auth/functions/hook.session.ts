@@ -1,10 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
-import { z } from 'zod';
 import { User } from '@dnf/core/user';
-import { PocketBase, ClientResponseError } from '@dnf/core/pocketbase';
-import { Assert, fn } from '@dnf/core/util';
-import { cookieSession } from '../../../pocketbase';
+import { Http } from '@dnf/core/http';
+import '../../../http';
 import { clearPlayerData } from '../../../query-client';
 import { queryPersister } from '../../cache/functions/query-persister';
 
@@ -21,48 +19,16 @@ const REJECTED_TOKEN_STATUS = new Set([401, 403, 404]);
  * sem rede (status 0), rate limit (429) ou erro no servidor (5xx) mantém o token local enquanto não expirar.
  */
 async function refreshSession(): Promise<User.SessionInfo | null> {
-  // eslint-disable-next-line react-hooks/rules-of-hooks -- PocketBase.use() devolve o cliente, não é hook do React.
-  const pb = PocketBase.use();
-  if (!pb.authStore.isValid) {
-    pb.authStore.clear();
+  if (!Http.client().auth.isValid) {
+    Http.client().auth.clear();
     return null;
   }
   try {
-    await pb.collection('users').authRefresh();
+    await User.refresh();
   } catch (error) {
-    if (error instanceof ClientResponseError && REJECTED_TOKEN_STATUS.has(error.status)) {
-      pb.authStore.clear();
-    }
+    if (error instanceof Http.ApiError && REJECTED_TOKEN_STATUS.has(error.status)) Http.client().auth.clear();
   }
   return User.session();
-}
-
-const assert = Assert.create('Session');
-
-const login = fn(
-  z.object({ email: User.Email, password: z.string().min(1) }),
-  async ({ email, password }) => {
-    await PocketBase.use().collection('users').authWithPassword(email, password);
-    return assert.exists(User.session());
-  },
-  { title: 'Login', description: 'Authenticate with email and password.' },
-);
-
-const signUp = fn(
-  User.create.schema,
-  async (input) => {
-    const user = await User.create.force(input);
-    return login.force({ email: user.email, password: input.password });
-  },
-  { title: 'Sign up', description: 'Create an account and log in.' },
-);
-
-function logout() {
-  // eslint-disable-next-line react-hooks/rules-of-hooks -- PocketBase.use() devolve o cliente, não é hook do React.
-  const pb = PocketBase.use();
-  pb.authStore.clear();
-  // O cookie é httpOnly: só o servidor consegue apagá-lo.
-  if (cookieSession) void pb.send('/api/dnf/logout', { method: 'POST' }).catch(() => {});
 }
 
 /** Ao abrir o app: lê o token do Keychain e renova com o servidor. */
@@ -92,8 +58,7 @@ function start() {
   started = true;
 
   // Login, logout, refresh e token rejeitado passam todos pelo authStore.
-  // eslint-disable-next-line react-hooks/rules-of-hooks -- PocketBase.use() devolve o cliente, não é hook do React.
-  PocketBase.use().authStore.onChange(() => {
+  Http.client().auth.onChange(() => {
     if (state.status !== 'loading') sync();
   });
 
@@ -119,8 +84,8 @@ export function useSession() {
   const current = useSyncExternalStore(subscribe, () => state);
   return {
     ...current,
-    login,
-    signUp,
-    logout,
+    login: User.login,
+    signUp: User.create,
+    logout: User.logout,
   };
 }

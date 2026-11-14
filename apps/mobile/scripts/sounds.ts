@@ -11,7 +11,7 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-// Tudo soa dentro de uma caverna, como a narração (reverb `tunnel` em core/pb_hooks/tts.pb.js).
+// Tudo soa dentro de uma caverna, como a narração (o reverb do narrador, em core/src/api/tts.ts).
 const CAVE = ', echoing inside a vast stone cave';
 
 const SOUNDS: Record<string, { text: string; seconds: number; loop?: boolean }> = {

@@ -388,7 +388,7 @@ const numericId = (key: string) => (/^\d+$/.test(key) ? Number(key) : null);
 
 /**
  * Consultas da 5e-FastAPI usadas pelo app, por edição (2014 = livros "5e", 2024 = livros "5.5e").
- * Só traz dados de regra; o que o jogador escolheu fica no PocketBase.
+ * Só traz dados de regra; o que o jogador escolheu fica no Postgres (API do DnF).
  */
 export function createSrdCatalog(client: SrdClient) {
   const query = (pagina: number) => ({ params: { query: { pagina, limite: PAGE } } });

@@ -1,23 +1,18 @@
 import { command, form, getRequestEvent, query } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { Grid } from '@dnf/core/grid';
+import { Mesa } from '@dnf/core/mesa';
 import { Nas } from '@dnf/core/storage';
 
 const MAP_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 
 type Falha = { failure: string };
 
-/** Grid do mestre: o PocketBase só devolve se a mesa é dele (404 também cobre "sem permissão"). */
+/** Grid do mestre: a API só devolve se a mesa é dele (404 também cobre "sem permissão"). */
 async function acharGrid(id: string) {
 	const { locals } = getRequestEvent();
 	if (!locals.user) return null;
-	return locals.pb
-		.collection('grids')
-		.getOne(id)
-		.catch((failure) => {
-			if ((failure as { status?: number }).status === 404) return null;
-			throw failure;
-		});
+	return Grid.fromID.force(id);
 }
 
 /** As grids de uma mesa (só o mestre acessa). */
@@ -25,31 +20,22 @@ export const grids = query('unchecked', async (mesaId: string) => {
 	const { locals } = getRequestEvent();
 	if (!locals.user) return { failure: 'Entre para ver as grids.' } as Falha;
 
-	// 404 aqui é só da mesa (o PocketBase também esconde a mesa de quem não tem acesso).
-	const mesa = await locals.pb
-		.collection('mesas')
-		.getOne(mesaId)
-		.catch((failure) => {
-			if ((failure as { status?: number }).status === 404) return null;
-			throw failure;
-		})
-		.catch((failure) => {
-			console.error('[grid] mesa', failure);
-			return undefined;
-		});
-	if (mesa === null) return { failure: 'Mesa não encontrada.' } as Falha;
-	if (mesa === undefined)
+	// 404 aqui é só da mesa (a API também esconde a mesa de quem não tem acesso).
+	let mesa;
+	try {
+		mesa = await Mesa.fromID.force(mesaId);
+	} catch (failure) {
+		console.error('[grid] mesa', failure);
 		return { failure: 'Não foi possível carregar a mesa. Tente de novo.' } as Falha;
-	if (mesa.gm !== locals.user.id) return { failure: 'Só o mestre acessa as grids.' } as Falha;
+	}
+	if (!mesa) return { failure: 'Mesa não encontrada.' } as Falha;
+	if (mesa.gmID !== locals.user.id) return { failure: 'Só o mestre acessa as grids.' } as Falha;
 
 	try {
-		const records = await locals.pb.collection('grids').getFullList({
-			filter: locals.pb.filter('mesa = {:mesaId}', { mesaId }),
-			sort: '-updated,id'
-		});
+		const lista = await Grid.list.force(mesaId);
 		return {
-			mesa: { id: mesa.id as string, name: mesa.name as string },
-			grids: records.map((record) => ({ ...Grid.serialize(record), image: `/nas/${record.url}` }))
+			mesa: { id: mesa.id, name: mesa.name },
+			grids: lista.map((grid) => ({ ...grid, image: `/nas/${grid.url}` }))
 		} as const;
 	} catch (failure) {
 		console.error('[grid] grids', failure);
@@ -65,17 +51,10 @@ export const grid = query('unchecked', async (id: string) => {
 	try {
 		const record = await acharGrid(id);
 		if (!record) return { failure: 'Grid não encontrada.' } as Falha;
-		const cena = await locals.pb
-			.collection('grid_scenes')
-			.getFirstListItem(locals.pb.filter('grid = {:id}', { id }))
-			.catch((failure) => {
-				if ((failure as { status?: number }).status === 404) return null;
-				throw failure;
-			});
 		return {
-			...Grid.serialize(record),
+			...record,
 			image: `/nas/${record.url}`,
-			scene: Grid.parseScene(cena?.data)
+			scene: await Grid.scene.force(id)
 		} as const;
 	} catch (failure) {
 		console.error('[grid] grid', failure);
@@ -83,7 +62,7 @@ export const grid = query('unchecked', async (id: string) => {
 	}
 });
 
-/** Cria a grid: guarda a imagem no NAS e o registro (nome, url, mesa) no PocketBase. */
+/** Cria a grid: guarda a imagem no NAS e o registro (nome, url, mesa) na API. */
 export const criarGrid = form(
 	'unchecked',
 	async (data: { mesaId: string; name: string; image?: File }, issue) => {
@@ -98,11 +77,8 @@ export const criarGrid = form(
 		const { locals } = getRequestEvent();
 		if (!locals.user) invalid(issue.name('Entre para criar a grid.'));
 
-		const mesa = await locals.pb
-			.collection('mesas')
-			.getOne(data.mesaId)
-			.catch(() => null);
-		if (!mesa || mesa.gm !== locals.user.id) invalid(issue.name('Só o mestre cria grids.'));
+		const mesa = await Mesa.fromID.force(data.mesaId).catch(() => null);
+		if (!mesa || mesa.gmID !== locals.user.id) invalid(issue.name('Só o mestre cria grids.'));
 
 		const url = `${mesa.id}/mapas/${Date.now()}.${Nas.extensionOf(image.type)}`;
 		try {
@@ -113,10 +89,8 @@ export const criarGrid = form(
 		}
 
 		try {
-			const record = await locals.pb
-				.collection('grids')
-				.create({ mesa: mesa.id, name: parsed.data!.name, url });
-			return { ok: true, id: record.id as string } as const;
+			const record = await Grid.create.force({ mesaID: mesa.id, name: parsed.data!.name, url });
+			return { ok: true, id: record.id } as const;
 		} catch (failure) {
 			console.error('[grid] criarGrid', failure);
 			await Nas.remove(url).catch(() => {});
@@ -125,13 +99,12 @@ export const criarGrid = form(
 	}
 );
 
-/** Apaga a grid, a cena (cascata do PocketBase) e a imagem do NAS. */
+/** Apaga a grid, a cena (cascata do banco) e a imagem do NAS. */
 export const excluirGrid = command('unchecked', async (id: string) => {
-	const { locals } = getRequestEvent();
 	const record = await acharGrid(id);
 	if (!record) return { failure: 'Grid não encontrada.' } as Falha;
 	try {
-		await locals.pb.collection('grids').delete(id);
+		await Grid.remove.force(id);
 	} catch (failure) {
 		console.error('[grid] excluirGrid', failure);
 		return { failure: 'Não foi possível excluir a grid.' } as Falha;
@@ -142,12 +115,11 @@ export const excluirGrid = command('unchecked', async (id: string) => {
 
 /** Muda o nome da grid. */
 export const renomearGrid = command('unchecked', async (data: { id: string; name: string }) => {
-	const { locals } = getRequestEvent();
 	const parsed = Grid.Info.pick({ name: true }).safeParse({ name: data.name });
 	if (!parsed.success) return { failure: 'Informe o nome da grid (até 64 letras).' } as Falha;
 	if (!(await acharGrid(data.id))) return { failure: 'Grid não encontrada.' } as Falha;
 	try {
-		await locals.pb.collection('grids').update(data.id, { name: parsed.data.name });
+		await Grid.update.force({ id: data.id, name: parsed.data.name });
 		return { ok: true } as const;
 	} catch (failure) {
 		console.error('[grid] renomearGrid', failure);
@@ -157,23 +129,13 @@ export const renomearGrid = command('unchecked', async (data: { id: string; name
 
 /** Grava a cena inteira (posições, desenhos, paredes, luzes, fog) no JSON da grid. */
 export const salvarCena = command('unchecked', async (data: { id: string; scene: unknown }) => {
-	const { locals } = getRequestEvent();
 	const parsed = Grid.Scene.safeParse(data.scene);
 	if (!parsed.success) return { failure: 'A cena tem dados inválidos.' } as Falha;
 	if (!(await acharGrid(data.id))) return { failure: 'Grid não encontrada.' } as Falha;
 
 	try {
-		const atual = await locals.pb
-			.collection('grid_scenes')
-			.getFirstListItem(locals.pb.filter('grid = {:id}', { id: data.id }))
-			.catch((failure) => {
-				if ((failure as { status?: number }).status === 404) return null;
-				throw failure;
-			});
-		if (atual) await locals.pb.collection('grid_scenes').update(atual.id, { data: parsed.data });
-		else await locals.pb.collection('grid_scenes').create({ grid: data.id, data: parsed.data });
-		// Mexer na cena conta como mexer na grid (a lista ordena pela mais recente).
-		await locals.pb.collection('grids').update(data.id, {});
+		// A API grava a cena e, de quebra, sobe a grid na lista (a ordem é pela mais recente).
+		await Grid.saveScene.force({ gridID: data.id, scene: parsed.data });
 		return { ok: true } as const;
 	} catch (failure) {
 		console.error('[grid] salvarCena', failure);

@@ -1,20 +1,10 @@
 import { z } from 'zod';
-import {
-  BaseAuthStore,
-  getTokenPayload,
-  type AuthRecord,
-  type RecordModel,
-} from 'pocketbase';
-import { Assert } from '../util/assert';
 import { fn } from '../util/fn';
-import { PocketBase } from '../pocketbase';
+import { Http } from '../http';
 import { Common } from '../common';
 import { Examples } from '../examples';
 
 export namespace User {
-  export const assert = Assert.create('User');
-
-  // Mantenha em sincronia com o mínimo do campo `password` da collection users no PocketBase.
   export const PASSWORD_MIN_LENGTH = 8;
 
   /** Ajustes do app, guardados no campo JSON `preferences`. Tudo liga por padrão; campo novo entra com padrão. */
@@ -47,41 +37,15 @@ export namespace User {
     });
   export type Info = z.infer<typeof Info>;
 
-  // Email e senha têm fluxos próprios no PocketBase (confirmação / senha antiga).
-  const Patch = Info.pick({ name: true, nickname: true })
-    .extend({ preferences: Preferences.partial() })
+  // Email e senha têm fluxos próprios (não passam pelo update do perfil).
+  export const Patch = Info.pick({ name: true, nickname: true })
+    // `.partial()` do Zod 4 ainda aplica os padrões (`{ sounds: false }` religaria a narração): campo ausente fica ausente.
+    .extend({ preferences: z.object({ narration: z.boolean().optional(), sounds: z.boolean().optional() }) })
     .partial();
 
   // Normaliza antes de validar: o autocompletar do teclado costuma deixar espaço no fim.
   export const Email = z.string().trim().toLowerCase().pipe(z.email());
-  export const Password = z.string().min(PASSWORD_MIN_LENGTH).max(71); // 71 = limite do bcrypt no PocketBase
-
-  const listing = Common.listing({
-    collection: 'users',
-    serialize,
-    columns: { name: 'name', timeCreated: 'created' } satisfies Partial<Record<keyof Info, string>>,
-    fallback: 'name,id',
-  });
-
-  export const create = fn(
-    z
-      .object({
-        name: Info.shape.name,
-        email: Email,
-        password: Password,
-        passwordConfirm: z.string(),
-      })
-      .refine((data) => data.password === data.passwordConfirm, {
-        path: ['passwordConfirm'],
-        message: 'As senhas não conferem',
-      }),
-    async (input) => {
-      const record = await PocketBase.use().collection('users').create(input);
-      // Sem login a resposta omite o email (emailVisibility); quem criou já sabe qual é.
-      return { ...serialize(record), email: input.email };
-    },
-    { title: 'Create user', description: 'Sign up a new account with email and password.' },
-  );
+  export const Password = z.string().min(PASSWORD_MIN_LENGTH).max(71); // 71 = limite do bcrypt
 
   /** Resposta de `lookupEmail`: a rota só devolve isto, nunca o registro do usuário. */
   export const EmailLookup = z.object({
@@ -90,55 +54,86 @@ export namespace User {
   });
   export type EmailLookup = z.infer<typeof EmailLookup>;
 
+  export const SignUp = z
+    .object({
+      name: Info.shape.name,
+      email: Email,
+      password: Password,
+      passwordConfirm: z.string(),
+    })
+    .refine((data) => data.password === data.passwordConfirm, {
+      path: ['passwordConfirm'],
+      message: 'As senhas não conferem',
+    });
+
+  export const Login = z.object({ email: Email, password: z.string().min(1) });
+
+  /** O que o servidor devolve ao entrar: o token da sessão e o perfil (com o avatar como caminho da API). */
+  export interface Granted {
+    token: string;
+    user: Info;
+  }
+
+  /** O avatar vem do servidor como caminho (`/files/avatars/…`); aqui vira o endereço completo. */
+  function withAvatarURL(user: Info): Info {
+    return { ...user, avatar: user.avatar ? Http.client().url(user.avatar) : null };
+  }
+
+  /** Guarda o login no `AuthStore` (o token vai para o Keychain; o perfil fica em memória). */
+  function start({ token, user }: Granted): Info {
+    const profile = withAvatarURL(user);
+    Http.client().auth.save(token, profile);
+    return profile;
+  }
+
+  export const create = fn(
+    SignUp,
+    async (input) => start(await Http.client().request<Granted>('/auth/signup', { method: 'POST', body: input })),
+    { title: 'Create user', description: 'Sign up a new account with email and password, and log in.' },
+  );
+
+  export const login = fn(
+    Login,
+    async (input) => start(await Http.client().request<Granted>('/auth/login', { method: 'POST', body: input })),
+    { title: 'Login', description: 'Authenticate with email and password.' },
+  );
+
+  /** Renova o token e o perfil. Quem decide o que fazer com um token recusado é o app (ver hook.session.ts). */
+  export async function refresh(): Promise<Info> {
+    return start(await Http.client().request<Granted>('/auth/refresh', { method: 'POST' }));
+  }
+
+  /** Encerra a sessão aqui e no servidor (o cookie da web é httpOnly: só ele consegue apagá-lo). */
+  export async function logout(): Promise<void> {
+    const http = Http.client();
+    const hadToken = !!http.auth.token;
+    http.auth.clear();
+    if (hadToken) await http.request('/auth/logout', { method: 'POST' }).catch(() => {});
+  }
+
   /**
    * Se já existe conta com o email e, se sim, o primeiro nome dela (para o "Bem-vindo de volta").
-   * Rota `/api/dnf/email-exists`, em core/pb_hooks/auth.pb.js.
+   * Rota aberta: o servidor devolve só isto.
    */
   export const lookupEmail = fn(
     z.object({ email: Email }),
-    async ({ email }) => {
-      const res = await PocketBase.use().send('/api/dnf/email-exists', { method: 'POST', body: { email } });
+    async ({ email }) =>
       // Filtra de novo aqui: campo a mais que o servidor mande não passa para o app.
-      return EmailLookup.parse(res);
-    },
+      EmailLookup.parse(await Http.client().request('/auth/email-exists', { method: 'POST', body: { email } })),
     { title: 'Look up email', description: 'Whether an account uses this email, and its first name.' },
   );
 
-  export const list = fn(
-    listing.Query,
-    (input) => listing.page(input),
-    {
-      title: 'List users',
-      description: 'List users visible to the requester (by default, only themself). Paginated.',
-    },
-  );
-
-  export const fromID = fn(
-    Info.shape.id,
-    (id) =>
-      PocketBase.use()
-        .collection('users')
-        .getOne(id)
-        .then(serialize, (error) => {
-          if (error?.status === 404) return null;
-          throw error;
-        }),
-    { title: 'Get user', description: 'Fetch a single user by id.' },
-  );
+  /** Depois de mudar o próprio perfil, a sessão (que o app lê) passa a mostrar o perfil novo. */
+  function keep(user: Info): Info {
+    const profile = withAvatarURL(user);
+    const auth = Http.client().auth;
+    auth.save(auth.token, profile);
+    return profile;
+  }
 
   export const update = fn(
     Patch.extend({ id: Info.shape.id }),
-    async ({ id, ...patch }) => {
-      await assert.exists(fromID.force(id));
-      const data: Record<string, unknown> = { ...patch };
-      // As preferências são um JSON só: junta com as atuais para mudar uma sem perder as outras.
-      if (patch.preferences) {
-        const current = await assert.exists(fromID.force(id));
-        data.preferences = Preferences.parse({ ...current.preferences, ...patch.preferences });
-      }
-      const record = await PocketBase.use().collection('users').update(id, data);
-      return serialize(record);
-    },
+    async ({ id, ...patch }) => keep(await Http.client().request<Info>(`/users/${id}`, { method: 'PATCH', body: patch })),
     { title: 'Update user', description: "Update a user's name, nickname or preferences (merged with the current)." },
   );
 
@@ -147,86 +142,44 @@ export namespace User {
   export const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
   export const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
-  /** Troca o avatar: o arquivo fica no storage do próprio PocketBase (campo `avatar` da coleção users). */
+  /** Troca o avatar: o servidor guarda o arquivo (JPEG, PNG ou WebP, até 5 MB). */
   export async function setAvatar(id: string, file: AvatarFile): Promise<Info> {
     if (!(AVATAR_TYPES as readonly string[]).includes(file.type)) throw new Error('Use uma imagem JPEG, PNG ou WebP.');
     if (file instanceof Blob && file.size > AVATAR_MAX_BYTES) throw new Error('A imagem passa de 5 MB.');
     const form = new FormData();
     // No React Native o FormData aceita o objeto { uri, name, type } no lugar de um Blob.
     form.append('avatar', file as Blob);
-    return serialize(await PocketBase.use().collection('users').update(id, form));
+    return keep(await Http.client().request<Info>(`/users/${id}/avatar`, { method: 'PUT', body: form }));
   }
 
   export async function removeAvatar(id: string): Promise<Info> {
-    return serialize(await PocketBase.use().collection('users').update(id, { avatar: null }));
+    return keep(await Http.client().request<Info>(`/users/${id}/avatar`, { method: 'DELETE' }));
   }
+
+  /** Apaga a conta de quem está logado (personagens, mesas e grids dele vão junto) e encerra a sessão. */
+  export const remove = fn(
+    Info.shape.id,
+    async (id) => {
+      await Http.client().request<void>(`/users/${id}`, { method: 'DELETE' });
+      Http.client().auth.clear();
+    },
+    { title: 'Delete user', description: 'Permanently delete the logged-in account.' },
+  );
 
   /** Como o jogador aparece para os outros: o apelido, ou o nome se não tiver. */
   export const displayName = (user: Pick<Info, 'name' | 'nickname'>) => user.nickname || user.name;
 
-  /** Apaga a conta de vez. Se for a do usuário logado, encerra a sessão. */
-  export const remove = fn(
-    Info.shape.id,
-    async (id) => {
-      await assert.exists(fromID.force(id));
-      const pb = PocketBase.use();
-      await pb.collection('users').delete(id);
-      if (pb.authStore.record?.id === id) pb.authStore.clear();
-    },
-    { title: 'Delete user', description: 'Permanently delete a user account.' },
-  );
-
   // ---------------------------------------------------------------------------
-  // Sessão (os detalhes ficam no namespace privado `Session`, abaixo)
-  // ---------------------------------------------------------------------------
+  // Sessão
 
   /** Armazenamento seguro do dispositivo (Keychain/Keystore no mobile). Implementado por cada app. */
-  export type SessionStorage = Session.Storage;
-  export type SessionInfo = Session.Info;
-
-  /** Sessão atual, ou null se não há login válido. */
-  export function session(): SessionInfo | null {
-    return Session.info(PocketBase.use().authStore);
-  }
-
-  /** AuthStore para passar ao PocketBase: persiste só o token no `storage`. */
-  export function createAuthStore(storage: SessionStorage): BaseAuthStore {
-    return new Session.SecureAuthStore(storage);
-  }
-
-  /**
-   * Lê o token salvo no armazenamento seguro para a memória, sem falar com o servidor.
-   * Quando e como renovar fica com o app (ver hook.session.ts no mobile).
-   */
-  export async function loadSession(): Promise<SessionInfo | null> {
-    await Session.load(PocketBase.use().authStore);
-    return session();
-  }
-
-  export function serialize(record: RecordModel): Info {
-    return {
-      id: record.id,
-      email: record.email ?? '',
-      name: record.name,
-      nickname: record.nickname ?? '',
-      avatar: record.avatar ? PocketBase.use().files.getURL(record, record.avatar, { thumb: '256x256' }) : null,
-      preferences: Preferences.catch(() => Preferences.parse({})).parse(record.preferences ?? {}),
-      verified: record.verified,
-      timeCreated: Common.toISO(record.created),
-      timeUpdated: Common.toISO(record.updated),
-    };
-  }
-}
-
-/** Privado: detalhes de como a sessão é guardada no dispositivo. */
-namespace Session {
-  const KEY = 'dnf.session.token';
+  export type SessionStorage = Http.Storage;
 
   // O token em si fica de fora de propósito: não deve chegar na UI nem em logs.
-  export const Info = z
+  export const SessionInfo = z
     .object({
       userID: z.string().meta({ description: 'Id of the logged-in user (read from the token).' }),
-      user: User.Info.nullable().meta({
+      user: Info.nullable().meta({
         description: 'Profile from the server, or null until it is loaded (e.g. app opened offline).',
       }),
       timeExpires: z.iso.datetime().meta({ description: 'When the token expires.' }),
@@ -240,56 +193,27 @@ namespace Session {
         timeExpires: '2026-11-03T05:24:30.000Z',
       },
     });
-  export type Info = z.infer<typeof Info>;
+  export type SessionInfo = z.infer<typeof SessionInfo>;
 
-  export function info(store: BaseAuthStore): Info | null {
-    if (!store.isValid) return null;
-    const payload = getTokenPayload(store.token);
-    return {
-      userID: payload.id,
-      user: store.record ? User.serialize(store.record) : null,
-      timeExpires: new Date(payload.exp * 1000).toISOString(),
-    };
+  /** Sessão atual, ou null se não há login válido. */
+  export function session(): SessionInfo | null {
+    const store = Http.client().auth as Http.AuthStore<Info>;
+    const payload = store.isValid ? Http.tokenPayload(store.token) : null;
+    if (!payload) return null;
+    return { userID: payload.id, user: store.record, timeExpires: new Date(payload.exp * 1000).toISOString() };
   }
 
-  export interface Storage {
-    getItem(key: string): Promise<string | null>;
-    setItem(key: string, value: string): Promise<void>;
-    removeItem(key: string): Promise<void>;
+  /** AuthStore para passar ao `Http.init`: persiste só o token no `storage`. */
+  export function createAuthStore(storage: SessionStorage): Http.AuthStore<Info> {
+    return new Http.AuthStore<Info>(storage);
   }
 
   /**
-   * AuthStore do PocketBase que persiste SOMENTE o token.
-   * O registro do usuário fica em memória e é recarregado no `authRefresh`
-   * (o Keychain pode rejeitar valores grandes e não precisa guardar dados de perfil).
+   * Lê o token salvo no armazenamento seguro para a memória, sem falar com o servidor.
+   * Quando e como renovar fica com o app (ver hook.session.ts no mobile).
    */
-  export class SecureAuthStore extends BaseAuthStore {
-    constructor(private readonly storage: Storage) {
-      super();
-    }
-
-    override save(token: string, record?: AuthRecord): void {
-      super.save(token, record);
-      this.storage.setItem(KEY, token).catch(reportStorageError);
-    }
-
-    override clear(): void {
-      super.clear();
-      this.storage.removeItem(KEY).catch(reportStorageError);
-    }
-
-    /** Carrega o token salvo para a memória, sem validar com o servidor. */
-    async load(): Promise<void> {
-      const token = await this.storage.getItem(KEY);
-      if (token) super.save(token, null);
-    }
-  }
-
-  export async function load(store: BaseAuthStore) {
-    if (store instanceof SecureAuthStore) await store.load();
-  }
-
-  function reportStorageError(error: unknown) {
-    console.warn('[session] falha ao acessar o armazenamento seguro', error);
+  export async function loadSession(): Promise<SessionInfo | null> {
+    await Http.client().auth.load();
+    return session();
   }
 }

@@ -9,7 +9,7 @@ import { Button, fonts, radius, spacing, typography, useRpgTheme } from '@dnf/ui
 import { Avatar, FooterBar, Header, SectionLabel } from '../../../components';
 import { useProfile, useRemoveAvatar, useSetAvatar, useUpdateProfile } from '../functions/queries';
 
-/** Edita o perfil: foto (guardada no storage do PocketBase), nome e apelido. */
+/** Edita o perfil: foto (guardada no servidor), nome e apelido. */
 export default function EditProfilePage() {
   const theme = useRpgTheme();
   const router = useRouter();
@@ -41,7 +41,7 @@ export default function EditProfilePage() {
     }
     setBusy('avatar');
     try {
-      // Na web o arquivo vira Blob; no celular o PocketBase aceita { uri, name, type } direto.
+      // Na web o arquivo vira Blob; no celular o FormData aceita { uri, name, type } direto.
       const file: User.AvatarFile =
         Platform.OS === 'web'
           ? await (await fetch(asset.uri)).blob()

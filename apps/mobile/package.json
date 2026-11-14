@@ -53,7 +53,7 @@
     "ios": "bun expo start --ios",
     "web": "bun expo start --web",
     "db:down": "docker compose -f ../../compose.yaml down",
-    "db:logs": "docker compose -f ../../compose.yaml logs -f pocketbase",
+    "db:logs": "docker compose -f ../../compose.yaml logs -f api",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "sounds": "bun --env-file=../../.env scripts/sounds.ts"

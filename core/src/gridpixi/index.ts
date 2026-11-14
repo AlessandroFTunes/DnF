@@ -4,7 +4,7 @@ import { blockers, distanceToSegment, visibilityPolygon, type Point } from '../g
 
 /**
  * Renderer da grid com PixiJS. Recebe a `Grid.Scene` (JSON) e desenha; o que o mestre faz no canvas
- * volta como `onChange(scene)`. Não conhece Svelte, PocketBase nem rotas: qualquer app com um
+ * volta como `onChange(scene)`. Não conhece Svelte, a API nem rotas: qualquer app com um
  * elemento HTML consegue usar. Medidas em pixels do mapa; câmera (pan/zoom) é só do renderer.
  *
  * Camadas, de baixo para cima: mapa, grade, desenhos, tokens, escuridão (luz), fog, e (só mestre)

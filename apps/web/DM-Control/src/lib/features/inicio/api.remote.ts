@@ -5,18 +5,17 @@ import { Nas } from '@dnf/core/storage';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** Nome da pessoa logada e as mesas que ela mestra ou joga (o PocketBase filtra pelas API rules). */
+/** Nome da pessoa logada e as mesas que ela mestra ou joga (a API só devolve as dela). */
 export const inicio = query(async () => {
 	const { locals } = getRequestEvent();
 	if (!locals.user) return { failure: 'Entre para ver suas mesas.' } as const;
 
 	try {
-		// Cliente da requisição: o compartilhado do `core` não tem o login desta pessoa.
-		const result = await locals.pb.collection('mesas').getList(1, 50, { sort: '-updated' });
+		const result = await Mesa.list.force({ page: 1, pageSize: 50 });
 		// A capa é servida por /nas/<caminho>, rota que lê do NAS.
-		const mesas = result.items.map((record) => ({
-			...Mesa.serialize(record),
-			image: record.cover ? `/nas/${record.cover}` : null
+		const mesas = result.data.map((mesa) => ({
+			...mesa,
+			image: mesa.cover ? `/nas/${mesa.cover}` : null
 		}));
 		return { name: locals.user.name, mesas } as const;
 	} catch (failure) {
@@ -50,8 +49,8 @@ export const criarMesa = form(
 		// A mesa nasce primeiro porque a pasta do arquivo leva o id dela: nas/<id da mesa>/imagens/.
 		let created;
 		try {
-			// Cliente da requisição: o PocketBase confere pelo login quem é o mestre.
-			created = await locals.pb.collection('mesas').create({ ...parsed.data, gm: locals.user.id });
+			// O mestre é quem está logado (o servidor confere pelo token).
+			created = await Mesa.create.force(parsed.data);
 		} catch (failure) {
 			console.error('[inicio] criarMesa', failure);
 			invalid(issue.name('Não foi possível criar a mesa. Tente de novo.'));
@@ -61,15 +60,12 @@ export const criarMesa = form(
 			const cover = `${created.id}/imagens/capa.${Nas.extensionOf(image.type)}`;
 			try {
 				await Mesa.adicionarCapa(cover, image);
-				await locals.pb.collection('mesas').update(created.id, { cover });
+				await Mesa.update.force({ id: created.id, cover });
 			} catch (failure) {
 				console.error('[inicio] capa', failure);
 				// Sem a capa a mesa não fica pela metade: volta ao estado de antes do envio.
 				await Nas.remove(cover);
-				await locals.pb
-					.collection('mesas')
-					.delete(created.id)
-					.catch(() => {});
+				await Mesa.remove.force(created.id).catch(() => {});
 				invalid(issue.image('Não foi possível guardar a imagem. Tente de novo.'));
 			}
 		}

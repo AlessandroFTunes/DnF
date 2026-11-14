@@ -11,13 +11,13 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_PB_URL": "https://dnf-db.developale.com"
+        "EXPO_PUBLIC_API_URL": "https://dnf.developale.com"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_PB_URL": "https://dnf-db.developale.com"
+        "EXPO_PUBLIC_API_URL": "https://dnf.developale.com"
       }
     }
   },

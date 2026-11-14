@@ -1,37 +1,6 @@
-# Ambiente local de testes. Sobe junto com `bun expo start` em apps/mobile.
+# Ambiente local de testes (API + Postgres). Sobe junto com `bun expo start` em apps/mobile.
 services:
-  pocketbase:
-    build: ./core
-    ports:
-      - "8090:8090"
-    environment:
-      PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@dnf.local}
-      PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-dnf-dev-password}
-      # Token do Cloudflare Access usado pela rota /srd (core/pb_hooks/srd.pb.js). Vem do .env da raiz.
-      DND_API_ACCESS_ID: ${DND_API_ACCESS_ID:-}
-      DND_API_ACCESS_SECRET: ${DND_API_ACCESS_SECRET:-}
-      DND_API_URL: ${DND_API_URL:-}
-      # Narração (core/pb_hooks/tts.pb.js): TTS_PROVIDERS é a ordem dos provedores (ex.: elevenlabs). Sem chave, fica muda.
-      TTS_PROVIDERS: ${TTS_PROVIDERS:-}
-      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
-      # Voz do Grande Sábio (/tts/sage): a ponte HTTP do Piper (core/piper-http). Vazia, o Sábio usa a ElevenLabs.
-      PIPER_URL: ${PIPER_URL:-}
-    # Cria/atualiza o superuser de dev e sobe em modo --dev (logs SQL, migrations geradas pelo Dashboard).
-    command: >
-      sh -c './pocketbase superuser upsert "$$PB_ADMIN_EMAIL" "$$PB_ADMIN_PASSWORD"
-      && exec ./pocketbase serve --http=0.0.0.0:8090 --dev'
-    volumes:
-      - ./core/pb_data:/pb/pb_data
-      - ./core/pb_migrations:/pb/pb_migrations
-      - ./core/pb_hooks:/pb/pb_hooks
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/api/health"]
-      interval: 2s
-      timeout: 2s
-      retries: 15
-
-  # API do DnF (core/server.ts: Hono + Drizzle). Roda o código do repo direto (sem imagem própria ainda).
-  # Enquanto as contas estão no PocketBase, o login é conferido nele (POCKETBASE_URL).
+  # API do DnF (core/server.ts: Hono + Drizzle). Em dev roda o código do repo direto (sem build da imagem).
   api:
     image: oven/bun:1
     working_dir: /app/core
@@ -43,8 +12,11 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: postgres://dnf:dnf@postgres:5432/dnf
-      POCKETBASE_URL: http://pocketbase:8090
+      # Só para dev: em produção o AUTH_SECRET vem do .env do NAS (openssl rand -hex 32).
+      AUTH_SECRET: ${AUTH_SECRET:-dev-only-secret-change-me-0123456789abcdef}
+      CORS_ORIGINS: '*'
       NAS_DIR: /nas
+      FILES_DIR: /files
       DND_API_URL: ${DND_API_URL:-}
       DND_API_ACCESS_ID: ${DND_API_ACCESS_ID:-}
       DND_API_ACCESS_SECRET: ${DND_API_ACCESS_SECRET:-}
@@ -54,6 +26,12 @@ services:
     volumes:
       - ./:/app
       - ./core/nas:/nas:ro
+      - dnf-files:/files
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,12 +52,12 @@ services:
       timeout: 2s
       retries: 15
 
-  # 5e-FastAPI local (repo clonado em ../5e-FastAPI). Só sobe com `docker compose --profile api up`.
+  # 5e-FastAPI local (repo clonado em ../5e-FastAPI). Só sobe com `docker compose --profile dnd up dnd-api`.
   # Precisa do banco em ../5e-FastAPI/app/dados/dnd.db (não é versionado; copie do NAS:
   #   scp ale@nas-ale:/srv/apps/5e-fastapi/app/dados/dnd.db ../5e-FastAPI/app/dados/).
-  # Para o PocketBase usar esta API (sem token do Cloudflare), ponha DND_API_URL=http://dnd-api:8000 no .env.
+  # Para a API do DnF usar esta (sem token do Cloudflare), ponha DND_API_URL=http://dnd-api:8000 no .env.
   dnd-api:
-    profiles: ["api"]
+    profiles: ["dnd"]
     build: ../5e-FastAPI
     ports:
       - "8000:8000"
@@ -90,3 +68,4 @@ services:
 
 volumes:
   dnf-pg:
+  dnf-files:
